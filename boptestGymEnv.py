@@ -36,8 +36,7 @@ class BoptestGymEnv(gym.Env):
                  random_start_time  = False,
                  start_time         = 0,
                  warmup_period      = 0,
-                 Ts                 = 900,
-                 w                  = 1e8):
+                 Ts                 = 900):
         '''
         Parameters
         ----------
@@ -72,11 +71,6 @@ class BoptestGymEnv(gym.Env):
             Desired simulation period to initialize each episode 
         Ts: integer
             Sampling time in seconds
-        w: float
-            Weight for thermal discomfort in the rewards. This weight is 
-            also used to standardize the reward, which is computed as:
-            `reward = -(increment_objective_integrand)/self.w` where:
-            `objective_integrand = kpis['cost_tot'] + self.w*kpis[tdis_tot]`
             
         '''
         
@@ -93,7 +87,6 @@ class BoptestGymEnv(gym.Env):
         self.warmup_period      = warmup_period
         self.reward             = reward
         self.Ts                 = Ts
-        self.w                  = w
         
         # GET TEST INFORMATION
         # --------------------
@@ -283,12 +276,7 @@ class BoptestGymEnv(gym.Env):
         reward is implemented as the negated increase in the objective
         integrand function. In turn, this objective integrand function 
         is calculated as the sum of the total operational cost plus
-        the weighted discomfort. The value to weight discomfort
-        can be accessed through `self.w` and is used to compensate 
-        for the different orders of magnitude of cost and discomfort. 
-        This weight is also used to rescale the rewards. Notice that
-        the rewards are rescaled without shifting mean as that would
-        affect agent's will to live. 
+        the weighted discomfort. 
         
         Returns
         -------
@@ -297,19 +285,28 @@ class BoptestGymEnv(gym.Env):
         
         Notes
         -----
-        This method should be changed to be an abstract method so that
-        users can redefine it as desired. 
+        This method is just a default method to compute reward. It can be 
+        overridden by defining a child from this class with
+        this same method name, i.e. `compute_reward`. If a custom reward 
+        is defined, it is strongly recommended to derive it using the KPIs
+        as returned from the BOPTEST framework, as it is done in this 
+        default `compute_reward` method. This ensures that all variables 
+        that may contribute to any KPI are properly accounted and 
+        integrated. 
         
         '''
+        
+        # Define a relative weight for the discomfort 
+        w = 1
         
         # Compute BOPTEST core kpis
         kpis = requests.get('{0}/kpi'.format(self.url)).json()
         
         # Calculate objective integrand function at this point
-        objective_integrand = kpis['cost_tot'] + self.w*kpis['tdis_tot']
+        objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
         
         # Compute reward
-        reward = -(objective_integrand - self.objective_integrand)/self.w
+        reward = -(objective_integrand - self.objective_integrand)/w
         
         self.objective_integrand = objective_integrand
         
