@@ -179,9 +179,10 @@ class BoptestGymEnv(gym.Env):
                 for period in excluding_periods:
                     if episode[0] < period[1] and period[0] < episode[1]:
                         # There is overlapping between episode and this period
+                        # Try to find a good starting time again
                         start_time = find_start_time()
-                # This is a valid starting time
-                return start_time
+            # This point is reached only when a good starting point is found
+            return start_time
         
         # Assign random start_time if it is None
         if self.random_start_time:
