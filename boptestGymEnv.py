@@ -147,14 +147,24 @@ class BoptestGymEnv(gym.Env):
                                             high = np.array(self.upper_obs_bounds), 
                                             dtype= np.float32)    
 
-    def reset(self, seed=1):
+    def reset(self, excluding_periods=None):
         '''
-        Important: the observation must be a numpy array
+        Method to reset the environment. The associated building model is 
+        initialized by running the baseline controller for a  
+        `self.warmup_period` of time right before `self.start_time`. 
+        If `self.random_start_time` is True, a random time is assigned 
+        to `self.start_time` such that there are not episodes that overlap
+        with the indicated `excluding_periods`. This is useful to define
+        testing periods that should not use data from training.   
         
         Parameters
         ----------
-        seed: int
-            Seed for random start time 
+        excluding_periods: list of tuples
+            List where each element is a tuple indicating the start and 
+            end time of the periods that should not overlap with any 
+            episode used for training. Example:
+            excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
+                                (304*24*3600, 304*24*3600+14*24*3600)]
             
         Returns
         -------
@@ -163,10 +173,26 @@ class BoptestGymEnv(gym.Env):
          
         '''        
         
+        def find_start_time():
+            '''Recursive method to find a random start time out of 
+            `excluding_periods`. An episode and an excluding_period that
+            are just touching each other are not considered as being 
+            overlapped. 
+            
+            '''
+            start_time = random.randint(0, 3.154e+7-self.episode_length)
+            episode = (start_time, start_time+self.episode_length)
+            if excluding_periods is not None:
+                for period in excluding_periods:
+                    if episode[0] < period[1] and period[0] < episode[1]:
+                        # There is overlapping between episode and this period
+                        start_time = find_start_time()
+                # This is a valid starting time
+                return start_time
+        
         # Assign random start_time if it is None
         if self.random_start_time:
-            random.seed(seed)
-            self.start_time = random.randint(0, 3.154e+7-self.episode_length)
+            self.start_time = find_start_time()
         
         # Initialize the building simulation
         res = requests.put('{0}/initialize'.format(self.url), 
