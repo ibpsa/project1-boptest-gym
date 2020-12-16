@@ -10,6 +10,7 @@ import utilities
 import os
 import pandas as pd
 import random
+from examples import run_baseline
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines.common.env_checker import check_env
@@ -36,7 +37,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                 warmup_period       = 3600,
                                 Ts                  = 900)
     
-    def ptest_stable_baselines_check(self):
+    def test_stable_baselines_check(self):
         '''Use the environment checker from stable baselines to test 
         the environment. This checks that the environment follows the 
         Gym API. It also optionally checks that the environment is 
@@ -46,7 +47,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         check_env(self.env, warn=True)
         
-    def ptest_reset_fixed(self):
+    def test_reset_fixed(self):
         '''Test that the environment can reset using a fixed start time
         and a specific warmup period. 
         
@@ -98,6 +99,30 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         df = pd.DataFrame.from_dict(start_times, orient = 'index', columns=['value'])
         df.index.name = 'keys'
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_random.csv')
+        self.compare_ref_values_df(df, ref_filepath) 
+    
+    def test_compute_reward_default(self):
+        '''Test default method to compute reward.
+        
+        '''
+        rewards = run_baseline.run_reward_default(plot=False)
+        
+        # Check values
+        df = pd.DataFrame(rewards, columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_default.csv')
+        self.compare_ref_values_df(df, ref_filepath) 
+        
+    def test_compute_reward_custom(self):
+        '''Test custom method to compute reward.
+        
+        '''
+        rewards = run_baseline.run_reward_custom(plot=False)
+        
+        # Check values
+        df = pd.DataFrame(rewards, columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_custom.csv')
         self.compare_ref_values_df(df, ref_filepath) 
         
 if __name__ == '__main__':
