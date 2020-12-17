@@ -36,7 +36,8 @@ class BoptestGymEnv(gym.Env):
                  random_start_time  = False,
                  start_time         = 0,
                  warmup_period      = 0,
-                 Ts                 = 900):
+                 Ts                 = 900,
+                 excluding_periods  = None):
         '''
         Parameters
         ----------
@@ -62,7 +63,14 @@ class BoptestGymEnv(gym.Env):
         episode_length: integer
             Duration of each episode in seconds
         random_start_time: boolean
-            Set to True if desired to use a random start time for each episode. 
+            Set to True if desired to use a random start time for each episode
+        excluding_periods: list of tuples
+            List where each element is a tuple indicating the start and 
+            end time of the periods that should not overlap with any 
+            episode used for training. Example:
+            excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
+                                (304*24*3600, 304*24*3600+14*24*3600)]
+            This is only used when `random_start_time=True`
         start_time: integer
             Initial fixed episode time in seconds from beginning of the 
             year for each episode. Use in combination with 
@@ -83,6 +91,7 @@ class BoptestGymEnv(gym.Env):
         self.upper_obs_bounds   = upper_obs_bounds
         self.episode_length     = episode_length
         self.random_start_time  = random_start_time
+        self.excluding_periods  = excluding_periods
         self.start_time         = start_time
         self.warmup_period      = warmup_period
         self.reward             = reward
@@ -140,25 +149,16 @@ class BoptestGymEnv(gym.Env):
                                             high = np.array(self.upper_obs_bounds), 
                                             dtype= np.float32)    
 
-    def reset(self, excluding_periods=None):
+    def reset(self):
         '''
         Method to reset the environment. The associated building model is 
         initialized by running the baseline controller for a  
         `self.warmup_period` of time right before `self.start_time`. 
         If `self.random_start_time` is True, a random time is assigned 
         to `self.start_time` such that there are not episodes that overlap
-        with the indicated `excluding_periods`. This is useful to define
-        testing periods that should not use data from training.   
+        with the indicated `self.excluding_periods`. This is useful to 
+        define testing periods that should not use data from training.   
         
-        Parameters
-        ----------
-        excluding_periods: list of tuples
-            List where each element is a tuple indicating the start and 
-            end time of the periods that should not overlap with any 
-            episode used for training. Example:
-            excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
-                                (304*24*3600, 304*24*3600+14*24*3600)]
-            
         Returns
         -------
         meas: numpy array
@@ -175,8 +175,8 @@ class BoptestGymEnv(gym.Env):
             '''
             start_time = random.randint(0, 3.154e+7-self.episode_length)
             episode = (start_time, start_time+self.episode_length)
-            if excluding_periods is not None:
-                for period in excluding_periods:
+            if self.excluding_periods is not None:
+                for period in self.excluding_periods:
                     if episode[0] < period[1] and period[0] < episode[1]:
                         # There is overlapping between episode and this period
                         # Try to find a good starting time again

@@ -78,11 +78,12 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # and the two first weeks of November
         excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                             (304*24*3600, 304*24*3600+14*24*3600)]
+        self.env.excluding_periods = excluding_periods
         random.seed(123456)
         start_times = OrderedDict()
         # Reset hundred times
         for i in range(100):
-            obs = self.env.reset(excluding_periods=excluding_periods)
+            obs = self.env.reset()
             start_time = self.env.start_time
             episode = (start_time, start_time+self.env.episode_length)
             for period in excluding_periods:
