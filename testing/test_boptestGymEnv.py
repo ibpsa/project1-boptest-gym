@@ -125,5 +125,17 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_custom.csv')
         self.compare_ref_values_df(df, ref_filepath) 
         
+    def test_compute_reward_clipping(self):
+        '''Test reward clipping.
+        
+        '''
+        rewards = run_baseline.run_reward_clipping(plot=False)
+        
+        # Check values
+        df = pd.DataFrame(rewards, columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_clipping.csv')
+        self.compare_ref_values_df(df, ref_filepath) 
+        
 if __name__ == '__main__':
     utilities.run_tests(os.path.basename(__file__))

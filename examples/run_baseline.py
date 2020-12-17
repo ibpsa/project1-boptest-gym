@@ -81,6 +81,54 @@ def run_reward_custom(plot=False):
     rewards = run(envClass=BoptestGymEnvCustom, plot=plot)
         
     return rewards
+
+def run_reward_clipping(plot=False):
+    '''Run example with clipped reward function. 
+    
+    Parameters
+    ----------
+    plot : bool, optional
+        True to plot timeseries results.
+        Default is False.
+    
+    Returns
+    -------
+    rewards : list
+        Rewards obtained in simulation
+        
+    
+    '''
+    
+    # Define a parent class as a wrapper to override the reward function
+    class BoptestGymEnvClipping(BoptestGymEnv):
+        
+        def compute_reward(self):
+            '''Clipped reward function that has the value either -1 when
+            there is any cost/discomfort, or 0 where there is not cost 
+            nor discomfort. This would be the simplest reward to learn for
+            an agent. 
+            
+            '''
+            
+            # Compute BOPTEST core kpis
+            kpis = requests.get('{0}/kpi'.format(self.url)).json()
+            
+            # Calculate objective integrand function at this point
+            objective_integrand = kpis['cost_tot'] + kpis['tdis_tot']
+            
+            # Compute reward
+            reward = -(objective_integrand - self.objective_integrand)
+            
+            # Filter to be either -1 or 0
+            reward = np.sign(reward)
+            
+            self.objective_integrand = objective_integrand
+            
+            return reward
+    
+    rewards = run(envClass=BoptestGymEnvClipping, plot=plot)
+        
+    return rewards
     
 def run(envClass, plot=False):
     # Use the first 3 days of February for testing with 3 days for initialization
