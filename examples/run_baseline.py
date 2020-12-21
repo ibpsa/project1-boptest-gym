@@ -7,12 +7,16 @@ The BOPTEST bestest_hydrinic_heat_pump case needs to be deployed.
 '''
 import numpy as np
 import requests
-import matplotlib.pyplot as plt
-from boptestGymEnv import BoptestGymEnv
-from scipy import interpolate
-
+import random
+from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, NormalizedActionWrapper
+from examples.test_and_plot import test_agent
 
 url = 'http://127.0.0.1:5000'
+random.seed(123456)
+
+start_time_test     = 31*24*3600
+episode_length_test = 3*24*3600
+warmup_period_test  = 3*24*3600
 
 def run_reward_default(plot=False):
     '''Run example with default reward function. 
@@ -31,10 +35,9 @@ def run_reward_default(plot=False):
     
     '''
     
-    rewards = run(envClass=BoptestGymEnv, plot=plot)
+    observations, rewards = run(envClass=BoptestGymEnv, plot=plot)
         
-    return rewards
-
+    return observations, rewards
 
 def run_reward_custom(plot=False):
     '''Run example with customized reward function. 
@@ -78,9 +81,9 @@ def run_reward_custom(plot=False):
             
             return reward
     
-    rewards = run(envClass=BoptestGymEnvCustom, plot=plot)
+    observations, rewards = run(envClass=BoptestGymEnvCustom, plot=plot)
         
-    return rewards
+    return observations, rewards
 
 def run_reward_clipping(plot=False):
     '''Run example with clipped reward function. 
@@ -126,11 +129,56 @@ def run_reward_clipping(plot=False):
             
             return reward
     
-    rewards = run(envClass=BoptestGymEnvClipping, plot=plot)
+    observations, rewards = run(envClass=BoptestGymEnvClipping, plot=plot)
         
-    return rewards
+    return observations, rewards
+
+def run_normalized_observation_wrapper(plot=False):
+    '''Run example with normalized observation wrapper. 
+     
+    Parameters
+    ----------
+    plot : bool, optional
+        True to plot timeseries results.
+        Default is False.
+     
+    Returns
+    -------
+    rewards : list
+        Rewards obtained in simulation
+        
+    '''
+
+    observations, rewards = run(envClass=BoptestGymEnv, 
+                  wrapper=NormalizedObservationWrapper,
+                  plot=plot)
+         
+    return observations, rewards
+
+
+def run_normalized_action_wrapper(plot=False):
+    '''Run example with normalized action wrapper. 
+     
+    Parameters
+    ----------
+    plot : bool, optional
+        True to plot timeseries results.
+        Default is False.
+     
+    Returns
+    -------
+    rewards : list
+        Rewards obtained in simulation
+        
+    '''
+
+    observations, actions, rewards = run(envClass=BoptestGymEnv, 
+                  wrapper=NormalizedActionWrapper,
+                  plot=plot)
+         
+    return observations, actions, rewards
     
-def run(envClass, plot=False):
+def run(envClass, wrapper=None, plot=False):
     # Use the first 3 days of February for testing with 3 days for initialization
     env = envClass(url                 = url,
                    observations        = ['reaTZon_y'], 
@@ -145,67 +193,43 @@ def run(envClass, plot=False):
     # Define an empty action list to don't overwrite any input
     env.actions = [] 
     
-    # Reset environment
-    _ = env.reset()
+    # Add wrapper if any
+    if wrapper is not None:
+        env = wrapper(env)
     
-    # Simulation loop
-    done = False
-    rewards = []
-    print('Simulating...')
-    while done is False:
-        _, reward, done, _ = env.step([])
-        rewards.append(reward)
+    model = BaselineModel()
+    # Perform test
+    observations, actions, rewards = test_agent(env, model, 
+                         start_time=start_time_test, 
+                         episode_length=episode_length_test,
+                         warmup_period=warmup_period_test,
+                         plot=plot)
+    
+    return observations, actions, rewards
         
-    if plot:
-        plot_results(env, rewards)
-        
-    return rewards
-
-def plot_results(env, rewards):
-    res = requests.get('{0}/results'.format(env.url)).json()
-    res_all = {}
-    res_all.update(res['u'])
-    res_all.update(res['y'])
-
-    _ = plt.figure(figsize=(10,8))
+class BaselineModel(object):
+    '''Dummy class for baseline model. It simply returns empty list when 
+    calling `predict` method. 
     
-    meas_names = ['reaTZon_y'] # measurements
-    cInp_names = ['reaHeaPumY_y'] # control inputs
-
-    res_time_days = np.array(res_all['time'])/3600./24.
-    res_lSet = np.array(res_all['reaTSetHea_y'])
-    res_uSet = np.array(res_all['reaTSetCoo_y'])
-    res_meas = {meas: np.array(res_all[meas]) for meas in meas_names}
-    res_cInp = {cInp: np.array(res_all[cInp]) for cInp in cInp_names}
-
-    ax1 = plt.subplot(3, 1, 1)
-    for meas in res_meas.keys():
-        plt.plot(res_time_days, res_meas[meas]-273.15, label=meas)
-        
-    plt.plot(res_time_days, res_lSet-273.15)
-    plt.plot(res_time_days, res_uSet-273.15)
-    plt.legend()
-    ax1.set_ylabel('Zone temperature\n($^\circ$C)')
+    '''
+    def __init__(self):
+        pass
+    def predict(self,obs):
+        return []
     
-    ax2 = plt.subplot(3, 1, 2)
-    for cInp in res_cInp.keys():
-        plt.plot(res_time_days, res_cInp[cInp], label=cInp)
-    ax2.set_ylabel('Heat pump\nmodulating signal\n(-)')
-
-    rewards_time_days = np.arange(env.start_time, 
-                                  env.start_time+env.episode_length,
-                                  env.Ts)/3600./24.
-    f = interpolate.interp1d(rewards_time_days, rewards, kind='zero',
-                             fill_value='extrapolate')
-    rewards_reindexed = f(res_time_days)
+class SampleModel(object):
+    '''Dummy class that generates random actions. It therefore does not
+    simulate the baseline controller, but is still maintained here because
+    also serves as a simple case to test features. 
     
-    ax3 = plt.subplot(3, 1, 3)
-    plt.plot(res_time_days, rewards_reindexed, label='rewards')
-    ax3.set_ylabel('Rewards\n(-)')
-    
-    plt.show()   
+    '''
+    def __init__(self):
+        pass
+    def predict(self,obs):
+        return self.action_space.sample()
         
 if __name__ == "__main__":
 
-    rewards = run_reward_custom(plot=True)
+    rewards = run_normalized_action_wrapper(plot=True)
+    # rewards = run_reward_custom(plot=True)
     
