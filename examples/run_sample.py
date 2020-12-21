@@ -6,11 +6,13 @@ The BOPTEST bestest_hydrinic_heat_pump case needs to be deployed.
 
 '''
 
-import random
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper
 from examples.test_and_plot import test_agent
+import random
 
 url = 'http://127.0.0.1:5000'
+
+# Seed for random starting times of episodes
 random.seed(123456)
 
 start_time_test     = 31*24*3600
@@ -78,8 +80,8 @@ class SampleModel(object):
     '''
     def __init__(self, env):
         self.env = env
-        # from gym.spaces import prng
-        # prng.seed(123456)
+        # Seed for action space
+        self.env.action_space.seed(123456)
     def predict(self,obs):
         return self.env.action_space.sample()
         
