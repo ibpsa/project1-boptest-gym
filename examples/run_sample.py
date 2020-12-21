@@ -25,9 +25,13 @@ def run_normalized_action_wrapper(plot=False):
     plot : bool, optional
         True to plot timeseries results.
         Default is False.
-     
+
     Returns
     -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
     rewards : list
         Rewards obtained in simulation
         

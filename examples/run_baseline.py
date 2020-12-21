@@ -29,15 +29,18 @@ def run_reward_default(plot=False):
     
     Returns
     -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
     rewards : list
         Rewards obtained in simulation
-        
     
     '''
     
-    observations, rewards = run(envClass=BoptestGymEnv, plot=plot)
+    observations, actions, rewards = run(envClass=BoptestGymEnv, plot=plot)
         
-    return observations, rewards
+    return observations, actions, rewards
 
 def run_reward_custom(plot=False):
     '''Run example with customized reward function. 
@@ -50,9 +53,12 @@ def run_reward_custom(plot=False):
     
     Returns
     -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
     rewards : list
         Rewards obtained in simulation
-        
     
     '''
     
@@ -81,9 +87,9 @@ def run_reward_custom(plot=False):
             
             return reward
     
-    observations, rewards = run(envClass=BoptestGymEnvCustom, plot=plot)
+    observations, actions, rewards = run(envClass=BoptestGymEnvCustom, plot=plot)
         
-    return observations, rewards
+    return observations, actions, rewards
 
 def run_reward_clipping(plot=False):
     '''Run example with clipped reward function. 
@@ -93,12 +99,15 @@ def run_reward_clipping(plot=False):
     plot : bool, optional
         True to plot timeseries results.
         Default is False.
-    
+
     Returns
     -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
     rewards : list
         Rewards obtained in simulation
-        
     
     '''
     
@@ -129,9 +138,9 @@ def run_reward_clipping(plot=False):
             
             return reward
     
-    observations, rewards = run(envClass=BoptestGymEnvClipping, plot=plot)
+    observations, actions, rewards = run(envClass=BoptestGymEnvClipping, plot=plot)
         
-    return observations, rewards
+    return observations, actions, rewards
 
 def run_normalized_observation_wrapper(plot=False):
     '''Run example with normalized observation wrapper. 
@@ -144,16 +153,20 @@ def run_normalized_observation_wrapper(plot=False):
      
     Returns
     -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
     rewards : list
         Rewards obtained in simulation
         
     '''
 
-    observations, rewards = run(envClass=BoptestGymEnv, 
+    observations, actions, rewards = run(envClass=BoptestGymEnv, 
                   wrapper=NormalizedObservationWrapper,
                   plot=plot)
          
-    return observations, rewards
+    return observations, actions, rewards
 
 
 def run_normalized_action_wrapper(plot=False):
@@ -167,6 +180,10 @@ def run_normalized_action_wrapper(plot=False):
      
     Returns
     -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
     rewards : list
         Rewards obtained in simulation
         
@@ -229,7 +246,5 @@ class SampleModel(object):
         return self.action_space.sample()
         
 if __name__ == "__main__":
-
-    rewards = run_normalized_action_wrapper(plot=True)
-    # rewards = run_reward_custom(plot=True)
+    rewards = run_reward_custom(plot=True)
     
