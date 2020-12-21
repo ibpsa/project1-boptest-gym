@@ -173,7 +173,7 @@ class BoptestGymEnv(gym.Env):
             overlapped. 
             
             '''
-            start_time = random.randint(0, 3.154e+7-self.episode_length)
+            start_time = random.randint(0, 3.1536e+7-self.episode_length)
             episode = (start_time, start_time+self.episode_length)
             if self.excluding_periods is not None:
                 for period in self.excluding_periods:
