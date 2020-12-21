@@ -605,7 +605,134 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         action = np.asarray(action).astype(self.env.action_space.dtype)
         
         return action
+      
+class NormalizedObservationWrapper(gym.ObservationWrapper):
+    '''This wrapper normalizes the values of the observation space to lie
+    between -1 and 1. Normalization can significantly help with convergence
+    speed. 
     
+    Notes
+    -----
+    The concept of wrappers is very powerful, with which we are capable 
+    to customize observation, action, step function, etc. of an env. 
+    No matter how many wrappers are applied, `env.unwrapped` always gives 
+    back the internal original environment object. Typical use:
+    `env = BoptestGymEnv()`
+    `env = NormalizedObservationWrapper(env)`
+    
+    '''
+    
+    def __init__(self, env):
+        '''
+        Constructor
+        
+        Parameters
+        ----------
+        env: gym.Env
+            Original gym environment
+        
+        '''
+        
+        # Construct from parent class
+        super().__init__(env)
+        
+    def observation(self, observation):
+        '''
+        This method accepts a single parameter (the 
+        observation to be modified) and returns the modified observation.
+        
+        Parameters
+        ----------
+        observation: 
+            Observation in the original environment observation space format 
+            to be modified.
+        
+        Returns
+        -------
+            Modified observation returned by the wrapped environment. 
+        
+        Notes
+        -----
+        To better understand what this method needs to do, see how the 
+        `gym.ObservationWrapper` parent class is doing in `gym.core`:
+        
+        '''
+        
+        # Convert to one number for the wrapped environment
+        observation_wrapper = 2*(observation - self.observation_space.low)/\
+            (self.observation_space.high-self.observation_space.low)-1
+        
+        return observation_wrapper
+     
+class NormalizedActionWrapper(gym.ActionWrapper):
+    '''This wrapper normalizes the values of the action space to lie
+    between -1 and 1. Normalization can significantly help with convergence
+    speed. 
+    
+    Notes
+    -----
+    The concept of wrappers is very powerful, with which we are capable 
+    to customize observation, action, step function, etc. of an env. 
+    No matter how many wrappers are applied, `env.unwrapped` always gives 
+    back the internal original environment object. Typical use:
+    `env = BoptestGymEnv()`
+    `env = NormalizedActionWrapper(env)`
+    
+    '''
+    
+    def __init__(self, env):
+        '''
+        Constructor
+        
+        Parameters
+        ----------
+        env: gym.Env
+            Original gym environment
+        
+        '''
+        
+        # Construct from parent class
+        super().__init__(env)
+        
+        n = self.unwrapped.action_space.shape[0]
+        # Redefine action space to lie between [-1,1]
+        self.action_space = spaces.Box(low  = -1*np.ones(n), 
+                                       high = +1*np.ones(n), 
+                                       dtype= np.float32)
+        
+        pass
+        
+    def action(self, action_wrapper):
+        '''This method accepts a single parameter (the modified action
+        in the wrapper format) and returns the action to be passed to the 
+        original environment. Thus, this method basically rescales the  
+        action inside the environment.
+        
+        Parameters
+        ----------
+        action_wrapper: 
+            Action in the modified environment action space format 
+            to be reformulated back to the original environment format.
+        
+        Returns
+        -------
+            Action in the original environment format.  
+        
+        Notes
+        -----
+        To better understand what this method needs to do, see how the 
+        `gym.ActionWrapper` parent class is doing in `gym.core`:
+        
+        '''
+        
+        # Rescale the action to be sent to the original environment
+        action = self.unwrapped.action_space.low + \
+            (self.unwrapped.action_space.high-self.unwrapped.action_space.low)*\
+            (np.ones(len(action_wrapper))+action_wrapper)/2
+        
+        return action
+
+     
 if __name__ == "__main__":
     
     # Instantiate the env    
