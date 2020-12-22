@@ -82,8 +82,8 @@ class SampleModel(object):
         self.env = env
         # Seed for action space
         self.env.action_space.seed(123456)
-    def predict(self,obs):
-        return self.env.action_space.sample()
+    def predict(self,obs, deterministic=True):
+        return self.env.action_space.sample(), obs
         
 if __name__ == "__main__":
     rewards = run_normalized_action_wrapper(plot=True)

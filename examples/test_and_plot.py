@@ -37,7 +37,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     rewards = []
     print('Simulating...')
     while done is False:
-        action = model.predict(obs)
+        action, _ = model.predict(obs, deterministic=True)
         obs, reward, done, _ = env.step(action)
         observations.append(obs)
         actions.append(action)

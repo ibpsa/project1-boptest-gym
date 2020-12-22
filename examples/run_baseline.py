@@ -233,8 +233,8 @@ class BaselineModel(object):
     '''
     def __init__(self):
         pass
-    def predict(self,obs):
-        return []
+    def predict(self, obs, deterministic=True):
+        return [], obs
     
 class SampleModel(object):
     '''Dummy class that generates random actions. It therefore does not
@@ -244,8 +244,8 @@ class SampleModel(object):
     '''
     def __init__(self):
         pass
-    def predict(self,obs):
-        return self.action_space.sample()
+    def predict(self,obs, deterministic=True):
+        return self.action_space.sample(), obs
         
 if __name__ == "__main__":
     rewards = run_reward_custom(plot=True)
