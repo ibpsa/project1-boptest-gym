@@ -341,6 +341,18 @@ class BoptestGymEnv(gym.Env):
                 
         return meas
     
+    def get_kpis(self):
+        '''Auxiliary method to get the so-colled core KPIs as computed in 
+        the BOPTEST framework. This is handy when evaluating performance 
+        of an agent in this environment. 
+        
+        '''
+        
+        # Compute BOPTEST core kpis
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        
+        return kpis
+    
     def reformat_expert_traj(self, file_path='data.csv'):
         '''
         Reformats expert trajectory from a csv file to the npz format 
@@ -472,7 +484,7 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         self.n_bins_obs = n_bins_obs
 
         # Assert that original observation space is a Box space
-        assert isinstance(env.observation_space, spaces.Box)
+        assert isinstance(env.observation_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
         
         # Get observation space bounds
         low     = self.observation_space.low
@@ -553,7 +565,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         self.n_bins_act = n_bins_act
 
         # Assert that original action space is a Box space
-        assert isinstance(env.action_space, spaces.Box)
+        assert isinstance(env.action_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
         
         # Get observation space bounds
         low     = self.action_space.low
@@ -699,6 +711,8 @@ class NormalizedActionWrapper(gym.ActionWrapper):
         self.action_space = spaces.Box(low  = -1*np.ones(n), 
                                        high = +1*np.ones(n), 
                                        dtype= np.float32)
+        # Assert that original observation space is a Box space
+        assert isinstance(self.unwrapped.action_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
         
         pass
         

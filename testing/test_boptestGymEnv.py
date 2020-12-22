@@ -106,97 +106,71 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''Test default method to compute reward.
         
         '''
-        observations, _, rewards = run_baseline.run_reward_default(plot=False)
-        
-        # Check observation values
-        df = pd.DataFrame(observations, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_default.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
-        
-        # Check reward values
-        df = pd.DataFrame(rewards, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_default.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        obs, _, rew = run_baseline.run_reward_default(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='default')
         
     def test_compute_reward_custom(self):
         '''Test custom method to compute reward.
         
         '''
-        observations, _, rewards = run_baseline.run_reward_custom(plot=False)
-        
-        # Check observation values
-        df = pd.DataFrame(observations, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_custom.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
-        
-        # Check reward values
-        df = pd.DataFrame(rewards, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_custom.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        obs, _, rew = run_baseline.run_reward_custom(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
         
     def test_compute_reward_clipping(self):
         '''Test reward clipping.
         
         '''
-        observations, _, rewards = run_baseline.run_reward_clipping(plot=False)
-        
-        # Check observation values
-        df = pd.DataFrame(observations, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_clipping.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
-        
-        # Check reward values
-        df = pd.DataFrame(rewards, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_clipping.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        obs, _, rew = run_baseline.run_reward_clipping(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='clipping')
         
     def test_normalized_observation_wrapper(self):
         '''Test wrapper that normalizes observations.
         
         '''
-        observations, _, rewards = run_baseline.run_normalized_observation_wrapper(plot=False)
-        
-        # Check observation values
-        df = pd.DataFrame(observations, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_normalizedObservationWrapper.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
-        
-        # Check reward values
-        df = pd.DataFrame(rewards, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_normalizedObservationWrapper.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        obs, _, rew = run_baseline.run_normalized_observation_wrapper(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='normalizedObservationWrapper')
         
     def test_normalized_action_wrapper(self):
         '''Test wrapper that normalizes actions.
         
         '''
-        observations, actions, rewards = run_sample.run_normalized_action_wrapper(plot=False)
+        obs, act, rew = run_sample.run_normalized_action_wrapper(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=act,rew=rew,kpi=None,label='normalizedActionWrapper')
+        
+            
+    def check_obs_act_rew_kpi(self, obs=None, act=None, rew=None, kpi=None,
+                              label='default'):
+        '''Auxiliary method to check for observations, actions, rewards, 
+        and/or kpis of a particular test case run. 
+        
+        '''
         
         # Check observation values
-        df = pd.DataFrame(observations, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_normalizedActionWrapper.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        if obs is not None:
+            df = pd.DataFrame(obs, columns=['value'])
+            df.index.name = 'keys'
+            ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_{}.csv'.format(label))
+            self.compare_ref_values_df(df, ref_filepath) 
         
         # Check actions values
-        df = pd.DataFrame(actions, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'actions_normalizedActionWrapper.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        if act is not None:
+            df = pd.DataFrame(act, columns=['value'])
+            df.index.name = 'keys'
+            ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'actions_{}.csv'.format(label))
+            self.compare_ref_values_df(df, ref_filepath) 
         
         # Check reward values
-        df = pd.DataFrame(rewards, columns=['value'])
-        df.index.name = 'keys'
-        ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_normalizedActionWrapper.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        if rew is not None:
+            df = pd.DataFrame(rew, columns=['value'])
+            df.index.name = 'keys'
+            ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_{}.csv'.format(label))
+            self.compare_ref_values_df(df, ref_filepath) 
+            
+        if kpi is not None:
+            df = pd.DataFrame(data=[kpi], index=['{0}_tot'.format(label)], columns=['value'])
+            df.index.name = 'keys'
+            ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'kpis_{}.csv'.format(label))
+            self.compare_ref_values_df(df, ref_filepath)
         
 if __name__ == '__main__':
     utilities.run_tests(os.path.basename(__file__))

@@ -64,7 +64,7 @@ def run(envClass, wrapper=None, plot=False):
     model = SampleModel(env)
     
     # Perform test
-    observations, actions, rewards = test_agent(env, model, 
+    observations, actions, rewards, _ = test_agent(env, model, 
                          start_time=start_time_test, 
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
@@ -82,8 +82,8 @@ class SampleModel(object):
         self.env = env
         # Seed for action space
         self.env.action_space.seed(123456)
-    def predict(self,obs):
-        return self.env.action_space.sample()
+    def predict(self,obs, deterministic=True):
+        return self.env.action_space.sample(), obs
         
 if __name__ == "__main__":
     rewards = run_normalized_action_wrapper(plot=True)

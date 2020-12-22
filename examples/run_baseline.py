@@ -218,7 +218,7 @@ def run(envClass, wrapper=None, plot=False):
     
     model = BaselineModel()
     # Perform test
-    observations, actions, rewards = test_agent(env, model, 
+    observations, actions, rewards, _ = test_agent(env, model, 
                          start_time=start_time_test, 
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
@@ -233,8 +233,8 @@ class BaselineModel(object):
     '''
     def __init__(self):
         pass
-    def predict(self,obs):
-        return []
+    def predict(self, obs, deterministic=True):
+        return [], obs
     
 class SampleModel(object):
     '''Dummy class that generates random actions. It therefore does not
@@ -244,8 +244,8 @@ class SampleModel(object):
     '''
     def __init__(self):
         pass
-    def predict(self,obs):
-        return self.action_space.sample()
+    def predict(self,obs, deterministic=True):
+        return self.action_space.sample(), obs
         
 if __name__ == "__main__":
     rewards = run_reward_custom(plot=True)
