@@ -45,8 +45,10 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         
     if plot:
         plot_results(env, rewards)
-        
-    return observations, actions, rewards
+    
+    kpis = env.get_kpis()
+    
+    return observations, actions, rewards, kpis
 
 def plot_results(env, rewards):
     res = requests.get('{0}/results'.format(env.url)).json()

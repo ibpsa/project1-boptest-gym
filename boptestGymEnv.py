@@ -341,6 +341,18 @@ class BoptestGymEnv(gym.Env):
                 
         return meas
     
+    def get_kpis(self):
+        '''Auxiliary method to get the so-colled core KPIs as computed in 
+        the BOPTEST framework. This is handy when evaluating performance 
+        of an agent in this environment. 
+        
+        '''
+        
+        # Compute BOPTEST core kpis
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        
+        return kpis
+    
     def reformat_expert_traj(self, file_path='data.csv'):
         '''
         Reformats expert trajectory from a csv file to the npz format 

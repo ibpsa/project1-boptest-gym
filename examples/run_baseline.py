@@ -218,7 +218,7 @@ def run(envClass, wrapper=None, plot=False):
     
     model = BaselineModel()
     # Perform test
-    observations, actions, rewards = test_agent(env, model, 
+    observations, actions, rewards, _ = test_agent(env, model, 
                          start_time=start_time_test, 
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
