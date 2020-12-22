@@ -706,15 +706,18 @@ class NormalizedActionWrapper(gym.ActionWrapper):
         # Construct from parent class
         super().__init__(env)
         
-        n = self.unwrapped.action_space.shape[0]
-        # Redefine action space to lie between [-1,1]
-        self.action_space = spaces.Box(low  = -1*np.ones(n), 
-                                       high = +1*np.ones(n), 
-                                       dtype= np.float32)
         # Assert that original observation space is a Box space
         assert isinstance(self.unwrapped.action_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
         
-        pass
+        # Store low and high bounds of action space
+        self.low    = self.unwrapped.action_space.low
+        self.high   = self.unwrapped.action_space.high
+        
+        # Redefine action space to lie between [-1,1]
+        self.action_space = spaces.Box(low = -1, 
+                                       high = 1,
+                                       shape=self.unwrapped.action_space.shape, 
+                                       dtype= np.float32)        
         
     def action(self, action_wrapper):
         '''This method accepts a single parameter (the modified action
@@ -739,12 +742,8 @@ class NormalizedActionWrapper(gym.ActionWrapper):
         
         '''
         
-        # Rescale the action to be sent to the original environment
-        action = self.unwrapped.action_space.low + \
-            (self.unwrapped.action_space.high-self.unwrapped.action_space.low)*\
-            (np.ones(len(action_wrapper))+action_wrapper)/2
+        return self.low + (0.5*(action_wrapper+1.0)*(self.high-self.low))
         
-        return action
 
      
 if __name__ == "__main__":
