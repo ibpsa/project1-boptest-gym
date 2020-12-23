@@ -201,7 +201,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             self.compare_ref_values_df(df, ref_filepath) 
             
         if kpi is not None:
-            df = pd.DataFrame(data=[kpi], index=['{0}_tot'.format(label)], columns=['value'])
+            df = pd.DataFrame(data=[kpi]).T
+            df.columns = ['value']
             df.index.name = 'keys'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'kpis_{}.csv'.format(label))
             self.compare_ref_values_df(df, ref_filepath)
