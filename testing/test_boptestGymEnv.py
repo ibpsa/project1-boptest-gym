@@ -10,7 +10,7 @@ import utilities
 import os
 import pandas as pd
 import random
-from examples import run_baseline, run_sample
+from examples import run_baseline, run_sample, train_A2C
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines.common.env_checker import check_env
@@ -137,6 +137,40 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, act, rew = run_sample.run_normalized_action_wrapper(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=act,rew=rew,kpi=None,label='normalizedActionWrapper')
         
+    def test_A2C(self, load=True, episode_length_test=2*24*3600,
+                 warmup_period_test=1*24*3600, plot=False):
+        '''Test for an A2C agent from stable baselines. 
+        
+        Parameters
+        ----------
+        load : boolean, default=True
+            If `load=False`, then this test case will be a long test run 
+            since the agent will be trained during the tests. Setting 
+            `load=True` reduces the testing time considerably by directly 
+            loading a pre-trained agent. Independently of whether the 
+            agent is trained or not during testing, the results should be 
+            exactly the same as far as the seed in `examples.train_A2C` 
+            is not modified. 
+        episode_length_test : integer, default=2*24*3600
+            Length of the testing episode. We keep it short for testing,
+            only two days are used by default. 
+        warmup_period_test : integer, default=1*24*3600
+            Length of the initialization period for the test. We keep it 
+            short for testing. Only one day is used by default. 
+        
+        '''        
+        
+        env, model, start_time_tests = train_A2C.train_A2C(load=load)
+        
+        obs, act, rew, kpi = \
+            train_A2C.test_jan(env, model, start_time_tests, 
+                               episode_length_test, warmup_period_test, plot)
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_jan')
+        
+        obs, act, rew, kpi = \
+            train_A2C.test_nov(env, model, start_time_tests, 
+                               episode_length_test, warmup_period_test, plot)
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_nov')
             
     def check_obs_act_rew_kpi(self, obs=None, act=None, rew=None, kpi=None,
                               label='default'):
