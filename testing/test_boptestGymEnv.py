@@ -204,6 +204,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             df = pd.DataFrame(data=[kpi]).T
             df.columns = ['value']
             df.index.name = 'keys'
+            # Time ratio is not checked since depends on the machine where tests are run
+            df.drop('time_rat', inplace=True) 
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'kpis_{}.csv'.format(label))
             self.compare_ref_values_df(df, ref_filepath)
         
