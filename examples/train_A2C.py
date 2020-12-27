@@ -64,7 +64,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     
     if not load: 
         model.learn(total_timesteps=int(1e5))
-        # Save the agent and delete trained model to demonstrate loading
+        # Save the agent
         model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
                                       'agents', 'a2c_bestest_hydronic_heatpump'))
     else:

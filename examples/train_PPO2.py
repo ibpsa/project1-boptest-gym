@@ -64,12 +64,12 @@ def train_PPO2(start_time_tests   = [31*24*3600, 304*24*3600],
     
     if not load: 
         model.learn(total_timesteps=int(1e5))
-        # Save the agent and delete trained model to demonstrate loading
+        # Save the agent 
         model.save(os.path.join(utilities.get_root_path(), 'examples', 
                                 'agents', 'ppo2_bestest_hydronic_heatpump'))  
     else:
         # Load the trained agent
-        model.save(os.path.join(utilities.get_root_path(), 'examples', 
+        model.load(os.path.join(utilities.get_root_path(), 'examples', 
                                 'agents', 'ppo2_bestest_hydronic_heatpump'))  
     
     return env, model, start_time_tests
