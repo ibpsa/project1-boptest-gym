@@ -28,9 +28,7 @@ class BoptestGymEnv(gym.Env):
     def __init__(self, 
                  url                = 'http://127.0.0.1:5000',
                  actions            = ['oveHeaPumY_u'],
-                 observations       = ['reaTZon_y'], 
-                 lower_obs_bounds   = [273.],
-                 upper_obs_bounds   = [330.],
+                 observations       = {'reaTZon_y':(280.,310.)}, 
                  reward             = ['reward'],
                  episode_length     = 3*3600,
                  random_start_time  = False,
@@ -47,16 +45,16 @@ class BoptestGymEnv(gym.Env):
             List of strings indicating the action space. The bounds of 
             each variable from the action space the are retrieved from 
             the overwrite block attributes of the BOPTEST test case
-        observations: list
-            List of strings indicating the observation space. The observation
-            keys must belong to the set of measurements or to the set of 
-            forecasting variables of the BOPTEST test case
-        lower_obs_bounds: list
-            List of floats with the expected lower bounds for the observations.
-            It should have the same length as the `observations` argument
-        upper_obs_bounds: list
-            List of floats with the expected upper bounds for the observations
-            It should have the same length as the `observations` argument
+        observations: dictionary
+            Dictionary mapping observation keys to a tuple with the lower
+            and upper bound of each observation. Observation keys must 
+            belong either to the set of measurements or to the set of 
+            forecasting variables of the BOPTEST test case. Contrary to 
+            the actions, the expected minimum and maximum values of the 
+            measurement and forecasting variables are not provided from 
+            the BOPTEST framework, although they are still relevant here 
+            e.g. for normalization or discretization. Therefore, these 
+            bounds need to be provided by the user. 
         reward: list
             List with string indicating the reward column name in a replay
             buffer of data in case the algorithm is going to use pretraining
@@ -86,9 +84,7 @@ class BoptestGymEnv(gym.Env):
         
         self.url                = url
         self.actions            = actions
-        self.observations       = observations
-        self.lower_obs_bounds   = lower_obs_bounds
-        self.upper_obs_bounds   = upper_obs_bounds
+        self.observations       = observations.keys()
         self.episode_length     = episode_length
         self.random_start_time  = random_start_time
         self.excluding_periods  = excluding_periods
@@ -107,11 +103,11 @@ class BoptestGymEnv(gym.Env):
         self.inputs = requests.get('{0}/inputs'.format(url)).json()
         print('Control Inputs:\t\t\t{0}'.format(self.inputs))
         # Measurements available
-        self.measurements = requests.get('{0}/measurements'.format(url)).json()
-        print('Measurements:\t\t\t{0}'.format(self.measurements))
+        self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()
+        print('Measurements:\t\t\t{0}'.format(self.all_measurement_vars))
         # Forecasting variables available
-        self.forecasting_vars = list(requests.get('{0}/forecast'.format(url)).json().keys())
-        print('Forecasting variables:\t\t\t{0}'.format(self.forecasting_vars))
+        self.all_forecasting_vars = list(requests.get('{0}/forecast'.format(url)).json().keys())
+        print('Forecasting variables:\t\t\t{0}'.format(self.all_forecasting_vars))
         # Default simulation step
         self.step_def = requests.get('{0}/step'.format(url)).json()
         print('Default Simulation Step:\t{0}'.format(self.step_def))
@@ -120,6 +116,25 @@ class BoptestGymEnv(gym.Env):
         print('Default Forecast Interval:\t{0} '.format(self.forecast_def['interval']))
         print('Default Forecast Horizon:\t{0} '.format(self.forecast_def['horizon']))
         # --------------------
+        
+        # Assert size of tuples associated to observations. 
+        for obs in self.observations:
+            if len(observations[obs])!=2: 
+                raise ValueError(\
+                     'Values of the observation dictionary must be tuples '\
+                     'of dimension 2 indicating the expected lower and '\
+                     'upper bounds of each variable. '\
+                     'Variable "{}" does not follow this format. '.format(obs))
+                     
+        # Check if agent uses predictions in state and parse forecasting variables
+        self.is_predictive_agent = False
+        self.forecasting_vars = []
+        if any([obs in self.all_forecasting_vars for obs in self.observations]):
+            self.is_predictive_agent = True
+            self.forecasting_vars = [obs for obs in self.observations if (obs in self.all_forecasting_vars)]
+            
+        # observations = measurements + predictions
+        self.measurement_vars = [var for var in self.observations if (var not in self.forecasting_vars)]
         
         # Define action space. It must be a gym.space object
         lower_input_bounds = []
@@ -135,16 +150,19 @@ class BoptestGymEnv(gym.Env):
         
         # Define observation space. It must be a gym.space object
         for obs in self.observations:
-            if not (obs in self.measurements.keys() or obs in self.forecasting_vars):
+            if not (obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars):
                 raise ReferenceError(\
                  '"{0}" does not belong to neither the set of '\
                  'test case measurements nor to the set of '\
                  'forecasted variables. \n'\
                  'Set of measurements: \n{1}\n'\
                  'Set of forecasting variables: \n{2}'.format(obs, 
-                                                              list(self.measurements.keys()), 
-                                                              self.forecasting_vars))
-
+                                                              list(self.all_measurement_vars.keys()), 
+                                                              self.all_forecasting_vars))
+        
+        # Assert that lower and upper observation arrays have
+        self.lower_obs_bounds = [observations[obs][0] for obs in self.observations]
+        self.upper_obs_bounds = [observations[obs][1] for obs in self.observations]
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
                                             high = np.array(self.upper_obs_bounds), 
                                             dtype= np.float32)    
@@ -335,7 +353,11 @@ class BoptestGymEnv(gym.Env):
         observations = []
         for obs in self.observations:
             observations.append(res[obs])
-            
+        
+        # Get predictions if this is a predictive agent
+        if self.is_predictive_agent:
+            pred = requests.get('{0}/forecast'.format(self.url)).json()
+        
         # Reformat observations
         meas = np.array(observations).astype(np.float32)
                 

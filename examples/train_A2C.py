@@ -46,10 +46,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
     env = BoptestGymEnvRewardWeightCost(url                   = url,
-                                        observations          = ['reaTZon_y'], 
                                         actions               = ['oveHeaPumY_u'],
-                                        lower_obs_bounds      = [280.],
-                                        upper_obs_bounds      = [310.],
+                                        observations          = {'reaTZon_y':(280.,310.)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
                                         episode_length        = 1*24*3600,
