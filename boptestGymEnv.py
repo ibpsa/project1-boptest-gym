@@ -84,7 +84,7 @@ class BoptestGymEnv(gym.Env):
         
         self.url                = url
         self.actions            = actions
-        self.observations       = observations.keys()
+        self.observations       = list(observations.keys())
         self.episode_length     = episode_length
         self.random_start_time  = random_start_time
         self.excluding_periods  = excluding_periods
@@ -100,13 +100,13 @@ class BoptestGymEnv(gym.Env):
         self.name = requests.get('{0}/name'.format(url)).json()
         print('Name:\t\t\t\t{0}'.format(self.name))
         # Inputs available
-        self.inputs = requests.get('{0}/inputs'.format(url)).json()
-        print('Control Inputs:\t\t\t{0}'.format(self.inputs))
+        self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()
+        print('Control Inputs:\t\t\t{0}'.format(self.all_input_vars))
         # Measurements available
         self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()
         print('Measurements:\t\t\t{0}'.format(self.all_measurement_vars))
         # Forecasting variables available
-        self.all_forecasting_vars = list(requests.get('{0}/forecast'.format(url)).json().keys())
+        self.all_forecasting_vars = requests.get('{0}/forecast'.format(url)).json()
         print('Forecasting variables:\t\t\t{0}'.format(self.all_forecasting_vars))
         # Default simulation step
         self.step_def = requests.get('{0}/step'.format(url)).json()
@@ -117,7 +117,10 @@ class BoptestGymEnv(gym.Env):
         print('Default Forecast Horizon:\t{0} '.format(self.forecast_def['horizon']))
         # --------------------
         
-        # Assert size of tuples associated to observations. 
+        #=============================================================
+        # Define observation space
+        #=============================================================
+        # Assert size of tuples associated to observations
         for obs in self.observations:
             if len(observations[obs])!=2: 
                 raise ValueError(\
@@ -125,7 +128,19 @@ class BoptestGymEnv(gym.Env):
                      'of dimension 2 indicating the expected lower and '\
                      'upper bounds of each variable. '\
                      'Variable "{}" does not follow this format. '.format(obs))
-                     
+        
+        # Assert that observations belong either to measurements or to forecasting variables
+        for obs in self.observations:
+            if not (obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars.keys()):
+                raise ReferenceError(\
+                 '"{0}" does not belong to neither the set of '\
+                 'test case measurements nor to the set of '\
+                 'forecasted variables. \n'\
+                 'Set of measurements: \n{1}\n'\
+                 'Set of forecasting variables: \n{2}'.format(obs, 
+                                                              list(self.all_measurement_vars.keys()), 
+                                                              list(self.all_forecasting_vars.keys()) ))
+
         # Check if agent uses predictions in state and parse forecasting variables
         self.is_predictive_agent = False
         self.forecasting_vars = []
@@ -136,36 +151,38 @@ class BoptestGymEnv(gym.Env):
         # observations = measurements + predictions
         self.measurement_vars = [var for var in self.observations if (var not in self.forecasting_vars)]
         
-        # Define action space. It must be a gym.space object
-        lower_input_bounds = []
-        upper_input_bounds = []
-        for inp in self.actions:
-            assert inp in self.inputs.keys()
-            lower_input_bounds.append(self.inputs[inp]['Minimum'])
-            upper_input_bounds.append(self.inputs[inp]['Maximum'])
-            
-        self.action_space = spaces.Box(low  = np.array(lower_input_bounds), 
-                                       high = np.array(upper_input_bounds), 
-                                       dtype= np.float32)
-        
-        # Define observation space. It must be a gym.space object
-        for obs in self.observations:
-            if not (obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars):
-                raise ReferenceError(\
-                 '"{0}" does not belong to neither the set of '\
-                 'test case measurements nor to the set of '\
-                 'forecasted variables. \n'\
-                 'Set of measurements: \n{1}\n'\
-                 'Set of forecasting variables: \n{2}'.format(obs, 
-                                                              list(self.all_measurement_vars.keys()), 
-                                                              self.all_forecasting_vars))
-        
-        # Assert that lower and upper observation arrays have
+        # Define arrays for lower and upper bounds for observations 
         self.lower_obs_bounds = [observations[obs][0] for obs in self.observations]
         self.upper_obs_bounds = [observations[obs][1] for obs in self.observations]
+        
+        # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
                                             high = np.array(self.upper_obs_bounds), 
                                             dtype= np.float32)    
+        
+        #=============================================================
+        # Define action space
+        #=============================================================
+        # Assert that actions belong to the inputs in the emulator model
+        for act in self.actions:
+            if not (act in self.all_input_vars.keys()):
+                raise ReferenceError(\
+                 '"{0}" does not belong to the set of inputs to this '\
+                 'emulator model. \n'\
+                 'Set of inputs: \n{1}\n'.format(act, list(self.all_input_vars.keys()) ))
+
+        # Parse minimum and maximum values for actions
+        self.lower_act_bounds = []
+        self.upper_act_bounds = []
+        for inp in self.actions:
+            assert inp in self.all_input_vars.keys()
+            self.lower_act_bounds.append(self.all_input_vars[inp]['Minimum'])
+            self.upper_act_bounds.append(self.all_input_vars[inp]['Maximum'])
+        
+        # Define gym action space
+        self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
+                                       high = np.array(self.upper_act_bounds), 
+                                       dtype= np.float32)
 
     def reset(self):
         '''
