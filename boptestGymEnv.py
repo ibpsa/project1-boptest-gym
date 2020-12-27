@@ -149,7 +149,7 @@ class BoptestGymEnv(gym.Env):
             self.forecasting_vars = [obs for obs in self.observations if (obs in self.all_forecasting_vars)]
             
         # observations = measurements + predictions
-        self.measurement_vars = [var for var in self.observations if (var not in self.forecasting_vars)]
+        self.measurement_vars = [obs for obs in self.observations if (obs not in self.forecasting_vars)]
         
         # Define arrays for lower and upper bounds for observations 
         self.lower_obs_bounds = [observations[obs][0] for obs in self.observations]
@@ -174,10 +174,9 @@ class BoptestGymEnv(gym.Env):
         # Parse minimum and maximum values for actions
         self.lower_act_bounds = []
         self.upper_act_bounds = []
-        for inp in self.actions:
-            assert inp in self.all_input_vars.keys()
-            self.lower_act_bounds.append(self.all_input_vars[inp]['Minimum'])
-            self.upper_act_bounds.append(self.all_input_vars[inp]['Maximum'])
+        for act in self.actions:
+            self.lower_act_bounds.append(self.all_input_vars[act]['Minimum'])
+            self.upper_act_bounds.append(self.all_input_vars[act]['Maximum'])
         
         # Define gym action space
         self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
