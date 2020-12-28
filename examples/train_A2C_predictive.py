@@ -20,8 +20,8 @@ seed = 123456
 random.seed(seed)
 
 def train_A2C_predictive(start_time_tests    = [31*24*3600, 304*24*3600], 
-              episode_length_test = 14*24*3600, 
-              load                = False):
+                         episode_length_test = 14*24*3600, 
+                         load                = False):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -56,7 +56,7 @@ def train_A2C_predictive(start_time_tests    = [31*24*3600, 304*24*3600],
                                                                  'HGloHor':     (0.,  1000.)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
-                                        forecasting_period    = 24*3600.,
+                                        forecasting_period    = 1*24*3600,
                                         episode_length        = 1*24*3600,
                                         warmup_period         = 3*3600,
                                         Ts                    = 900)
@@ -70,8 +70,8 @@ def train_A2C_predictive(start_time_tests    = [31*24*3600, 304*24*3600],
     if not load: 
         model.learn(total_timesteps=int(1e5))
         # Save the agent
-        model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_pred_bestest_hydronic_heatpump'))
+        model.save(os.path.join(utilities.get_root_path(), 'examples',
+                                'agents', 'a2c_pred_bestest_hydronic_heatpump'))
     else:
         # Load the trained agent
         model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
