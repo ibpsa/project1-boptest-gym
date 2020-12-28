@@ -7,6 +7,7 @@ Created on Jun 4, 2020
 
 import random
 import gym
+import copy
 import requests
 import numpy as np
 import pandas as pd
@@ -32,10 +33,11 @@ class BoptestGymEnv(gym.Env):
                  reward             = ['reward'],
                  episode_length     = 3*3600,
                  random_start_time  = False,
+                 excluding_periods  = None,
+                 forecasting_period = None,
                  start_time         = 0,
                  warmup_period      = 0,
-                 Ts                 = 900,
-                 excluding_periods  = None):
+                 Ts                 = 900):
         '''
         Parameters
         ----------
@@ -69,6 +71,18 @@ class BoptestGymEnv(gym.Env):
             excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                                 (304*24*3600, 304*24*3600+14*24*3600)]
             This is only used when `random_start_time=True`
+        forecasting_period: integer, default is None
+            Number of seconds for the forecasting horizon. The observations
+            will be extended for each of the forecasting variables indicated
+            in the `observations` dictionary argument. Specifically, a number
+            of `int(self.forecasting_period/self.Ts)` observations per 
+            forecasting variable will be included in the observation space.
+            Each of these observations correspond to the foresighted 
+            variable `i` steps ahead from the actual observation time. 
+            Note that it's allowed to use `forecasting_period=0` when the
+            intention is to retrieve boundary condition data at the actual
+            observation time, useful e.g. for temperature setpoints or 
+            ambient temperature. 
         start_time: integer
             Initial fixed episode time in seconds from beginning of the 
             year for each episode. Use in combination with 
@@ -91,6 +105,7 @@ class BoptestGymEnv(gym.Env):
         self.start_time         = start_time
         self.warmup_period      = warmup_period
         self.reward             = reward
+        self.forecasting_period = forecasting_period
         self.Ts                 = Ts
         
         # GET TEST INFORMATION
@@ -140,20 +155,33 @@ class BoptestGymEnv(gym.Env):
                  'Set of forecasting variables: \n{2}'.format(obs, 
                                                               list(self.all_measurement_vars.keys()), 
                                                               list(self.all_forecasting_vars.keys()) ))
-
-        # Check if agent uses predictions in state and parse forecasting variables
-        self.is_predictive_agent = False
-        self.forecasting_vars = []
-        if any([obs in self.all_forecasting_vars for obs in self.observations]):
-            self.is_predictive_agent = True
-            self.forecasting_vars = [obs for obs in self.observations if (obs in self.all_forecasting_vars)]
-            
-        # observations = measurements + predictions
-        self.measurement_vars = [obs for obs in self.observations if (obs not in self.forecasting_vars)]
         
-        # Define arrays for lower and upper bounds for observations 
-        self.lower_obs_bounds = [observations[obs][0] for obs in self.observations]
-        self.upper_obs_bounds = [observations[obs][1] for obs in self.observations]
+        # observations = measurements + predictions
+        self.measurement_vars = [obs for obs in self.observations if (obs in self.all_measurement_vars)]
+        
+        # Define lower and upper bounds for observations. Always start observation space by measurements
+        self.observations = copy.deepcopy(self.measurement_vars)
+        self.lower_obs_bounds = [observations[obs][0] for obs in self.measurement_vars]
+        self.upper_obs_bounds = [observations[obs][1] for obs in self.measurement_vars]
+        
+        # Check if agent uses predictions in state and parse forecasting variables
+        self.is_predictive = False
+        self.forecasting_vars = []
+        if any([obs in self.all_forecasting_vars for obs in observations]):
+            self.is_predictive = True
+            self.forecasting_vars = [obs for obs in observations if (obs in self.all_forecasting_vars)]
+        
+            # Number of discrete forecasting steps
+            self.fore_n = int(self.forecasting_period/self.Ts)
+            
+            # Extend observations to have one observation per forecasting step
+            for obs in self.forecasting_vars:
+                obs_list = [obs+'_pred_{}'.format(int(i*self.Ts)) for i in range(self.fore_n)]
+                obs_lbou = [observations[obs][0]]*len(obs_list)
+                obs_ubou = [observations[obs][1]]*len(obs_list)
+                self.observations.extend(obs_list)
+                self.lower_obs_bounds.extend(obs_lbou)
+                self.upper_obs_bounds.extend(obs_ubou)
         
         # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
@@ -195,8 +223,9 @@ class BoptestGymEnv(gym.Env):
         
         Returns
         -------
-        meas: numpy array
-            Measurements at the end of initialization
+        observations: numpy array
+            Reformatted observations that include measurements and 
+            predictions (if any) at the end of the initialization. 
          
         '''        
         
@@ -230,13 +259,19 @@ class BoptestGymEnv(gym.Env):
         # Set simulation step
         requests.put('{0}/step'.format(self.url), data={'step':self.Ts})
         
+        # Set forecasting parameters if predictive
+        if self.is_predictive:
+            forecast_parameters = {'horizon':self.forecasting_period, 'interval':self.Ts}
+            requests.put('{0}/forecast_parameters'.format(self.url),
+                         data=forecast_parameters)
+        
         # Initialize objective integrand
         self.objective_integrand = 0.
         
-        # Get measurements at the end of the initialization period
-        meas = self.get_measurements(res)
+        # Get observations at the end of the initialization period
+        observations = self.get_observations(res)
         
-        return meas
+        return observations
 
     def step(self, action):
         '''
@@ -284,10 +319,10 @@ class BoptestGymEnv(gym.Env):
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
-        # Get measurements at the end of this time step
-        meas = self.get_measurements(res)
+        # Get observations at the end of this time step
+        observations = self.get_observations(res)
                 
-        return meas, reward, done, info
+        return observations, reward, done, info
     
     def render(self, mode='console'):
         '''
@@ -347,37 +382,44 @@ class BoptestGymEnv(gym.Env):
         
         return reward
         
-    def get_measurements(self, res):
+    def get_observations(self, res):
         '''
-        Get measurement outputs in the right format and assign the 
-        simulation keys to them. Add noise if any. Concatenate the 
-        obtained mesurements. 
+        Get the observations, i.e. the conjunction of measurements and 
+        forecasting variables if any. Also transforms the output to have
+        the right format. 
         
         Parameters
         ----------
         res: dictionary
-            
+            Dictionary mapping simulation variables and their value at the
+            end of the last time step. 
         
         Returns
         -------
-        meas: float
-            Reformatted observations 
+        observations: numpy array
+            Reformatted observations that include measurements and 
+            predictions (if any) at the end of last step. 
         
         '''
         
-        # Get reults at the end of the simulation step
+        # Initialize observations
         observations = []
-        for obs in self.observations:
+
+        # Get measurements at the end of the simulation step
+        for obs in self.measurement_vars:
             observations.append(res[obs])
         
         # Get predictions if this is a predictive agent
-        if self.is_predictive_agent:
-            pred = requests.get('{0}/forecast'.format(self.url)).json()
-        
+        if self.is_predictive:
+            forecast = requests.get('{0}/forecast'.format(self.url)).json()
+            for var in self.forecasting_vars:
+                for i in range(self.fore_n):
+                    observations.append(forecast[var][i])
+            
         # Reformat observations
-        meas = np.array(observations).astype(np.float32)
+        observations = np.array(observations).astype(np.float32)
                 
-        return meas
+        return observations
     
     def get_kpis(self):
         '''Auxiliary method to get the so-colled core KPIs as computed in 
