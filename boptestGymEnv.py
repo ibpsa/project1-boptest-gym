@@ -108,6 +108,9 @@ class BoptestGymEnv(gym.Env):
         self.forecasting_period = forecasting_period
         self.Ts                 = Ts
         
+        # Avoid surpassing the end of the year during an episode
+        self.end_year_margin = self.episode_length
+        
         # GET TEST INFORMATION
         # --------------------
         print('\nTEST CASE INFORMATION\n---------------------')
@@ -183,6 +186,9 @@ class BoptestGymEnv(gym.Env):
                 self.lower_obs_bounds.extend(obs_lbou)
                 self.upper_obs_bounds.extend(obs_ubou)
         
+            # If predictive, the margin should be extended        
+            self.end_year_margin = self.episode_length + self.forecasting_period
+        
         # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
                                             high = np.array(self.upper_obs_bounds), 
@@ -236,7 +242,7 @@ class BoptestGymEnv(gym.Env):
             overlapped. 
             
             '''
-            start_time = random.randint(0, 3.1536e+7-self.episode_length)
+            start_time = random.randint(0, 3.1536e+7-self.end_year_margin)
             episode = (start_time, start_time+self.episode_length)
             if self.excluding_periods is not None:
                 for period in self.excluding_periods:
