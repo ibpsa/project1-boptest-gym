@@ -291,8 +291,8 @@ class BoptestGymEnv(gym.Env):
             
         Returns
         -------
-        meas: numpy array
-            Measurements at the end of this time step
+        observations: numpy array
+            Observations at the end of this time step
         reward: float
             Reward for the state-action pair implemented
         done: boolean
