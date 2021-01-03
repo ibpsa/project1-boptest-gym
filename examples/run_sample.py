@@ -48,9 +48,8 @@ def run_normalized_action_wrapper(plot=False):
 def run(envClass, wrapper=None, plot=False):
     # Use the first 3 days of February for testing with 3 days for initialization
     env = envClass(url                 = url,
-                   observations        = ['reaTZon_y'], 
-                   lower_obs_bounds    = [280.],
-                   upper_obs_bounds    = [310.],
+                   actions             = ['oveHeaPumY_u'],
+                   observations        = {'reaTZon_y':(280.,310.)}, 
                    random_start_time   = False,
                    start_time          = 31*24*3600,
                    episode_length      = 3*24*3600,

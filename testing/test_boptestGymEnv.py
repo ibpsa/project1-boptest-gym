@@ -28,9 +28,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         self.env = BoptestGymEnv(url                 = url,
                                 actions             = ['oveHeaPumY_u'],
-                                observations        = ['reaTZon_y'], 
-                                lower_obs_bounds    = [280.],
-                                upper_obs_bounds    = [310.],
+                                observations        = {'reaTZon_y':(280.,310.)}, 
                                 reward              = ['reward'],
                                 episode_length      = 24*3600,
                                 random_start_time   = True,

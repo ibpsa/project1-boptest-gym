@@ -7,6 +7,7 @@ Created on Jun 4, 2020
 
 import random
 import gym
+import copy
 import requests
 import numpy as np
 import pandas as pd
@@ -28,16 +29,15 @@ class BoptestGymEnv(gym.Env):
     def __init__(self, 
                  url                = 'http://127.0.0.1:5000',
                  actions            = ['oveHeaPumY_u'],
-                 observations       = ['reaTZon_y'], 
-                 lower_obs_bounds   = [273.],
-                 upper_obs_bounds   = [330.],
+                 observations       = {'reaTZon_y':(280.,310.)}, 
                  reward             = ['reward'],
                  episode_length     = 3*3600,
                  random_start_time  = False,
+                 excluding_periods  = None,
+                 forecasting_period = None,
                  start_time         = 0,
                  warmup_period      = 0,
-                 Ts                 = 900,
-                 excluding_periods  = None):
+                 Ts                 = 900):
         '''
         Parameters
         ----------
@@ -47,16 +47,16 @@ class BoptestGymEnv(gym.Env):
             List of strings indicating the action space. The bounds of 
             each variable from the action space the are retrieved from 
             the overwrite block attributes of the BOPTEST test case
-        observations: list
-            List of strings indicating the observation space. The observation
-            keys must belong to the set of measurements or to the set of 
-            forecasting variables of the BOPTEST test case
-        lower_obs_bounds: list
-            List of floats with the expected lower bounds for the observations.
-            It should have the same length as the `observations` argument
-        upper_obs_bounds: list
-            List of floats with the expected upper bounds for the observations
-            It should have the same length as the `observations` argument
+        observations: dictionary
+            Dictionary mapping observation keys to a tuple with the lower
+            and upper bound of each observation. Observation keys must 
+            belong either to the set of measurements or to the set of 
+            forecasting variables of the BOPTEST test case. Contrary to 
+            the actions, the expected minimum and maximum values of the 
+            measurement and forecasting variables are not provided from 
+            the BOPTEST framework, although they are still relevant here 
+            e.g. for normalization or discretization. Therefore, these 
+            bounds need to be provided by the user. 
         reward: list
             List with string indicating the reward column name in a replay
             buffer of data in case the algorithm is going to use pretraining
@@ -71,6 +71,18 @@ class BoptestGymEnv(gym.Env):
             excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                                 (304*24*3600, 304*24*3600+14*24*3600)]
             This is only used when `random_start_time=True`
+        forecasting_period: integer, default is None
+            Number of seconds for the forecasting horizon. The observations
+            will be extended for each of the forecasting variables indicated
+            in the `observations` dictionary argument. Specifically, a number
+            of `int(self.forecasting_period/self.Ts)` observations per 
+            forecasting variable will be included in the observation space.
+            Each of these observations correspond to the foresighted 
+            variable `i` steps ahead from the actual observation time. 
+            Note that it's allowed to use `forecasting_period=0` when the
+            intention is to retrieve boundary condition data at the actual
+            observation time, useful e.g. for temperature setpoints or 
+            ambient temperature. 
         start_time: integer
             Initial fixed episode time in seconds from beginning of the 
             year for each episode. Use in combination with 
@@ -86,16 +98,18 @@ class BoptestGymEnv(gym.Env):
         
         self.url                = url
         self.actions            = actions
-        self.observations       = observations
-        self.lower_obs_bounds   = lower_obs_bounds
-        self.upper_obs_bounds   = upper_obs_bounds
+        self.observations       = list(observations.keys())
         self.episode_length     = episode_length
         self.random_start_time  = random_start_time
         self.excluding_periods  = excluding_periods
         self.start_time         = start_time
         self.warmup_period      = warmup_period
         self.reward             = reward
+        self.forecasting_period = forecasting_period
         self.Ts                 = Ts
+        
+        # Avoid surpassing the end of the year during an episode
+        self.end_year_margin = self.episode_length
         
         # GET TEST INFORMATION
         # --------------------
@@ -104,14 +118,14 @@ class BoptestGymEnv(gym.Env):
         self.name = requests.get('{0}/name'.format(url)).json()
         print('Name:\t\t\t\t{0}'.format(self.name))
         # Inputs available
-        self.inputs = requests.get('{0}/inputs'.format(url)).json()
-        print('Control Inputs:\t\t\t{0}'.format(self.inputs))
+        self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()
+        print('Control Inputs:\t\t\t{0}'.format(self.all_input_vars))
         # Measurements available
-        self.measurements = requests.get('{0}/measurements'.format(url)).json()
-        print('Measurements:\t\t\t{0}'.format(self.measurements))
+        self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()
+        print('Measurements:\t\t\t{0}'.format(self.all_measurement_vars))
         # Forecasting variables available
-        self.forecasting_vars = list(requests.get('{0}/forecast'.format(url)).json().keys())
-        print('Forecasting variables:\t\t\t{0}'.format(self.forecasting_vars))
+        self.all_forecasting_vars = requests.get('{0}/forecast'.format(url)).json()
+        print('Forecasting variables:\t\t\t{0}'.format(self.all_forecasting_vars))
         # Default simulation step
         self.step_def = requests.get('{0}/step'.format(url)).json()
         print('Default Simulation Step:\t{0}'.format(self.step_def))
@@ -121,33 +135,87 @@ class BoptestGymEnv(gym.Env):
         print('Default Forecast Horizon:\t{0} '.format(self.forecast_def['horizon']))
         # --------------------
         
-        # Define action space. It must be a gym.space object
-        lower_input_bounds = []
-        upper_input_bounds = []
-        for inp in self.actions:
-            assert inp in self.inputs.keys()
-            lower_input_bounds.append(self.inputs[inp]['Minimum'])
-            upper_input_bounds.append(self.inputs[inp]['Maximum'])
-            
-        self.action_space = spaces.Box(low  = np.array(lower_input_bounds), 
-                                       high = np.array(upper_input_bounds), 
-                                       dtype= np.float32)
-        
-        # Define observation space. It must be a gym.space object
+        #=============================================================
+        # Define observation space
+        #=============================================================
+        # Assert size of tuples associated to observations
         for obs in self.observations:
-            if not (obs in self.measurements.keys() or obs in self.forecasting_vars):
+            if len(observations[obs])!=2: 
+                raise ValueError(\
+                     'Values of the observation dictionary must be tuples '\
+                     'of dimension 2 indicating the expected lower and '\
+                     'upper bounds of each variable. '\
+                     'Variable "{}" does not follow this format. '.format(obs))
+        
+        # Assert that observations belong either to measurements or to forecasting variables
+        for obs in self.observations:
+            if not (obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars.keys()):
                 raise ReferenceError(\
                  '"{0}" does not belong to neither the set of '\
                  'test case measurements nor to the set of '\
                  'forecasted variables. \n'\
                  'Set of measurements: \n{1}\n'\
                  'Set of forecasting variables: \n{2}'.format(obs, 
-                                                              list(self.measurements.keys()), 
-                                                              self.forecasting_vars))
-
+                                                              list(self.all_measurement_vars.keys()), 
+                                                              list(self.all_forecasting_vars.keys()) ))
+        
+        # observations = measurements + predictions
+        self.measurement_vars = [obs for obs in self.observations if (obs in self.all_measurement_vars)]
+        
+        # Define lower and upper bounds for observations. Always start observation space by measurements
+        self.observations = copy.deepcopy(self.measurement_vars)
+        self.lower_obs_bounds = [observations[obs][0] for obs in self.measurement_vars]
+        self.upper_obs_bounds = [observations[obs][1] for obs in self.measurement_vars]
+        
+        # Check if agent uses predictions in state and parse forecasting variables
+        self.is_predictive = False
+        self.forecasting_vars = []
+        if any([obs in self.all_forecasting_vars for obs in observations]):
+            self.is_predictive = True
+            self.forecasting_vars = [obs for obs in observations if (obs in self.all_forecasting_vars)]
+        
+            # Number of discrete forecasting steps
+            self.fore_n = int(self.forecasting_period/self.Ts)
+            
+            # Extend observations to have one observation per forecasting step
+            for obs in self.forecasting_vars:
+                obs_list = [obs+'_pred_{}'.format(int(i*self.Ts)) for i in range(self.fore_n)]
+                obs_lbou = [observations[obs][0]]*len(obs_list)
+                obs_ubou = [observations[obs][1]]*len(obs_list)
+                self.observations.extend(obs_list)
+                self.lower_obs_bounds.extend(obs_lbou)
+                self.upper_obs_bounds.extend(obs_ubou)
+        
+            # If predictive, the margin should be extended        
+            self.end_year_margin = self.episode_length + self.forecasting_period
+        
+        # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
                                             high = np.array(self.upper_obs_bounds), 
                                             dtype= np.float32)    
+        
+        #=============================================================
+        # Define action space
+        #=============================================================
+        # Assert that actions belong to the inputs in the emulator model
+        for act in self.actions:
+            if not (act in self.all_input_vars.keys()):
+                raise ReferenceError(\
+                 '"{0}" does not belong to the set of inputs to this '\
+                 'emulator model. \n'\
+                 'Set of inputs: \n{1}\n'.format(act, list(self.all_input_vars.keys()) ))
+
+        # Parse minimum and maximum values for actions
+        self.lower_act_bounds = []
+        self.upper_act_bounds = []
+        for act in self.actions:
+            self.lower_act_bounds.append(self.all_input_vars[act]['Minimum'])
+            self.upper_act_bounds.append(self.all_input_vars[act]['Maximum'])
+        
+        # Define gym action space
+        self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
+                                       high = np.array(self.upper_act_bounds), 
+                                       dtype= np.float32)
 
     def reset(self):
         '''
@@ -161,8 +229,9 @@ class BoptestGymEnv(gym.Env):
         
         Returns
         -------
-        meas: numpy array
-            Measurements at the end of initialization
+        observations: numpy array
+            Reformatted observations that include measurements and 
+            predictions (if any) at the end of the initialization. 
          
         '''        
         
@@ -173,7 +242,7 @@ class BoptestGymEnv(gym.Env):
             overlapped. 
             
             '''
-            start_time = random.randint(0, 3.1536e+7-self.episode_length)
+            start_time = random.randint(0, 3.1536e+7-self.end_year_margin)
             episode = (start_time, start_time+self.episode_length)
             if self.excluding_periods is not None:
                 for period in self.excluding_periods:
@@ -196,13 +265,19 @@ class BoptestGymEnv(gym.Env):
         # Set simulation step
         requests.put('{0}/step'.format(self.url), data={'step':self.Ts})
         
+        # Set forecasting parameters if predictive
+        if self.is_predictive:
+            forecast_parameters = {'horizon':self.forecasting_period, 'interval':self.Ts}
+            requests.put('{0}/forecast_parameters'.format(self.url),
+                         data=forecast_parameters)
+        
         # Initialize objective integrand
         self.objective_integrand = 0.
         
-        # Get measurements at the end of the initialization period
-        meas = self.get_measurements(res)
+        # Get observations at the end of the initialization period
+        observations = self.get_observations(res)
         
-        return meas
+        return observations
 
     def step(self, action):
         '''
@@ -250,10 +325,10 @@ class BoptestGymEnv(gym.Env):
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
-        # Get measurements at the end of this time step
-        meas = self.get_measurements(res)
+        # Get observations at the end of this time step
+        observations = self.get_observations(res)
                 
-        return meas, reward, done, info
+        return observations, reward, done, info
     
     def render(self, mode='console'):
         '''
@@ -313,33 +388,44 @@ class BoptestGymEnv(gym.Env):
         
         return reward
         
-    def get_measurements(self, res):
+    def get_observations(self, res):
         '''
-        Get measurement outputs in the right format and assign the 
-        simulation keys to them. Add noise if any. Concatenate the 
-        obtained mesurements. 
+        Get the observations, i.e. the conjunction of measurements and 
+        forecasting variables if any. Also transforms the output to have
+        the right format. 
         
         Parameters
         ----------
         res: dictionary
-            
+            Dictionary mapping simulation variables and their value at the
+            end of the last time step. 
         
         Returns
         -------
-        meas: float
-            Reformatted observations 
+        observations: numpy array
+            Reformatted observations that include measurements and 
+            predictions (if any) at the end of last step. 
         
         '''
         
-        # Get reults at the end of the simulation step
+        # Initialize observations
         observations = []
-        for obs in self.observations:
+
+        # Get measurements at the end of the simulation step
+        for obs in self.measurement_vars:
             observations.append(res[obs])
+        
+        # Get predictions if this is a predictive agent
+        if self.is_predictive:
+            forecast = requests.get('{0}/forecast'.format(self.url)).json()
+            for var in self.forecasting_vars:
+                for i in range(self.fore_n):
+                    observations.append(forecast[var][i])
             
         # Reformat observations
-        meas = np.array(observations).astype(np.float32)
+        observations = np.array(observations).astype(np.float32)
                 
-        return meas
+        return observations
     
     def get_kpis(self):
         '''Auxiliary method to get the so-colled core KPIs as computed in 

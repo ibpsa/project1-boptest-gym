@@ -1,6 +1,8 @@
 '''
 Module to train and test an A2C agent for the bestest_hydronic_heatpump 
-case. This case needs to be deployed to run this script.  
+case. The trained agent uses not only measurements but also forecasting
+variables in the observation space. The bestest_hydronic_heatpump case 
+needs to be deployed to run this script.
 
 '''
 
@@ -17,9 +19,9 @@ seed = 123456
 # Seed for random starting times of episodes
 random.seed(seed)
 
-def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600], 
-              episode_length_test = 14*24*3600, 
-              load                = False):
+def train_A2C_predictive(start_time_tests    = [31*24*3600, 304*24*3600], 
+                         episode_length_test = 14*24*3600, 
+                         load                = False):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -47,9 +49,14 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     
     env = BoptestGymEnvRewardWeightCost(url                   = url,
                                         actions               = ['oveHeaPumY_u'],
-                                        observations          = {'reaTZon_y':(280.,310.)}, 
+                                        observations          = {'reaTZon_y':   (280.,310.),
+                                                                 'LowerSetp[1]':(280.,310.),
+                                                                 'UpperSetp[1]':(280.,310.),
+                                                                 'TDryBul':     (250.,310.),
+                                                                 'HGloHor':     (0.,  1000.)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
+                                        forecasting_period    = 1*24*3600,
                                         episode_length        = 1*24*3600,
                                         warmup_period         = 3*3600,
                                         Ts                    = 900)
@@ -63,12 +70,12 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     if not load: 
         model.learn(total_timesteps=int(1e5))
         # Save the agent
-        model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_bestest_hydronic_heatpump'))
+        model.save(os.path.join(utilities.get_root_path(), 'examples',
+                                'agents', 'a2c_pred_bestest_hydronic_heatpump'))
     else:
         # Load the trained agent
         model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_bestest_hydronic_heatpump'))
+                                      'agents', 'a2c_pred_bestest_hydronic_heatpump'))
     
     return env, model, start_time_tests
         
@@ -99,7 +106,7 @@ def test_nov(env, model, start_time_tests,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=True)
+    env, model, start_time_tests = train_A2C_predictive(load=False)
     episode_length_test = 14*24*3600
     warmup_period_test  = 3*24*3600
     plot = True
