@@ -11,7 +11,11 @@ import copy
 import requests
 import numpy as np
 import pandas as pd
+import inspect
+import json
 
+from collections import OrderedDict
+from pprint import pformat
 from gym import spaces
 from stable_baselines.common.env_checker import check_env
 
@@ -111,29 +115,23 @@ class BoptestGymEnv(gym.Env):
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.episode_length
         
-        # GET TEST INFORMATION
-        # --------------------
-        print('\nTEST CASE INFORMATION\n---------------------')
+        #=============================================================
+        # Get test information
+        #=============================================================
         # Test case name
         self.name = requests.get('{0}/name'.format(url)).json()
-        print('Name:\t\t\t\t{0}'.format(self.name))
-        # Inputs available
-        self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()
-        print('Control Inputs:\t\t\t{0}'.format(self.all_input_vars))
         # Measurements available
         self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()
-        print('Measurements:\t\t\t{0}'.format(self.all_measurement_vars))
         # Forecasting variables available
         self.all_forecasting_vars = requests.get('{0}/forecast'.format(url)).json()
-        print('Forecasting variables:\t\t\t{0}'.format(self.all_forecasting_vars))
+        # Inputs available
+        self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()
         # Default simulation step
         self.step_def = requests.get('{0}/step'.format(url)).json()
-        print('Default Simulation Step:\t{0}'.format(self.step_def))
         # Default forecast parameters
         self.forecast_def = requests.get('{0}/forecast_parameters'.format(url)).json()
-        print('Default Forecast Interval:\t{0} '.format(self.forecast_def['interval']))
-        print('Default Forecast Horizon:\t{0} '.format(self.forecast_def['horizon']))
-        # --------------------
+        # Default scenario
+        self.scenario_def = requests.get('{0}/scenario'.format(url)).json()
         
         #=============================================================
         # Define observation space
@@ -216,6 +214,106 @@ class BoptestGymEnv(gym.Env):
         self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
                                        high = np.array(self.upper_act_bounds), 
                                        dtype= np.float32)
+
+    def __str__(self):
+        '''
+        Print a summary of the environment. 
+        
+        '''
+        
+        # Get a summary of the environment
+        summary = self.get_summary()
+        
+        # Create a printable string from summary
+        s = '\n'
+        
+        # Iterate over summary, which has two layers of key,value pairs
+        for k1,v1 in summary.items():
+            s += '='*len(k1) + '\n'
+            s += k1 + '\n'
+            s += '='*len(k1) + '\n\n'
+            for k2,v2 in v1.items():
+                s += k2 + '\n'
+                s += '-'*len(k2) + '\n'
+                s += v2 + '\n\n'
+
+        return s
+    
+    def get_summary(self):
+        '''
+        Get a summary of the environment.
+        
+        Returns
+        -------
+        summary: OrderedDict
+            A dictionary mapping keys and values that fully describe the 
+            environment. 
+        
+        '''
+        
+        summary = OrderedDict()
+        
+        summary['BOPTEST CASE INFORMATION'] = OrderedDict()
+        summary['BOPTEST CASE INFORMATION']['Test case name'] = pformat(self.name)
+        summary['BOPTEST CASE INFORMATION']['All measurement variables'] = pformat(self.all_measurement_vars)
+        summary['BOPTEST CASE INFORMATION']['All forecasting variables'] = pformat(list(self.all_forecasting_vars.keys()))
+        summary['BOPTEST CASE INFORMATION']['All input variables'] = pformat(self.all_input_vars)
+        summary['BOPTEST CASE INFORMATION']['Default simulation step (seconds)'] = pformat(self.step_def)
+        summary['BOPTEST CASE INFORMATION']['Default forecasting parameters (seconds)'] = pformat(self.forecast_def)
+        summary['BOPTEST CASE INFORMATION']['Default scenario'] = pformat(self.scenario_def)
+        
+        summary['GYM ENVIRONMENT INFORMATION'] = OrderedDict()
+        summary['GYM ENVIRONMENT INFORMATION']['Observation space'] = pformat(self.observation_space)
+        summary['GYM ENVIRONMENT INFORMATION']['Action space'] = pformat(self.action_space)
+        summary['GYM ENVIRONMENT INFORMATION']['Is a predictive environment'] = pformat(self.is_predictive)
+        summary['GYM ENVIRONMENT INFORMATION']['Forecasting period (seconds)'] = pformat(self.forecasting_period)
+        summary['GYM ENVIRONMENT INFORMATION']['Measurement variables used in observation space'] = pformat(self.measurement_vars)
+        summary['GYM ENVIRONMENT INFORMATION']['Forecasting variables used in observation space'] = pformat(self.forecasting_vars)
+        summary['GYM ENVIRONMENT INFORMATION']['Sampling time (seconds)'] = pformat(self.Ts)
+        summary['GYM ENVIRONMENT INFORMATION']['Random start time'] = pformat(self.random_start_time)
+        summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
+        summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
+        summary['GYM ENVIRONMENT INFORMATION']['Episode length (seconds)'] = pformat(self.episode_length)
+        summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.compute_reward))
+        summary['GYM ENVIRONMENT INFORMATION']['Environment hierarchy'] = pformat(inspect.getmro(self.__class__))
+        
+        return summary
+
+    def save_summary(self, file_name='summary'):
+        '''
+        Saves the environment summary in a `.json` file. 
+        
+        Parameters
+        ----------
+        file_name: string
+            File name where the summary will be saved in `.json` format
+        
+        '''
+        
+        summary = self.get_summary()
+        with open('{}.json'.format(file_name), 'w') as outfile:  
+            json.dump(summary, outfile) 
+            
+    def load_summary(self, file_name='summary'):
+        '''
+        Loads an environment summary from a `.json` file. 
+        
+        Parameters
+        ----------
+        file_name: string
+            File in `.json` format from where the summary is to be loaded
+        
+        Returns
+        -------
+        summary: OrderedDict
+            A summary of an environment
+            
+        '''
+        
+        with open(file_name+'.json', 'r') as f:
+            summary = json.load(f, object_pairs_hook=OrderedDict)
+        
+        return summary
 
     def reset(self):
         '''
