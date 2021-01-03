@@ -35,6 +35,29 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                 warmup_period       = 3600,
                                 Ts                  = 900)
     
+    def test_summary(self):
+        '''
+        Test that the environment can print, save, and load a summary 
+        describing its most important attributes.  
+        
+        '''
+        
+        # Check that we can print the environment summary
+        print(self.env)
+        
+        # Check that we can save the environment summary
+        file_ref = os.path.join('references','summary_ref')
+        file_tst = 'summary_tst'
+        self.env.save_summary(file_tst)
+        
+        # Check that we can load the environment summary. This test only checks sorted keys
+        summary = self.env.load_summary(file_tst)
+        for i,k in enumerate(summary.keys()):
+            self.compare_ref_json(sorted(dict(summary[k])), file_ref+'_'+str(i)+'.json')
+        
+        # Remove generated file
+        os.remove(file_tst+'.json')
+
     def test_stable_baselines_check(self):
         '''Use the environment checker from stable baselines to test 
         the environment. This checks that the environment follows the 
@@ -44,7 +67,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         
         check_env(self.env, warn=True)
-        
+   
     def test_reset_fixed(self):
         '''Test that the environment can reset using a fixed start time
         and a specific warmup period. 
@@ -62,7 +85,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         df.index.name = 'keys'
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_fixed.csv')
         self.compare_ref_values_df(df, ref_filepath)
-        
+
     def test_reset_random(self):
         '''Test that the environment can reset using a random start time
         that is out of the specified `excluding_periods`. This test also
@@ -99,28 +122,27 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         df.index.name = 'keys'
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_random.csv')
         self.compare_ref_values_df(df, ref_filepath) 
-    
+
     def test_compute_reward_default(self):
         '''Test default method to compute reward.
         
         '''
         obs, _, rew = run_baseline.run_reward_default(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='default')
-        
+
     def test_compute_reward_custom(self):
         '''Test custom method to compute reward.
         
         '''
         obs, _, rew = run_baseline.run_reward_custom(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
-        
     def test_compute_reward_clipping(self):
         '''Test reward clipping.
         
         '''
         obs, _, rew = run_baseline.run_reward_clipping(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='clipping')
-        
+
     def test_normalized_observation_wrapper(self):
         '''Test wrapper that normalizes observations.
         
@@ -169,7 +191,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             train_A2C.test_nov(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
         self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_nov')
-        
         
     def test_PPO2(self, load=True, episode_length_test=2*24*3600,
                  warmup_period_test=1*24*3600, plot=False):
