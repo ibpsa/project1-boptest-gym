@@ -1025,6 +1025,35 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         self.objective_integrand = objective_integrand
         
         return reward
+    
+class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
+    '''Boptest gym environment that redefines the reward function to 
+    weight more the operational cost when compared with the default reward
+    function. 
+    
+    '''
+    
+    def compute_done(self, res, reward=None, 
+                     objective_integrand_threshold=0.1):
+        '''Custom method to determine that the episode is done not only 
+        when the maximum episode length is exceeded but also when the 
+        objective integrand overpasses a certain threshold. The latter is
+        useful to early terminate agent strategies that do not work, hence
+        avoiding unnecessary steps and leading to improved sampling 
+        efficiency. 
+        
+        Returns
+        -------
+        done: boolean
+            Boolean indicating whether the episode is done or not.  
+        
+        '''
+        
+        done =  (res['time'] >= self.start_time + self.max_episode_length)\
+                or \
+                (self.objective_integrand >= objective_integrand_threshold)
+        
+        return done
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     '''
