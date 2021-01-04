@@ -10,10 +10,12 @@ import utilities
 import os
 import pandas as pd
 import random
-from examples import run_baseline, run_sample, train_A2C, train_PPO2
+import shutil
+from examples import run_baseline, run_sample, run_save_callback, train_A2C, train_PPO2
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines.common.env_checker import check_env
+from stable_baselines import A2C
 
 url = 'http://127.0.0.1:5000'
 
@@ -226,7 +228,37 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             train_PPO2.test_nov(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
         self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_nov')
-            
+
+    def test_save_callback(self):
+        '''
+        Test that the model performance can be monitored and results can be 
+        checked and saved as the model improves. This test trains an agent
+        for a short period of time, without loading a pre-trained model. 
+        Therefore, this test also checks that a RL from stable-baselines 
+        can be trained.
+        
+        '''
+        # Define logging directory. Monitoring data and agent model will be stored here
+        log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 
+                               'monitored_A2C')
+        
+        # Perform a short training example with callback
+        env, _, _ = run_save_callback.train_A2C_with_callback(log_dir=log_dir)  
+        
+        # Load the trained agent
+        model = A2C.load(os.path.join(log_dir, 'best_model'))
+        
+        # Test one step with the trained model
+        obs = env.reset()
+        df = pd.DataFrame([model.predict(obs)[0][0]], columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath    = os.path.join(utilities.get_root_path(), 
+                            'testing', 'references', 'save_callback.csv')
+        self.compare_ref_values_df(df, ref_filepath)
+        
+        # Remove model to prove further testing
+        shutil.rmtree(log_dir, ignore_errors=True)
+        
     def check_obs_act_rew_kpi(self, obs=None, act=None, rew=None, kpi=None,
                               label='default'):
         '''Auxiliary method to check for observations, actions, rewards, 
