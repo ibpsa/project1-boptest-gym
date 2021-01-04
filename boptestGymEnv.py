@@ -13,11 +13,14 @@ import numpy as np
 import pandas as pd
 import inspect
 import json
+import os
 
 from collections import OrderedDict
 from pprint import pformat
 from gym import spaces
 from stable_baselines.common.env_checker import check_env
+from stable_baselines.results_plotter import load_results, ts2xy
+from stable_baselines.common.callbacks import BaseCallback
 
 
 class BoptestGymEnv(gym.Env):
@@ -986,7 +989,83 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         self.objective_integrand = objective_integrand
         
         return reward
-     
+
+class SaveOnBestTrainingRewardCallback(BaseCallback):
+    '''
+    Callback for saving a model (the check is done every `check_freq` 
+    steps) based on the training reward (in practice, we recommend using 
+    `EvalCallback`). This callback requires the environment to be wrapped
+    around a `stable_baselines.bench.Monitor` wrapper to generate the 
+    monitoring files that are then loaded using the 
+    `stable_baselines.results_plotter.load_results` method.  
+
+    '''
+    
+    def __init__(self, check_freq=1000, log_dir='agents', verbose=1):
+        '''
+        Constructor for the callback. 
+        
+        Parameters
+        ----------
+        check_freq: integer, default is 1000
+            Number of steps to che
+        log_dir: string, default is 'agents'
+            Path to the folder where the model will be saved. 
+            It must contain the file created by an 
+            `stable_baselines.bench.Monitor` wrapper. 
+        verbose: integer
+            Verbose level for the callback
+        
+        '''
+        super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
+        self.check_freq = check_freq
+        self.log_dir = log_dir
+        self.save_path = os.path.join(log_dir, 'best_model')
+        self.best_mean_reward = -np.inf
+
+    def _init_callback(self) -> None:
+        '''
+        Create folder if needed
+        
+        '''
+        
+        if self.log_dir is not None:
+            os.makedirs(self.log_dir, exist_ok=True)
+
+    def _on_step(self) -> bool:
+        '''
+        This method will be called by the model after each call to 
+        `env.step()`.
+        
+        Returns
+        -------
+        ret_bool: booleant
+            If the callback returns False, training is aborted early. In 
+            this case we always return `True`. 
+        
+        '''
+        if self.n_calls % self.check_freq == 0:
+            # Retrieve training reward
+            x, y = ts2xy(load_results(self.log_dir), 'timesteps')
+            if len(x) > 0:
+                # Mean training reward over the last self.check_freq episodes
+                mean_reward = np.mean(y[-self.check_freq:])
+                if self.verbose > 0:
+                    print("Num timesteps: {}".format(self.num_timesteps))
+                    print("Best mean reward: {:.2f} - Last mean reward per episode: {:.2f}".format(self.best_mean_reward, mean_reward))
+
+                # New best model, we save the agent here
+                if mean_reward > self.best_mean_reward:
+                    self.best_mean_reward = mean_reward
+                    # Example for saving best model
+                    if self.verbose > 0:
+                        print("Saving new best model to {}".format(self.save_path))
+                        self.model.save(self.save_path)
+        
+        ret_bool = True
+        
+        return ret_bool
+
 if __name__ == "__main__":
     
     # Instantiate the env    
