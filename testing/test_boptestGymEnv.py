@@ -108,7 +108,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         for i in range(100):
             obs = self.env.reset()
             start_time = self.env.start_time
-            episode = (start_time, start_time+self.env.episode_length)
+            episode = (start_time, start_time+self.env.max_episode_length)
             for period in excluding_periods:
                 # Make sure that the episodes don't overlap with excluding_periods
                 assert not(episode[0] < period[1] and period[0] < episode[1]),\
@@ -116,7 +116,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                         'The episode with starting time {0} and end time {1} '\
                         'overlaps with period {2}. This corresponds to the '\
                         'generated starting time number {3}.'\
-                        ''.format(start_time,start_time+self.env.episode_length,period,i)
+                        ''.format(start_time,start_time+self.env.max_episode_length,period,i)
             start_times[start_time] = obs
             
         # Check values

@@ -38,7 +38,7 @@ class BoptestGymEnv(gym.Env):
                  actions            = ['oveHeaPumY_u'],
                  observations       = {'reaTZon_y':(280.,310.)}, 
                  reward             = ['reward'],
-                 episode_length     = 3*3600,
+                 max_episode_length = 3*3600,
                  random_start_time  = False,
                  excluding_periods  = None,
                  forecasting_period = None,
@@ -67,8 +67,8 @@ class BoptestGymEnv(gym.Env):
         reward: list
             List with string indicating the reward column name in a replay
             buffer of data in case the algorithm is going to use pretraining
-        episode_length: integer
-            Duration of each episode in seconds
+        max_episode_length: integer
+            Maximum duration of each episode in seconds
         random_start_time: boolean
             Set to True if desired to use a random start time for each episode
         excluding_periods: list of tuples
@@ -106,7 +106,7 @@ class BoptestGymEnv(gym.Env):
         self.url                = url
         self.actions            = actions
         self.observations       = list(observations.keys())
-        self.episode_length     = episode_length
+        self.max_episode_length = max_episode_length
         self.random_start_time  = random_start_time
         self.excluding_periods  = excluding_periods
         self.start_time         = start_time
@@ -116,7 +116,7 @@ class BoptestGymEnv(gym.Env):
         self.Ts                 = Ts
         
         # Avoid surpassing the end of the year during an episode
-        self.end_year_margin = self.episode_length
+        self.end_year_margin = self.max_episode_length
         
         #=============================================================
         # Get test information
@@ -188,7 +188,7 @@ class BoptestGymEnv(gym.Env):
                 self.upper_obs_bounds.extend(obs_ubou)
         
             # If predictive, the margin should be extended        
-            self.end_year_margin = self.episode_length + self.forecasting_period
+            self.end_year_margin = self.max_episode_length + self.forecasting_period
         
         # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
@@ -276,7 +276,7 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION']['Random start time'] = pformat(self.random_start_time)
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
         summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
-        summary['GYM ENVIRONMENT INFORMATION']['Episode length (seconds)'] = pformat(self.episode_length)
+        summary['GYM ENVIRONMENT INFORMATION']['Maximum episode length (seconds)'] = pformat(self.max_episode_length)
         summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.compute_reward))
         summary['GYM ENVIRONMENT INFORMATION']['Environment hierarchy'] = pformat(inspect.getmro(self.__class__))
         
@@ -344,7 +344,7 @@ class BoptestGymEnv(gym.Env):
             
             '''
             start_time = random.randint(0, 3.1536e+7-self.end_year_margin)
-            episode = (start_time, start_time+self.episode_length)
+            episode = (start_time, start_time+self.max_episode_length)
             if self.excluding_periods is not None:
                 for period in self.excluding_periods:
                     if episode[0] < period[1] and period[0] < episode[1]:

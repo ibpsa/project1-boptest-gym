@@ -54,7 +54,7 @@ def train_A2C_with_callback(start_time_tests    = [31*24*3600, 304*24*3600],
                                         observations          = {'reaTZon_y':(280.,310.)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
-                                        episode_length        = 1*3600, 
+                                        max_episode_length    = 1*3600, 
                                         warmup_period         = 3*3600,
                                         Ts                    = 900)
     
