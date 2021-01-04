@@ -417,12 +417,12 @@ class BoptestGymEnv(gym.Env):
         # Advance a BOPTEST simulation
         res = requests.post('{0}/advance'.format(self.url), data=u).json()
         
-        # Define whether we've finished the episode
-        done = res['time'] >= self.start_time + self.episode_length
-        
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
-                
+        
+        # Define whether we've finished the episode
+        done = self.compute_done(res, reward)
+        
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
@@ -488,7 +488,33 @@ class BoptestGymEnv(gym.Env):
         self.objective_integrand = objective_integrand
         
         return reward
+
+    def compute_done(self, res, reward=None):
+        '''
+        Compute whether the episode is finished or not. By default, a 
+        maximum episode length is defined and the episode will be finished
+        only when the time exceeds this maximum episode length. 
         
+        Returns
+        -------
+        done: boolean
+            Boolean indicating whether the episode is done or not.  
+        
+        Notes
+        -----
+        This method is just a default method to determine if an episode is
+        finished or not. It can be overridden by defining a child from 
+        this class with this same method name, i.e. `compute_done`. Notice
+        that the reward for each step is passed here to enable the user to
+        access this reward as it may be handy when defining a custom 
+        method for `compute_done`. 
+        
+        '''
+        
+        done = res['time'] >= self.start_time + self.max_episode_length
+        
+        return done
+
     def get_observations(self, res):
         '''
         Get the observations, i.e. the conjunction of measurements and 
