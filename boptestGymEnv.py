@@ -38,7 +38,7 @@ class BoptestGymEnv(gym.Env):
                  actions            = ['oveHeaPumY_u'],
                  observations       = {'reaTZon_y':(280.,310.)}, 
                  reward             = ['reward'],
-                 episode_length     = 3*3600,
+                 max_episode_length = 3*3600,
                  random_start_time  = False,
                  excluding_periods  = None,
                  forecasting_period = None,
@@ -67,8 +67,8 @@ class BoptestGymEnv(gym.Env):
         reward: list
             List with string indicating the reward column name in a replay
             buffer of data in case the algorithm is going to use pretraining
-        episode_length: integer
-            Duration of each episode in seconds
+        max_episode_length: integer
+            Maximum duration of each episode in seconds
         random_start_time: boolean
             Set to True if desired to use a random start time for each episode
         excluding_periods: list of tuples
@@ -106,7 +106,7 @@ class BoptestGymEnv(gym.Env):
         self.url                = url
         self.actions            = actions
         self.observations       = list(observations.keys())
-        self.episode_length     = episode_length
+        self.max_episode_length = max_episode_length
         self.random_start_time  = random_start_time
         self.excluding_periods  = excluding_periods
         self.start_time         = start_time
@@ -116,7 +116,7 @@ class BoptestGymEnv(gym.Env):
         self.Ts                 = Ts
         
         # Avoid surpassing the end of the year during an episode
-        self.end_year_margin = self.episode_length
+        self.end_year_margin = self.max_episode_length
         
         #=============================================================
         # Get test information
@@ -188,7 +188,7 @@ class BoptestGymEnv(gym.Env):
                 self.upper_obs_bounds.extend(obs_ubou)
         
             # If predictive, the margin should be extended        
-            self.end_year_margin = self.episode_length + self.forecasting_period
+            self.end_year_margin = self.max_episode_length + self.forecasting_period
         
         # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
@@ -276,7 +276,7 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION']['Random start time'] = pformat(self.random_start_time)
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
         summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
-        summary['GYM ENVIRONMENT INFORMATION']['Episode length (seconds)'] = pformat(self.episode_length)
+        summary['GYM ENVIRONMENT INFORMATION']['Maximum episode length (seconds)'] = pformat(self.max_episode_length)
         summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.compute_reward))
         summary['GYM ENVIRONMENT INFORMATION']['Environment hierarchy'] = pformat(inspect.getmro(self.__class__))
         
@@ -344,7 +344,7 @@ class BoptestGymEnv(gym.Env):
             
             '''
             start_time = random.randint(0, 3.1536e+7-self.end_year_margin)
-            episode = (start_time, start_time+self.episode_length)
+            episode = (start_time, start_time+self.max_episode_length)
             if self.excluding_periods is not None:
                 for period in self.excluding_periods:
                     if episode[0] < period[1] and period[0] < episode[1]:
@@ -417,12 +417,12 @@ class BoptestGymEnv(gym.Env):
         # Advance a BOPTEST simulation
         res = requests.post('{0}/advance'.format(self.url), data=u).json()
         
-        # Define whether we've finished the episode
-        done = res['time'] >= self.start_time + self.episode_length
-        
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
-                
+        
+        # Define whether we've finished the episode
+        done = self.compute_done(res, reward)
+        
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
@@ -488,7 +488,33 @@ class BoptestGymEnv(gym.Env):
         self.objective_integrand = objective_integrand
         
         return reward
+
+    def compute_done(self, res, reward=None):
+        '''
+        Compute whether the episode is finished or not. By default, a 
+        maximum episode length is defined and the episode will be finished
+        only when the time exceeds this maximum episode length. 
         
+        Returns
+        -------
+        done: boolean
+            Boolean indicating whether the episode is done or not.  
+        
+        Notes
+        -----
+        This method is just a default method to determine if an episode is
+        finished or not. It can be overridden by defining a child from 
+        this class with this same method name, i.e. `compute_done`. Notice
+        that the reward for each step is passed here to enable the user to
+        access this reward as it may be handy when defining a custom 
+        method for `compute_done`. 
+        
+        '''
+        
+        done = res['time'] >= self.start_time + self.max_episode_length
+        
+        return done
+
     def get_observations(self, res):
         '''
         Get the observations, i.e. the conjunction of measurements and 
@@ -943,6 +969,11 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
         nor discomfort. This would be the simplest reward to learn for
         an agent. 
         
+        Returns
+        -------
+        reward: float
+            Reward of last state-action-state' tuple
+        
         '''
         
         # Compute BOPTEST core kpis
@@ -972,6 +1003,11 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         '''Custom reward function that penalizes less the discomfort
         and thus more the operational cost.
         
+        Returns
+        -------
+        reward: float
+            Reward of last state-action-state' tuple
+        
         '''
         
         # Define relative weight for discomfort 
@@ -989,6 +1025,35 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         self.objective_integrand = objective_integrand
         
         return reward
+    
+class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
+    '''Boptest gym environment that redefines the reward function to 
+    weight more the operational cost when compared with the default reward
+    function. 
+    
+    '''
+    
+    def compute_done(self, res, reward=None, 
+                     objective_integrand_threshold=0.1):
+        '''Custom method to determine that the episode is done not only 
+        when the maximum episode length is exceeded but also when the 
+        objective integrand overpasses a certain threshold. The latter is
+        useful to early terminate agent strategies that do not work, hence
+        avoiding unnecessary steps and leading to improved sampling 
+        efficiency. 
+        
+        Returns
+        -------
+        done: boolean
+            Boolean indicating whether the episode is done or not.  
+        
+        '''
+        
+        done =  (res['time'] >= self.start_time + self.max_episode_length)\
+                or \
+                (self.objective_integrand >= objective_integrand_threshold)
+        
+        return done
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
     '''

@@ -19,12 +19,12 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     if isinstance(env,Wrapper): 
         env.unwrapped.random_start_time   = False
         env.unwrapped.start_time          = start_time
-        env.unwrapped.episode_length      = episode_length
+        env.unwrapped.max_episode_length  = episode_length
         env.unwrapped.warmup_period       = warmup_period
     else:
         env.random_start_time   = False
         env.start_time          = start_time
-        env.episode_length      = episode_length
+        env.max_episode_length  = episode_length
         env.warmup_period       = warmup_period
     
     # Reset environment
