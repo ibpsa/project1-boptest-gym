@@ -11,7 +11,8 @@ import os
 import pandas as pd
 import random
 import shutil
-from examples import run_baseline, run_sample, run_save_callback, train_A2C, train_PPO2
+from examples import run_baseline, run_sample, run_save_callback,\
+    run_variable_episode, train_A2C, train_PPO2
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines.common.env_checker import check_env
@@ -255,6 +256,61 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         ref_filepath    = os.path.join(utilities.get_root_path(), 
                             'testing', 'references', 'save_callback.csv')
         self.compare_ref_values_df(df, ref_filepath)
+        
+        # Remove model to prove further testing
+        shutil.rmtree(log_dir, ignore_errors=True)
+        
+    def test_variable_episode(self):
+        '''
+        Test that a model can be trained using variable episode length. 
+        The method that is used to determine whether the episode is 
+        terminated or not is defined by the user. This test trains an agent
+        for a short period of time, without loading a pre-trained model. 
+        Therefore, this test also checks that a RL from stable-baselines 
+        can be trained. This test also uses the save callback to check that
+        the variable episode length is being effectively used. 
+        Notice that this test also checks that child classes can be nested
+        since the example redefines the `compute_reward` and the 
+        `compute_done` methods. 
+        
+        '''
+        # Define logging directory. Monitoring data and agent model will be stored here
+        log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 
+                               'variable_episode_A2C')
+        
+        # Perform a short training example with callback
+        env, _, _ = run_variable_episode.train_A2C_with_variable_episode(log_dir=log_dir)  
+        
+        # Load the trained agent
+        model = A2C.load(os.path.join(log_dir, 'best_model'))
+        
+        # Test one step with the trained model
+        obs = env.reset()
+        df = pd.DataFrame([model.predict(obs)[0][0]], columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath    = os.path.join(utilities.get_root_path(), 
+                            'testing', 'references', 'variable_episode_step.csv')
+        self.compare_ref_values_df(df, ref_filepath)
+        
+        # Check variable lengths
+        monitor = pd.read_csv(os.path.join(log_dir,'monitor.csv'),index_col=None)
+        monitor = monitor.iloc[1:]
+        monitor.reset_index(inplace=True)
+        monitor.columns =['reward','episode_length','time']
+        
+        # Time may vary from one computer to another
+        monitor.drop(labels='time',axis=1,inplace=True)
+        
+        # Utilities require index to have time as index name (even this is not the case here)
+        monitor.index.name = 'time'
+        
+        # Transfor to numeric
+        monitor = monitor.apply(lambda col:pd.to_numeric(col, errors='coerce'))
+        
+        # Check that we obtain always same monitoring parameters
+        ref_filepath = os.path.join(utilities.get_root_path(), 
+                    'testing', 'references', 'variable_episode_monitor.csv')
+        self.compare_ref_timeseries_df(monitor, ref_filepath)
         
         # Remove model to prove further testing
         shutil.rmtree(log_dir, ignore_errors=True)
