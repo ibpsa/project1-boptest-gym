@@ -32,7 +32,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                 actions             = ['oveHeaPumY_u'],
                                 observations        = {'reaTZon_y':(280.,310.)}, 
                                 reward              = ['reward'],
-                                episode_length      = 24*3600,
+                                max_episode_length  = 24*3600,
                                 random_start_time   = True,
                                 warmup_period       = 3600,
                                 Ts                  = 900)
