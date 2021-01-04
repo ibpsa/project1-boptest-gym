@@ -969,6 +969,11 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
         nor discomfort. This would be the simplest reward to learn for
         an agent. 
         
+        Returns
+        -------
+        reward: float
+            Reward of last state-action-state' tuple
+        
         '''
         
         # Compute BOPTEST core kpis
@@ -997,6 +1002,11 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
     def compute_reward(self):
         '''Custom reward function that penalizes less the discomfort
         and thus more the operational cost.
+        
+        Returns
+        -------
+        reward: float
+            Reward of last state-action-state' tuple
         
         '''
         
