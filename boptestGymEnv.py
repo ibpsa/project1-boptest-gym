@@ -1073,11 +1073,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         Parameters
         ----------
         check_freq: integer, default is 1000
-            Number of steps to che
+            Number of steps to perform check
         log_dir: string, default is 'agents'
-            Path to the folder where the model will be saved. 
+            Path to the folder where the model will be saved
             It must contain the file created by an 
-            `stable_baselines.bench.Monitor` wrapper. 
+            `stable_baselines.bench.Monitor` wrapper
         verbose: integer
             Verbose level for the callback
         
@@ -1113,7 +1113,8 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), 'timesteps')
             if len(x) > 0:
-                # Mean training reward over the last self.check_freq episodes
+                # Mean training reward over the last self.check_freq episodes (notice that self.check_freq refers to a number of timesteps even though here we are using it for averaging over episodes...)
+                # This means that we perform the check every self.check_freq STEPS, and we also use the averate of self.check_freq EPISODES to evaluate the average reward.
                 mean_reward = np.mean(y[-self.check_freq:])
                 if self.verbose > 0:
                     print("Num timesteps: {}".format(self.num_timesteps))
@@ -1125,7 +1126,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                     # Example for saving best model
                     if self.verbose > 0:
                         print("Saving new best model to {}".format(self.save_path))
-                        self.model.save(self.save_path)
+                    self.model.save(self.save_path)
         
         ret_bool = True
         
