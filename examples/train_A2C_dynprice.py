@@ -4,7 +4,7 @@ case. This case needs to be deployed to run this script.
 
 '''
 
-from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
+from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
 from stable_baselines import A2C
 from stable_baselines.common.vec_env import DummyVecEnv
 from examples.test_and_plot import test_agent
@@ -23,7 +23,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
               episode_length_test = 14*24*3600, 
               load                = False,
               log_dir = os.path.join(utilities.get_root_path(), 
-                                     'examples', 'agents', 'A2C_dynprice3')):
+                                     'examples', 'agents', 'A2C_dynprice4')):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -49,7 +49,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
-    env = BoptestGymEnvRewardWeightCost(url                   = url,
+    env = BoptestGymEnv(url                                   = url,
                                         actions               = ['oveHeaPumY_u'],
                                         observations          = {'reaTZon_y':   (280.,310.),
                                                                  'LowerSetp[1]':(280.,310.),
@@ -97,14 +97,14 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                          tensorboard_log=os.path.join('results'))
 
     if not load: 
-        model.learn(total_timesteps=int(3e4), callback=callback)
+        model.learn(total_timesteps=int(5e4), callback=callback)
         # Save the agent
         model.save(os.path.join(utilities.get_root_path(),'examples',
-                                'agents','a2c_dynprice'))
+                                'agents','a2c_dynprice4'))
     else:
         # Load the trained agent
         # model = A2C.load(os.path.join(log_dir,'best_model'))
-        model = A2C.load(os.path.join(utilities.get_root_path(),'examples', 'agents','a2c_dynprice3'))
+        model = A2C.load(os.path.join(utilities.get_root_path(),'examples', 'agents','a2c_dynprice4'))
     
     return env, model, start_time_tests
         
@@ -135,7 +135,7 @@ def test_nov(env, model, start_time_tests,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=True)
+    env, model, start_time_tests = train_A2C(load=False)
     episode_length_test = 7*24*3600
     warmup_period_test  = 3*3600
     plot = True
