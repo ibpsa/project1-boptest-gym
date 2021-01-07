@@ -2,3 +2,29 @@ examples/results/
 testing/results/
 examples/agents/monitored_A2C/monitor.csv
 examples/agents/variable_episode_A2C/monitor.csv
+examples/baseline.npz
+examples/train_A2C_cloning.py
+examples/train_A2C_variable_episode.py
+examples/train_DQN.py
+examples/agents/a2c_bestest_hydronic_heatpump_1e4.zip
+examples/agents/a2c_bestest_hydronic_heatpump_1e5.zip
+examples/agents/dqn_boptest.zip
+examples/agents/ppo2_bestest_hydronic_heatpump_3e5.zip
+examples/agents/ppo2_bestest_hydronic_heatpump_654321.zip
+examples/agents/A2C_dynprice/best_model - Copy (2).zip
+examples/agents/A2C_dynprice/best_model - Copy.zip
+examples/agents/A2C_dynprice/best_model.zip
+examples/agents/A2C_dynprice/monitor - Copy.csv
+examples/agents/A2C_dynprice/monitor.csv
+examples/agents/A2C_dynprice2/best_model - Copy.zip
+examples/agents/A2C_dynprice2/best_model.zip
+examples/agents/A2C_dynprice2/monitor - Copy.csv
+examples/agents/A2C_dynprice2/monitor.csv
+examples/agents/A2C_dynprice3/monitor.csv
+examples/agents/A2C_dynprice3_testing/monitor.csv
+examples/agents/variable_episode_A2C/best_model - Copy.zip
+examples/agents/variable_episode_A2C/best_model.zip
+examples/agents/variable_episode_predictive_A2C/best_model - Copy.zip
+examples/agents/variable_episode_predictive_A2C/best_model.zip
+examples/agents/variable_episode_predictive_A2C/monitor - Copy.csv
+examples/agents/variable_episode_predictive_A2C/monitor.csv
