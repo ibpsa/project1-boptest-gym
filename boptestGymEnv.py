@@ -46,6 +46,7 @@ class BoptestGymEnv(gym.Env):
                  regressive_period  = None,
                  start_time         = 0,
                  warmup_period      = 0,
+                 scenario           = {'electricity_price':'constant'},
                  Ts                 = 900):
         '''
         Parameters
@@ -107,6 +108,9 @@ class BoptestGymEnv(gym.Env):
             `random_start_time=False` 
         warmup_period: integer
             Desired simulation period to initialize each episode 
+        scenario: dictionary
+            Defines the BOPTEST scenario. Can be `constant`, `dynamic` or
+            `highly_dynamic`
         Ts: integer
             Sampling time in seconds
             
@@ -125,6 +129,7 @@ class BoptestGymEnv(gym.Env):
         self.reward             = reward
         self.forecasting_period = forecasting_period
         self.Ts                 = Ts
+        self.scenario           = scenario
         
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
@@ -376,6 +381,9 @@ class BoptestGymEnv(gym.Env):
         
         # Set simulation step
         requests.put('{0}/step'.format(self.url), data={'step':self.Ts})
+        
+        # Set BOPTEST scenario
+        requests.put('{0}/scenario'.format(self.url), data=self.scenario)
         
         # Set forecasting parameters if predictive
         if self.is_predictive:
