@@ -59,7 +59,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                                                  'PriceElectricPowerHighlyDynamic': (-0.5,0.14)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
-                                        forecasting_period    = 0*3600,
+                                        forecasting_period    = 0,
                                         max_episode_length    = 24*3600,
                                         scenario              = {'electricity_price':'highly_dynamic'},
                                         warmup_period         = 3*3600,
@@ -67,6 +67,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
+    
+    print(env)
     
     # Modify the environment to include the callback when learning
     if not load:
@@ -95,13 +97,14 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                          tensorboard_log=os.path.join('results'))
 
     if not load: 
-        model.learn(total_timesteps=int(5e4), callback=callback)
+        model.learn(total_timesteps=int(3e4), callback=callback)
         # Save the agent
-        model.save(save_path=os.path.join(utilities.get_root_path(),'examples',
-                                      'agents','a2c_dynprice'))
+        model.save(os.path.join(utilities.get_root_path(),'examples',
+                                'agents','a2c_dynprice'))
     else:
         # Load the trained agent
-        model = A2C.load(os.path.join(log_dir,'best_model'))
+        # model = A2C.load(os.path.join(log_dir,'best_model'))
+        model = A2C.load(os.path.join(utilities.get_root_path(),'examples', 'agents','a2c_dynprice3'))
     
     return env, model, start_time_tests
         
@@ -133,7 +136,7 @@ def test_nov(env, model, start_time_tests,
 
 if __name__ == "__main__":
     env, model, start_time_tests = train_A2C(load=True)
-    episode_length_test = 5*24*3600
+    episode_length_test = 7*24*3600
     warmup_period_test  = 3*3600
     plot = True
     test_jan(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
