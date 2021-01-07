@@ -42,6 +42,8 @@ class BoptestGymEnv(gym.Env):
                  random_start_time  = False,
                  excluding_periods  = None,
                  forecasting_period = None,
+                 regressive_vars    = None,
+                 regressive_period  = None,
                  start_time         = 0,
                  warmup_period      = 0,
                  Ts                 = 900):
@@ -90,6 +92,15 @@ class BoptestGymEnv(gym.Env):
             intention is to retrieve boundary condition data at the actual
             observation time, useful e.g. for temperature setpoints or 
             ambient temperature. 
+        regressive_vars: list, default is None
+            The state is extended with past observations from this list.
+            Specifically, the past observations during the last 
+            `regressive_period` of time will be used. The aim is to 
+            better approximate the state space to have the Markov property.
+        regressive_period: integer, default is None
+            Number of seconds for the regressive preriod. This is the 
+            lookback period for which past observations of 
+            `regressive_vars` will be included in the actual state. 
         start_time: integer
             Initial fixed episode time in seconds from beginning of the 
             year for each episode. Use in combination with 
