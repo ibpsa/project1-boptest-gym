@@ -24,7 +24,7 @@ def train_A2C_predictive_variable_episode(start_time_tests    = [31*24*3600, 304
                          episode_length_test = 14*24*3600, 
                          load                = False,
                          log_dir = os.path.join(utilities.get_root_path(), 
-                            'examples', 'agents', 'variable_episode_predictive_A2C')):
+                                                'examples', 'agents', 'variable_episode_predictive_A2C')):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     This method uses a callback to save the model upon performance improvement
@@ -46,7 +46,7 @@ def train_A2C_predictive_variable_episode(start_time_tests    = [31*24*3600, 304
      
     '''
     
-        # Define custom child class:
+    # Define custom child class:
     class BoptestGymEnvVariableEpisodeLength(BoptestGymEnvRewardWeightCost):
         '''Boptest gym environment that redefines the reward function to 
         weight more the operational cost when compared with the default reward
