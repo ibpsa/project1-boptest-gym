@@ -52,18 +52,36 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
 
 def plot_results(env, rewards):
     res = requests.get('{0}/results'.format(env.url)).json()
+    # Retrieve boundary condition data. 
+    # Only way we have is through the forecast request. Take 10 points per step:
+    env.reset()
+    forecast_parameters = {'horizon':env.max_episode_length, 'interval':env.Ts/10}
+    requests.put('{0}/forecast_parameters'.format(env.url),
+                 data=forecast_parameters)
+    forecast = requests.get('{0}/forecast'.format(env.url)).json()
     res_all = {}
     res_all.update(res['u'])
     res_all.update(res['y'])
-
+    # Do not mess up forecasting time with simulation time
+    forecast['time_forecast'] = forecast.pop('time')
+    res_all.update(forecast)
+    
     _ = plt.figure(figsize=(10,8))
     
     meas_names = ['reaTZon_y'] # measurements
     cInp_names = ['reaHeaPumY_y'] # control inputs
-
+    if env.scenario['electricity_price'] == 'constant':
+        price_name = 'PriceElectricPowerConstant'
+    elif env.scenario['electricity_price'] == 'dynamic':
+        price_name = 'PriceElectricPowerDynamic'
+    elif env.scenario['electricity_price'] == 'highly_dynamic':
+        price_name = 'PriceElectricPowerHighlyDynamic'
+    
     res_time_days = np.array(res_all['time'])/3600./24.
+    forecast_time = np.array(forecast['time_forecast'])/3600./24.
     res_lSet = np.array(res_all['reaTSetHea_y'])
     res_uSet = np.array(res_all['reaTSetCoo_y'])
+    res_pric = np.array(res_all[price_name])
     res_meas = {meas: np.array(res_all[meas]) for meas in meas_names}
     res_cInp = {cInp: np.array(res_all[cInp]) for cInp in cInp_names}
 
@@ -80,7 +98,10 @@ def plot_results(env, rewards):
     for cInp in res_cInp.keys():
         plt.plot(res_time_days, res_cInp[cInp], label=cInp)
     ax2.set_ylabel('Heat pump\nmodulating signal\n(-)')
-
+    ax2twin = ax2.twinx()
+    ax2twin.plot(forecast_time, res_pric, 'grey', linewidth=1, label='Price')
+    ax2twin.set_ylabel('(EUR/kWh)')
+      
     rewards_time_days = np.arange(env.start_time, 
                                   env.start_time+env.episode_length,
                                   env.step_period)/3600./24.
