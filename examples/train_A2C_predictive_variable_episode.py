@@ -83,19 +83,36 @@ def train_A2C_predictive_variable_episode(start_time_tests    = [31*24*3600, 304
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
-    env = BoptestGymEnvVariableEpisodeLength(url                   = url,
-                                        actions               = ['oveHeaPumY_u'],
-                                        observations          = {'reaTZon_y':   (280.,310.),
-                                                                 'LowerSetp[1]':(280.,310.),
-                                                                 'UpperSetp[1]':(280.,310.),
-                                                                 'TDryBul':     (250.,310.),
-                                                                 'HGloHor':     (0.,  1000.)}, 
-                                        random_start_time     = True,
-                                        excluding_periods     = excluding_periods,
-                                        forecasting_period    = 6*3600,
-                                        max_episode_length    = 6*3600,
-                                        warmup_period         = 3*3600,
-                                        Ts                    = 900)
+    if not load:
+        # This may be used for training
+        env = BoptestGymEnvVariableEpisodeLength(url                   = url,
+                                            actions               = ['oveHeaPumY_u'],
+                                            observations          = {'reaTZon_y':   (280.,310.),
+                                                                     'LowerSetp[1]':(280.,310.),
+                                                                     'UpperSetp[1]':(280.,310.),
+                                                                     'TDryBul':     (250.,310.),
+                                                                     'HGloHor':     (0.,  1000.)}, 
+                                            random_start_time     = True,
+                                            excluding_periods     = excluding_periods,
+                                            forecasting_period    = 6*3600,
+                                            max_episode_length    = 6*3600,
+                                            warmup_period         = 3*3600,
+                                            Ts                    = 900)
+    else:
+        # This may be used for testing
+        env = BoptestGymEnvRewardWeightCost(url                   = url,
+                                            actions               = ['oveHeaPumY_u'],
+                                            observations          = {'reaTZon_y':   (280.,310.),
+                                                                     'LowerSetp[1]':(280.,310.),
+                                                                     'UpperSetp[1]':(280.,310.),
+                                                                     'TDryBul':     (250.,310.),
+                                                                     'HGloHor':     (0.,  1000.)}, 
+                                            random_start_time     = True,
+                                            excluding_periods     = excluding_periods,
+                                            forecasting_period    = 6*3600,
+                                            max_episode_length    = 6*3600,
+                                            warmup_period         = 3*3600,
+                                            Ts                    = 900)  
     
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
@@ -103,7 +120,8 @@ def train_A2C_predictive_variable_episode(start_time_tests    = [31*24*3600, 304
     os.makedirs(log_dir, exist_ok=True)
     
     # Modify the environment to include the callback
-    env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
+    if not load:
+        env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
     # Create the callback: check every 10 steps. We keep it very short for testing 
     callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
@@ -118,9 +136,8 @@ def train_A2C_predictive_variable_episode(start_time_tests    = [31*24*3600, 304
         model.save(os.path.join(utilities.get_root_path(), 'examples',
                                 'agents', 'a2c_pred_bestest_hydronic_heatpump'))
     else:
-        # Load the trained agent
-        model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_pred_bestest_hydronic_heatpump'))
+        # Load the best trained agent
+        model = A2C.load(os.path.join(log_dir,'best_model'))
     
     return env, model, start_time_tests
         
