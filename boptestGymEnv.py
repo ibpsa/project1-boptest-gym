@@ -191,8 +191,9 @@ class BoptestGymEnv(gym.Env):
             self.is_predictive = True
             self.forecasting_vars = [obs for obs in observations if (obs in self.all_forecasting_vars)]
         
-            # Number of discrete forecasting steps
-            self.fore_n = int(self.forecasting_period/self.Ts)
+            # Number of discrete forecasting steps. If forecasting_period=0, 
+            # then only 1 step is taken: the actual time step. 
+            self.fore_n = int(self.forecasting_period/self.Ts)+1
             
             # Extend observations to have one observation per forecasting step
             for obs in self.forecasting_vars:
