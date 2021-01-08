@@ -28,3 +28,18 @@ examples/agents/variable_episode_predictive_A2C/best_model - Copy.zip
 examples/agents/variable_episode_predictive_A2C/best_model.zip
 examples/agents/variable_episode_predictive_A2C/monitor - Copy.csv
 examples/agents/variable_episode_predictive_A2C/monitor.csv
+testing/test_boptestGymEnv.log
+testing/__pycache__/utilities.cpython-35.pyc
+testing/__pycache__/test_boptestGymEnv.cpython-35.pyc
+testing/__pycache__/__init__.cpython-35.pyc
+examples/agents/variable_episode_predictive_A2C/monitor - Copy (2).csv
+examples/agents/variable_episode_predictive_A2C/best_model - Copy (2).zip
+examples/__pycache__/train_PPO2.cpython-35.pyc
+examples/__pycache__/train_A2C.cpython-35.pyc
+examples/__pycache__/test_and_plot.cpython-35.pyc
+examples/__pycache__/run_sample.cpython-35.pyc
+examples/__pycache__/run_baseline.cpython-35.pyc
+examples/__pycache__/__init__.cpython-35.pyc
+__pycache__/boptestGymEnv.cpython-35.pyc
+.pydevproject
+.project
