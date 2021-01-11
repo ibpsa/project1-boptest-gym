@@ -7,7 +7,6 @@ Created on Jun 4, 2020
 
 import random
 import gym
-import copy
 import requests
 import numpy as np
 import pandas as pd
