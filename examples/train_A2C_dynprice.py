@@ -4,8 +4,8 @@ case. This case needs to be deployed to run this script.
 
 '''
 
-from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
-from stable_baselines import A2C
+from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
+from stable_baselines import A2C, ACKTR
 from stable_baselines.common.vec_env import DummyVecEnv
 from examples.test_and_plot import test_agent
 from stable_baselines.bench import Monitor
@@ -23,7 +23,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
               episode_length_test = 14*24*3600, 
               load                = False,
               log_dir = os.path.join(utilities.get_root_path(), 
-                                     'examples', 'agents', 'A2C_dynprice4')):
+                                     'examples', 'agents', 'A2C_dynprice17')):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -49,9 +49,10 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
-    env = BoptestGymEnv(url                                   = url,
+    env = BoptestGymEnvRewardWeightCost(url                   = url,
                                         actions               = ['oveHeaPumY_u'],
-                                        observations          = {'reaTZon_y':   (280.,310.),
+                                        observations          = {'time_week':   (0, 604800),
+                                                                 'reaTZon_y':   (280.,310.),
                                                                  'LowerSetp[1]':(280.,310.),
                                                                  'UpperSetp[1]':(280.,310.),
                                                                  #'TDryBul':     (250.,310.),
@@ -59,10 +60,10 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                                                  'PriceElectricPowerHighlyDynamic': (-0.5,0.14)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
-                                        forecasting_period    = 0,
+                                        forecasting_period    = 0*3600,
                                         max_episode_length    = 24*3600,
                                         scenario              = {'electricity_price':'highly_dynamic'},
-                                        warmup_period         = 3*3600,
+                                        warmup_period         = 24*3600,
                                         Ts                    = 900)
     
     env = NormalizedObservationWrapper(env)
@@ -83,10 +84,10 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
     
     # Initialize the agent
-    model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
+    model = ACKTR('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
                 tensorboard_log=os.path.join('results'))
     
-    if os.path.exists(os.path.join(log_dir,'best_model')):
+    if False or os.path.exists(os.path.join(log_dir,'best_model')):
         # Try to load a pre-trained agent. The A2C model requires a VecEnv.
         # Wrap it in a DummyVecEnv to avoid error
         # If no exists just go with the newly created agent
@@ -97,14 +98,14 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                          tensorboard_log=os.path.join('results'))
 
     if not load: 
-        model.learn(total_timesteps=int(5e4), callback=callback)
+        model.learn(total_timesteps=int(2e5), callback=callback)
         # Save the agent
         model.save(os.path.join(utilities.get_root_path(),'examples',
-                                'agents','a2c_dynprice4'))
+                                'agents','a2c_dynprice17'))
     else:
         # Load the trained agent
         # model = A2C.load(os.path.join(log_dir,'best_model'))
-        model = A2C.load(os.path.join(utilities.get_root_path(),'examples', 'agents','a2c_dynprice4'))
+        model = A2C.load(os.path.join(utilities.get_root_path(),'examples', 'agents','a2c_dynprice17'))
     
     return env, model, start_time_tests
         
@@ -137,7 +138,7 @@ def test_nov(env, model, start_time_tests,
 if __name__ == "__main__":
     env, model, start_time_tests = train_A2C(load=False)
     episode_length_test = 7*24*3600
-    warmup_period_test  = 3*3600
+    warmup_period_test  = 24*3600
     plot = True
     test_jan(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
     test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
