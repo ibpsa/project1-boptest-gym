@@ -23,7 +23,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
               episode_length_test = 14*24*3600, 
               load                = False,
               log_dir = os.path.join(utilities.get_root_path(), 
-                                     'examples', 'agents', 'A2C_dynprice17')):
+                                     'examples', 'agents', 'ACKTR_dynprice2')):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -55,8 +55,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                                                  'reaTZon_y':   (280.,310.),
                                                                  'LowerSetp[1]':(280.,310.),
                                                                  'UpperSetp[1]':(280.,310.),
-                                                                 #'TDryBul':     (250.,310.),
-                                                                 #'HGloHor':     (0.,  1000.),
+                                                                 'TDryBul':     (250.,310.),
+                                                                 'HGloHor':     (0.,  1000.),
                                                                  'PriceElectricPowerHighlyDynamic': (-0.5,0.14)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
@@ -101,11 +101,11 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
         model.learn(total_timesteps=int(2e5), callback=callback)
         # Save the agent
         model.save(os.path.join(utilities.get_root_path(),'examples',
-                                'agents','a2c_dynprice17'))
+                                'agents','acktr_dynprice2'))
     else:
         # Load the trained agent
         # model = A2C.load(os.path.join(log_dir,'best_model'))
-        model = A2C.load(os.path.join(utilities.get_root_path(),'examples', 'agents','a2c_dynprice17'))
+        model = ACKTR.load(os.path.join(utilities.get_root_path(),'examples', 'agents','acktr_dynprice2'))
     
     return env, model, start_time_tests
         
