@@ -15,7 +15,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     '''
         
-    # Use the first 3 days of February for testing with 3 days for initialization
+    # Set a fixed start time
     if isinstance(env,Wrapper): 
         env.unwrapped.random_start_time   = False
         env.unwrapped.start_time          = start_time
@@ -103,7 +103,7 @@ def plot_results(env, rewards):
     ax2twin.set_ylabel('(EUR/kWh)')
       
     rewards_time_days = np.arange(env.start_time, 
-                                  env.start_time+env.episode_length,
+                                  env.start_time+env.max_episode_length,
                                   env.step_period)/3600./24.
     f = interpolate.interp1d(rewards_time_days, rewards, kind='zero',
                              fill_value='extrapolate')
