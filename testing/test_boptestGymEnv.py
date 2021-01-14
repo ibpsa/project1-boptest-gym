@@ -139,6 +139,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         obs, _, rew = run_baseline.run_reward_custom(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
+        
     def test_compute_reward_clipping(self):
         '''Test reward clipping.
         
@@ -186,9 +187,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         env, model, start_time_tests = train_A2C.train_A2C(load=load)
         
         obs, act, rew, kpi = \
-            train_A2C.test_jan(env, model, start_time_tests, 
+            train_A2C.test_feb(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_jan')
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_feb')
         
         obs, act, rew, kpi = \
             train_A2C.test_nov(env, model, start_time_tests, 
@@ -221,9 +222,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         env, model, start_time_tests = train_PPO2.train_PPO2(load=load)
         
         obs, act, rew, kpi = \
-            train_PPO2.test_jan(env, model, start_time_tests, 
+            train_PPO2.test_feb(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_jan')
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_feb')
         
         obs, act, rew, kpi = \
             train_PPO2.test_nov(env, model, start_time_tests, 
