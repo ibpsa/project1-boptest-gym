@@ -55,7 +55,7 @@ def plot_results(env, rewards):
     # Retrieve boundary condition data. 
     # Only way we have is through the forecast request. Take 10 points per step:
     env.reset()
-    forecast_parameters = {'horizon':env.max_episode_length, 'interval':env.Ts/10}
+    forecast_parameters = {'horizon':env.max_episode_length, 'interval':env.step_period/10}
     requests.put('{0}/forecast_parameters'.format(env.url),
                  data=forecast_parameters)
     forecast = requests.get('{0}/forecast'.format(env.url)).json()
