@@ -165,8 +165,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''Test that environment can set BOPTEST case scenario.
         
         '''
-        obs, act, rew = run_baseline.run_highly_dynamic_price(plot=False)
-        self.check_obs_act_rew_kpi(obs=obs,act=act,rew=rew,kpi=None,label='setScenario')
+        obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
     
     def test_A2C(self, load=True, episode_length_test=2*24*3600,
                  warmup_period_test=1*24*3600, plot=False):
