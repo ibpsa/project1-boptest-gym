@@ -483,7 +483,7 @@ class BoptestGymEnv(gym.Env):
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
         
         # Compute reward
-        reward = -(objective_integrand - self.objective_integrand)/w
+        reward = -(objective_integrand - self.objective_integrand)
         
         self.objective_integrand = objective_integrand
         
