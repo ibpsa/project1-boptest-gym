@@ -79,9 +79,9 @@ def train_A2C_predictive(start_time_tests    = [31*24*3600, 304*24*3600],
     
     return env, model, start_time_tests
         
-def test_jan(env, model, start_time_tests, 
+def test_feb(env, model, start_time_tests, 
              episode_length_test, warmup_period_test, plot=False):
-    ''' Perform test in January
+    ''' Perform test in February
     
     '''
 
@@ -110,6 +110,6 @@ if __name__ == "__main__":
     episode_length_test = 14*24*3600
     warmup_period_test  = 3*24*3600
     plot = True
-    test_jan(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
+    test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
     test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
     
