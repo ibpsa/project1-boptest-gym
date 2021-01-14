@@ -36,7 +36,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                 max_episode_length  = 24*3600,
                                 random_start_time   = True,
                                 warmup_period       = 3600,
-                                Ts                  = 900)
+                                step_period         = 900)
     
     def test_summary(self):
         '''

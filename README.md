@@ -28,7 +28,7 @@ env = BoptestGymEnv(url                   = url,
                     random_start_time     = True,
                     max_episode_length    = 24*3600,
                     warmup_period         = 24*3600,
-                    Ts                    = 900)
+                    step_period           = 900)
 
 # Add wrappers to normalize state and action spaces (Optional)
 env = NormalizedObservationWrapper(env)

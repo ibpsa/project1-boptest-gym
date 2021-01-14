@@ -83,7 +83,7 @@ def plot_results(env, rewards):
 
     rewards_time_days = np.arange(env.start_time, 
                                   env.start_time+env.episode_length,
-                                  env.Ts)/3600./24.
+                                  env.step_period)/3600./24.
     f = interpolate.interp1d(rewards_time_days, rewards, kind='zero',
                              fill_value='extrapolate')
     rewards_reindexed = f(res_time_days)
