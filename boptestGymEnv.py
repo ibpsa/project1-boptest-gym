@@ -268,6 +268,7 @@ class BoptestGymEnv(gym.Env):
         summary['BOPTEST CASE INFORMATION']['Default simulation step (seconds)'] = pformat(self.step_def)
         summary['BOPTEST CASE INFORMATION']['Default forecasting parameters (seconds)'] = pformat(self.forecast_def)
         summary['BOPTEST CASE INFORMATION']['Default scenario'] = pformat(self.scenario_def)
+        summary['BOPTEST CASE INFORMATION']['Test case scenario'] = pformat(self.scenario)
         
         summary['GYM ENVIRONMENT INFORMATION'] = OrderedDict()
         summary['GYM ENVIRONMENT INFORMATION']['Observation space'] = pformat(self.observation_space)
