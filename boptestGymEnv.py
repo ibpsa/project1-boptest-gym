@@ -44,6 +44,7 @@ class BoptestGymEnv(gym.Env):
                  forecasting_period = None,
                  start_time         = 0,
                  warmup_period      = 0,
+                 scenario           = {'electricity_price':'constant'},
                  step_period        = 900):
         '''
         Parameters
@@ -82,7 +83,7 @@ class BoptestGymEnv(gym.Env):
             Number of seconds for the forecasting horizon. The observations
             will be extended for each of the forecasting variables indicated
             in the `observations` dictionary argument. Specifically, a number
-            of `int(self.forecasting_period/self.step)` observations per 
+            of `int(self.forecasting_period/self.step_period)` observations per 
             forecasting variable will be included in the observation space.
             Each of these observations correspond to the foresighted 
             variable `i` steps ahead from the actual observation time. 
@@ -96,8 +97,11 @@ class BoptestGymEnv(gym.Env):
             `random_start_time=False` 
         warmup_period: integer
             Desired simulation period to initialize each episode 
+        scenario: dictionary
+            Defines the BOPTEST scenario. Can be `constant`, `dynamic` or
+            `highly_dynamic`
         step_period: integer
-            Sampling time period in seconds
+            Sampling time in seconds
             
         '''
         
@@ -114,7 +118,7 @@ class BoptestGymEnv(gym.Env):
         self.reward             = reward
         self.forecasting_period = forecasting_period
         self.step_period        = step_period
-        
+        self.scenario           = scenario
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
         
@@ -264,6 +268,7 @@ class BoptestGymEnv(gym.Env):
         summary['BOPTEST CASE INFORMATION']['Default simulation step (seconds)'] = pformat(self.step_def)
         summary['BOPTEST CASE INFORMATION']['Default forecasting parameters (seconds)'] = pformat(self.forecast_def)
         summary['BOPTEST CASE INFORMATION']['Default scenario'] = pformat(self.scenario_def)
+        summary['BOPTEST CASE INFORMATION']['Test case scenario'] = pformat(self.scenario)
         
         summary['GYM ENVIRONMENT INFORMATION'] = OrderedDict()
         summary['GYM ENVIRONMENT INFORMATION']['Observation space'] = pformat(self.observation_space)
@@ -365,6 +370,9 @@ class BoptestGymEnv(gym.Env):
         
         # Set simulation step
         requests.put('{0}/step'.format(self.url), data={'step':self.step_period})
+        
+        # Set BOPTEST scenario
+        requests.put('{0}/scenario'.format(self.url), data=self.scenario)
         
         # Set forecasting parameters if predictive
         if self.is_predictive:
@@ -1073,7 +1081,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         Parameters
         ----------
         check_freq: integer, default is 1000
-            Number of steps to che
+            Number of steps to perform check
         log_dir: string, default is 'agents'
             Path to the folder where the model will be saved. 
             It must contain the file created by an 

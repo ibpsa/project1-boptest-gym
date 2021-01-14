@@ -170,7 +170,6 @@ def run_normalized_observation_wrapper(plot=False):
          
     return observations, actions, rewards
 
-
 def run_normalized_action_wrapper(plot=False):
     '''Run example with normalized action wrapper. 
      
@@ -196,8 +195,35 @@ def run_normalized_action_wrapper(plot=False):
                   plot=plot)
          
     return observations, actions, rewards
+
+def run_highly_dynamic_price(plot=False):
+    '''Run example when setting the highly dynamic price scenario of BOPTEST. 
+     
+    Parameters
+    ----------
+    plot : bool, optional
+        True to plot timeseries results.
+        Default is False.
+     
+    Returns
+    -------
+    observations : list
+        Observations obtained in simulation
+    actions : list
+        Actions applied in simulation
+    rewards : list
+        Rewards obtained in simulation
+        
+    '''
+
+    observations, actions, rewards = run(envClass=BoptestGymEnv, 
+                  scenario={'electricity_price':'highly_dynamic'},
+                  plot=plot)
+         
+    return observations, actions, rewards
     
-def run(envClass, wrapper=None, plot=False):
+def run(envClass, wrapper=None, scenario={'electricity_price':'constant'}, 
+        plot=False):
     # Use the first 3 days of February for testing with 3 days for initialization
     env = envClass(url                 = url,
                    actions             = ['oveHeaPumY_u'],
@@ -206,6 +232,7 @@ def run(envClass, wrapper=None, plot=False):
                    start_time          = 31*24*3600,
                    max_episode_length  = 3*24*3600,
                    warmup_period       = 3*24*3600,
+                   scenario            = scenario,
                    step_period         = 3600)
     
     # Define an empty action list to don't overwrite any input

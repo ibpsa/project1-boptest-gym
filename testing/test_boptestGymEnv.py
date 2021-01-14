@@ -160,7 +160,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         obs, act, rew = run_sample.run_normalized_action_wrapper(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=act,rew=rew,kpi=None,label='normalizedActionWrapper')
+    
+    def test_set_scenario(self):
+        '''Test that environment can set BOPTEST case scenario.
         
+        '''
+        obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
+        self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
+    
     def test_A2C(self, load=True, episode_length_test=2*24*3600,
                  warmup_period_test=1*24*3600, plot=False):
         '''Test for an A2C agent from stable baselines. 
