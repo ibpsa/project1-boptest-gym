@@ -44,7 +44,7 @@ class BoptestGymEnv(gym.Env):
                  forecasting_period = None,
                  start_time         = 0,
                  warmup_period      = 0,
-                 Ts                 = 900):
+                 step_period        = 900):
         '''
         Parameters
         ----------
@@ -82,7 +82,7 @@ class BoptestGymEnv(gym.Env):
             Number of seconds for the forecasting horizon. The observations
             will be extended for each of the forecasting variables indicated
             in the `observations` dictionary argument. Specifically, a number
-            of `int(self.forecasting_period/self.Ts)` observations per 
+            of `int(self.forecasting_period/self.step)` observations per 
             forecasting variable will be included in the observation space.
             Each of these observations correspond to the foresighted 
             variable `i` steps ahead from the actual observation time. 
@@ -96,8 +96,8 @@ class BoptestGymEnv(gym.Env):
             `random_start_time=False` 
         warmup_period: integer
             Desired simulation period to initialize each episode 
-        Ts: integer
-            Sampling time in seconds
+        step_period: integer
+            Sampling time period in seconds
             
         '''
         
@@ -113,7 +113,7 @@ class BoptestGymEnv(gym.Env):
         self.warmup_period      = warmup_period
         self.reward             = reward
         self.forecasting_period = forecasting_period
-        self.Ts                 = Ts
+        self.step_period        = step_period
         
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
@@ -176,11 +176,11 @@ class BoptestGymEnv(gym.Env):
             self.forecasting_vars = [obs for obs in observations if (obs in self.all_forecasting_vars)]
         
             # Number of discrete forecasting steps
-            self.fore_n = int(self.forecasting_period/self.Ts)
+            self.fore_n = int(self.forecasting_period/self.step_period)
             
             # Extend observations to have one observation per forecasting step
             for obs in self.forecasting_vars:
-                obs_list = [obs+'_pred_{}'.format(int(i*self.Ts)) for i in range(self.fore_n)]
+                obs_list = [obs+'_pred_{}'.format(int(i*self.step_period)) for i in range(self.fore_n)]
                 obs_lbou = [observations[obs][0]]*len(obs_list)
                 obs_ubou = [observations[obs][1]]*len(obs_list)
                 self.observations.extend(obs_list)
@@ -272,7 +272,7 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION']['Forecasting period (seconds)'] = pformat(self.forecasting_period)
         summary['GYM ENVIRONMENT INFORMATION']['Measurement variables used in observation space'] = pformat(self.measurement_vars)
         summary['GYM ENVIRONMENT INFORMATION']['Forecasting variables used in observation space'] = pformat(self.forecasting_vars)
-        summary['GYM ENVIRONMENT INFORMATION']['Sampling time (seconds)'] = pformat(self.Ts)
+        summary['GYM ENVIRONMENT INFORMATION']['Sampling time (seconds)'] = pformat(self.step_period)
         summary['GYM ENVIRONMENT INFORMATION']['Random start time'] = pformat(self.random_start_time)
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
         summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
@@ -364,11 +364,11 @@ class BoptestGymEnv(gym.Env):
                                  'warmup_period':self.warmup_period}).json()
         
         # Set simulation step
-        requests.put('{0}/step'.format(self.url), data={'step':self.Ts})
+        requests.put('{0}/step'.format(self.url), data={'step':self.step_period})
         
         # Set forecasting parameters if predictive
         if self.is_predictive:
-            forecast_parameters = {'horizon':self.forecasting_period, 'interval':self.Ts}
+            forecast_parameters = {'horizon':self.forecasting_period, 'interval':self.step_period}
             requests.put('{0}/forecast_parameters'.format(self.url),
                          data=forecast_parameters)
         

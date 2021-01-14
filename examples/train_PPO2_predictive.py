@@ -59,7 +59,7 @@ def train_PPO2_predictive(start_time_tests    = [31*24*3600, 304*24*3600],
                                         forecasting_period    = 1*24*3600,
                                         max_episode_length    = 1*24*3600,
                                         warmup_period         = 3*3600,
-                                        Ts                    = 900)
+                                        step_period           = 900)
     
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
