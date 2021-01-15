@@ -1,0 +1,14 @@
+apt-get update
+apt-get install -y git
+apt-get install -y sudo
+
+mkdir git
+cd git
+git clone https://github.com/ibpsa/project1-boptest.git
+cd project1-boptest/testing
+
+make build_jm_image
+make compile_testcase_model TESTCASE=bestest_hydronic_heat_pump
+cd ..
+make build TESTCASE=bestest_hydronic_heat_pump
+make run-detached TESTCASE=bestest_hydronic_heat_pump
