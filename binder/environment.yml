@@ -4,38 +4,38 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - certifi=2018.8.24=py35_1001
-  - ffmpeg=4.3.1=ha925a31_0
-  - blas=1.0=mkl
-  - cffi=1.11.5=py35h74b6da3_1
-  - cudatoolkit=10.2.89=h74a9793_1
-  - freetype=2.10.4=hd328e21_0
-  - icc_rt=2019.0.0=h0cc432a_1
-  - intel-openmp=2020.2=254
-  - jpeg=9b=hb83a4c4_2
-  - libpng=1.6.37=h2a8f88b_0
-  - libtiff=4.1.0=h56a325e_1
-  - lz4-c=1.9.2=hf4a77e7_3
-  - mkl=2020.2=256
-  - ninja=1.8.2=py35he980bc4_1
-  - numpy=1.14.2=py35h5c71026_0
-  - olefile=0.46=py_0
-  - pillow=5.2.0=py35h08bbbbd_0
-  - pip=10.0.1=py35_0
-  - pycparser=2.20=py_2
-  - python=3.5.6=he025d50_0
-  - setuptools=40.2.0=py35_0
-  - tk=8.6.10=he774522_0
-  - vc=14.2=h21ff451_1
-  - vs2015_runtime=14.27.29016=h5e58377_2
-  - wheel=0.36.2=pyhd3eb1b0_0
-  - wincertstore=0.2=py35hfebbdb8_0
-  - xz=5.2.5=h62dcd97_0
-  - zlib=1.2.11=h62dcd97_4
-  - zstd=1.4.5=h04227a9_0
-  - pytorch=1.5.1=py3.5_cuda102_cudnn7_0
-  - pytorch-cpu=1.1.0=py3.5_cpu_1
-  - torchvision=0.6.1=py35_cu102
+  - certifi=2018.8.24
+  - ffmpeg=4.3.1
+  - blas=1.0
+  - cffi=1.11.5
+  - cudatoolkit=10.2.89
+  - freetype=2.10.4
+  - icc_rt=2019.0.0
+  - intel-openmp=2020.2
+  - jpeg=9b
+  - libpng=1.6.37
+  - libtiff=4.1.0
+  - lz4-c=1.9.2
+  - mkl=2020.2
+  - ninja=1.8.2
+  - numpy=1.14.2
+  - olefile=0.46
+  - pillow=5.2.0
+  - pip=10.0.1
+  - pycparser=2.20
+  - python=3.5.6
+  - setuptools=40.2.0
+  - tk=8.6.10
+  - vc=14.2
+  - vs2015_runtime=14.27.29016
+  - wheel=0.36.2
+  - wincertstore=0.2
+  - xz=5.2.5
+  - zlib=1.2.11
+  - zstd=1.4.5
+  - pytorch=1.5.1
+  - pytorch-cpu=1.1.0
+  - torchvision=0.6.1
   - pip:
     - absl-py==0.11.0
     - astor==0.8.1
@@ -78,5 +78,3 @@ dependencies:
     - werkzeug==1.0.1
     - wrapt==1.12.1
     - zipp==1.2.0
-prefix: C:\Users\u0110910\AppData\Local\Continuum\anaconda3\envs\gym
-
