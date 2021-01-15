@@ -22,7 +22,8 @@ random.seed(seed)
 def train_A2C_with_callback(start_time_tests    = [31*24*3600, 304*24*3600], 
                             episode_length_test = 14*24*3600,
                             log_dir = os.path.join(utilities.get_root_path(), 
-                                'examples', 'agents', 'monitored_A2C')):
+                                'examples', 'agents', 'monitored_A2C'),
+                            tensorboard_log     = os.path.join('results')):
     '''Method to train an A2C agent using a callback to save the model 
     upon performance improvement.  
     
@@ -37,7 +38,9 @@ def train_A2C_with_callback(start_time_tests    = [31*24*3600, 304*24*3600],
         Number of seconds indicating the length of the testing periods. By
         default two weeks are reserved for testing.  
     log_dir : string
-        Directory where monitoring data and 
+        Directory where monitoring data and best trained model are stored.
+    tensorboard_log : path
+        Path to directory to load tensorboard logs.
     
     '''
     
@@ -71,7 +74,7 @@ def train_A2C_with_callback(start_time_tests    = [31*24*3600, 304*24*3600],
     
     # Initialize the agent
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
-                tensorboard_log=os.path.join('results'))
+                tensorboard_log=tensorboard_log)
     
     # Train the agent with callback for saving
     model.learn(total_timesteps=int(100), callback=callback)

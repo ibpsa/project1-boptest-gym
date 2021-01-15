@@ -1,4 +1,3 @@
 examples/results/
-testing/results/
 examples/agents/monitored_A2C/monitor.csv
 examples/agents/variable_episode_A2C/monitor.csv

@@ -19,7 +19,8 @@ random.seed(seed)
 
 def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600], 
               episode_length_test = 14*24*3600, 
-              load                = False):
+              load                = False,
+              tensorboard_log     = os.path.join('results')):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -36,7 +37,9 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     load : boolean
         Boolean indicating whether the algorithm is loaded (True) or 
         needs to be trained (False)
-     
+    tensorboard_log : path
+        Path to directory to load tensorboard logs.
+        
     '''
     excluding_periods = []
     for start_time_test in start_time_tests:
@@ -58,7 +61,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     env = NormalizedActionWrapper(env)  
     
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
-                tensorboard_log=os.path.join('results'))
+                tensorboard_log=tensorboard_log)
     
     if not load: 
         model.learn(total_timesteps=int(1e5))

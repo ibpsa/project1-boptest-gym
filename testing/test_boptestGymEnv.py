@@ -191,7 +191,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests = train_A2C.train_A2C(load=load)
+        env, model, start_time_tests = train_A2C.train_A2C(load=load, 
+                                                           tensorboard_log=None)
         
         obs, act, rew, kpi = \
             train_A2C.test_feb(env, model, start_time_tests, 
@@ -226,7 +227,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests = train_PPO2.train_PPO2(load=load)
+        env, model, start_time_tests = train_PPO2.train_PPO2(load=load, 
+                                                             tensorboard_log=None)
         
         obs, act, rew, kpi = \
             train_PPO2.test_feb(env, model, start_time_tests, 
@@ -252,7 +254,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                'monitored_A2C')
         
         # Perform a short training example with callback
-        env, _, _ = run_save_callback.train_A2C_with_callback(log_dir=log_dir)  
+        env, _, _ = run_save_callback.train_A2C_with_callback(log_dir=log_dir,
+                                                              tensorboard_log=None)  
         
         # Load the trained agent
         model = A2C.load(os.path.join(log_dir, 'best_model'))
@@ -287,7 +290,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                'variable_episode_A2C')
         
         # Perform a short training example with callback
-        env, _, _ = run_variable_episode.train_A2C_with_variable_episode(log_dir=log_dir)  
+        env, _, _ = run_variable_episode.train_A2C_with_variable_episode(log_dir=log_dir,
+                                                                         tensorboard_log=None)  
         
         # Load the trained agent
         model = A2C.load(os.path.join(log_dir, 'best_model'))
