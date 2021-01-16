@@ -23,7 +23,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
               episode_length_test = 14*24*3600, 
               load                = False,
               log_dir = os.path.join(utilities.get_root_path(), 
-                                     'examples', 'agents', 'ACKTR_dynprice2')):
+                                     'examples', 'agents', 'ACKTR_dynprice3')):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -55,12 +55,12 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                                                  'reaTZon_y':   (280.,310.),
                                                                  'LowerSetp[1]':(280.,310.),
                                                                  'UpperSetp[1]':(280.,310.),
-                                                                 'TDryBul':     (250.,310.),
-                                                                 'HGloHor':     (0.,  1000.),
+                                                                 #'TDryBul':     (250.,310.),
+                                                                 #'HGloHor':     (0.,  1000.),
                                                                  'PriceElectricPowerHighlyDynamic': (-0.5,0.14)}, 
                                         random_start_time     = True,
                                         excluding_periods     = excluding_periods,
-                                        forecasting_period    = 0*3600,
+                                        forecasting_period    = 1*3600,
                                         max_episode_length    = 24*3600,
                                         scenario              = {'electricity_price':'highly_dynamic'},
                                         warmup_period         = 24*3600,
@@ -98,14 +98,14 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                          tensorboard_log=os.path.join('results'))
 
     if not load: 
-        model.learn(total_timesteps=int(2e5), callback=callback)
+        model.learn(total_timesteps=int(1e6), callback=callback)
         # Save the agent
         model.save(os.path.join(utilities.get_root_path(),'examples',
-                                'agents','acktr_dynprice2'))
+                                'agents','acktr_dynprice3'))
     else:
         # Load the trained agent
         # model = A2C.load(os.path.join(log_dir,'best_model'))
-        model = ACKTR.load(os.path.join(utilities.get_root_path(),'examples', 'agents','acktr_dynprice2'))
+        model = ACKTR.load(os.path.join(utilities.get_root_path(),'examples', 'agents','acktr_dynprice3'))
     
     return env, model, start_time_tests
         
