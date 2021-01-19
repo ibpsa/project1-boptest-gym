@@ -1150,6 +1150,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         '''
         super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
         self.check_freq = check_freq
+        self.save_freq = self.check_freq*10
         self.log_dir = log_dir
         self.save_path = os.path.join(log_dir, 'best_model')
         self.best_mean_reward = -np.inf
@@ -1194,9 +1195,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                         print("Saving new best model to {}".format(self.save_path))
                     self.model.save(self.save_path)
         
-        ret_bool = True
+                # Save every 10000 steps independently of performance
+                if self.n_calls % self.save_freq == 0:
+                    self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
         
-        return ret_bool
+        return True
 
 if __name__ == "__main__":
     
