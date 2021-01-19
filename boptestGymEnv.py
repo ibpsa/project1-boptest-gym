@@ -65,6 +65,10 @@ class BoptestGymEnv(gym.Env):
             the BOPTEST framework, although they are still relevant here 
             e.g. for normalization or discretization. Therefore, these 
             bounds need to be provided by the user. 
+            If `time` is included as an observation, the time in seconds
+            will be passed to the agent. This is the remainder time from 
+            the beginning of the episode and for periods of the length
+            specified in the upper bound of the time feature. 
         reward: list
             List with string indicating the reward column name in a replay
             buffer of data in case the algorithm is going to use pretraining
@@ -154,7 +158,7 @@ class BoptestGymEnv(gym.Env):
         
         # Assert that observations belong either to measurements or to forecasting variables
         for obs in self.observations:
-            if not (obs=='time_week' or obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars.keys()):
+            if not (obs=='time' or obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars.keys()):
                 raise ReferenceError(\
                  '"{0}" does not belong to neither the set of '\
                  'test case measurements nor to the set of '\
@@ -172,11 +176,11 @@ class BoptestGymEnv(gym.Env):
         self.lower_obs_bounds = []
         self.upper_obs_bounds = []
         
-        # Check for time of the week in observations
-        if 'time_week' in list(observations.keys()):
-            self.observations.extend(['time_week'])
-            self.lower_obs_bounds.extend([0])
-            self.upper_obs_bounds.extend([604800])
+        # Check for time in observations
+        if 'time' in list(observations.keys()):
+            self.observations.extend(['time'])
+            self.lower_obs_bounds.extend([observations['time'][0]])
+            self.upper_obs_bounds.extend([observations['time'][1]])
         
         # Define lower and upper bounds for observations. Always start observation space by measurements
         self.observations.extend(self.measurement_vars)
@@ -559,8 +563,9 @@ class BoptestGymEnv(gym.Env):
         observations = []
         
         # First check for time
-        if 'time_week' in self.observations:
-            observations.append(res['time']%604800) # Seconds in a week: 7*24*3600 = 604800
+        if 'time' in self.observations:
+            # Time is always the first feature in observations
+            observations.append(res['time']%self.upper_obs_bounds[0]) 
         
         # Get measurements at the end of the simulation step
         for obs in self.measurement_vars:
