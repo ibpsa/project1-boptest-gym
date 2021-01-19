@@ -336,24 +336,24 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         # Check observation values
         if obs is not None:
-            df = pd.DataFrame(obs, columns=['value'])
-            df.index.name = 'keys'
+            df = pd.DataFrame(obs)
+            df.index.name = 'time'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_{}.csv'.format(label))
-            self.compare_ref_values_df(df, ref_filepath) 
+            self.compare_ref_timeseries_df(df, ref_filepath) 
         
         # Check actions values
         if act is not None:
-            df = pd.DataFrame(act, columns=['value'])
-            df.index.name = 'keys'
+            df = pd.DataFrame(act)
+            df.index.name = 'time'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'actions_{}.csv'.format(label))
-            self.compare_ref_values_df(df, ref_filepath) 
+            self.compare_ref_timeseries_df(df, ref_filepath) 
         
         # Check reward values
         if rew is not None:
-            df = pd.DataFrame(rew, columns=['value'])
-            df.index.name = 'keys'
+            df = pd.DataFrame(rew)
+            df.index.name = 'time'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_{}.csv'.format(label))
-            self.compare_ref_values_df(df, ref_filepath) 
+            self.compare_ref_timeseries_df(df, ref_filepath) 
             
         if kpi is not None:
             df = pd.DataFrame(data=[kpi]).T
