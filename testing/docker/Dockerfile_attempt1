@@ -1,0 +1,23 @@
+FROM javierarroyo/boptestgym
+
+ENV PYTHONPATH $PYTHONPATH:$HOME/git/BOPTEST:$HOME/git/BOPTEST/bestest_hydronic_heat_pump
+ENV PATH $PATH:$HOME/git/BOPTEST/bestest_hydronic_heat_pump
+
+# Build jm image
+RUN cd $HOME/git/BOPTEST/testing && \ 
+	make build_jm_image
+
+# Compile testcase model
+RUN	cd $HOME/git/BOPTEST/testing && \
+	make compile_testcase_model TESTCASE=bestest_hydronic_heat_pump
+
+# Build testcase image
+RUN	cd $HOME/git/BOPTEST &&  \
+	make build TESTCASE=bestest_hydronic_heat_pump
+
+# Deploy testcase container
+RUN	cd $HOME/git/BOPTEST &&  \
+	make run-detached TESTCASE=bestest_hydronic_heat_pump
+
+USER	user
+WORKDIR $HOME

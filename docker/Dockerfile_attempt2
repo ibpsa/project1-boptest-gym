@@ -1,0 +1,22 @@
+FROM continuumio/miniconda3
+
+# Create environment from yml file
+ADD environment.yml /tmp/environment.yml
+RUN conda env create --name boptestgym -f /tmp/environment.yml
+
+# Activate environment
+RUN conda activate boptestgym
+
+# Create new user
+RUN     useradd -ms /bin/bash user
+ENV     HOME /home/user
+USER    user
+
+# Download BOPTEST
+RUN mkdir $HOME/git && \
+    git clone https://github.com/JavierArroyoBastida/project1-boptest.git $HOME/git/BOPTEST && \
+	cd $HOME/git/BOPTEST && \
+	git checkout boptestgym
+
+# Set working directory to home
+WORKDIR $HOME

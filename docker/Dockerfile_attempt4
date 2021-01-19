@@ -1,0 +1,12 @@
+FROM docker
+RUN wget http://security.ubuntu.com/ubuntu/pool/main/a/apt/apt_1.0.1ubuntu2.17_amd64.deb -O apt.deb
+RUN pkexec dpkg -i apt.deb
+
+# Download BOPTEST
+RUN mkdir $HOME/git && \
+    git clone https://github.com/JavierArroyoBastida/project1-boptest.git $HOME/git/BOPTEST && \
+	cd $HOME/git/BOPTEST && \
+	git checkout boptestgym
+
+# Set working directory to home
+WORKDIR $HOME

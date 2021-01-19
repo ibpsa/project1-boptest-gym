@@ -1,0 +1,32 @@
+FROM ubuntu:18.04
+
+# Install required packages
+RUN 	apt-get update && \
+    	apt-get install -y \
+    	wget 
+
+# Create new user
+RUN     useradd -ms /bin/bash user
+USER    user
+ENV     HOME /home/user
+COPY environment.yml $HOME
+
+# Download and install miniconda. Create environment from yml file
+RUN 	cd $HOME && \
+		wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $HOME/miniconda.sh && \
+		/bin/bash $HOME/miniconda.sh -b -p $HOME/miniconda && \
+		. miniconda/bin/activate && \
+		conda update -n base -c defaults conda && \
+		pip install --upgrade pip setuptools && \
+		conda env create --name boptestgym --file environment.yml && \
+		conda activate boptestgym 
+
+# Download BOPTEST
+RUN mkdir git && \
+    cd git && \
+    git clone https://github.com/JavierArroyoBastida/project1-boptest.git && \
+	cd project1-boptest && \
+	git checkout boptestgym
+
+# Set working directory to home
+WORKDIR $HOME

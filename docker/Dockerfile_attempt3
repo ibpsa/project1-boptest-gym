@@ -1,0 +1,24 @@
+FROM stablebaselines/stable-baselines-cpu
+
+USER root
+RUN apt-get update && \
+    apt-get install -y sudo
+
+# Get docker
+RUN curl -sSL https://get.docker.com/ | sh
+RUN sudo usermod -aG docker root
+
+# Download BOPTEST
+RUN mkdir $HOME/git && \
+    git clone https://github.com/JavierArroyoBastida/project1-boptest.git $HOME/git/BOPTEST && \
+	cd $HOME/git/BOPTEST && \
+	git checkout boptestgym
+
+# Create new user
+RUN     useradd -ms /bin/bash user
+RUN 	sudo usermod -aG docker user
+ENV     HOME /home/user
+# USER    user
+
+# Set working directory to home
+WORKDIR $HOME
