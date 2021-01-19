@@ -7,6 +7,7 @@ case. This case needs to be deployed to run this script.
 from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper
 from stable_baselines import A2C
 from examples.test_and_plot import test_agent
+from collections import OrderedDict
 from testing import utilities
 import random
 import os
@@ -20,7 +21,8 @@ random.seed(seed)
 def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600], 
               episode_length_test = 14*24*3600, 
               load                = False,
-              tensorboard_log     = os.path.join('results')):
+              tensorboard_log     = os.path.join('results'),
+              case                = 'simple'):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -39,6 +41,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
         needs to be trained (False)
     tensorboard_log : path
         Path to directory to load tensorboard logs.
+    case : string
+        Case to be tested.
         
     '''
     excluding_periods = []
@@ -48,14 +52,58 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
-    env = BoptestGymEnvRewardWeightCost(url                   = url,
-                                        actions               = ['oveHeaPumY_u'],
-                                        observations          = {'reaTZon_y':(280.,310.)}, 
-                                        random_start_time     = True,
-                                        excluding_periods     = excluding_periods,
-                                        max_episode_length    = 1*24*3600,
-                                        warmup_period         = 3*3600,
-                                        step_period           = 900)
+    if case == 'simple':
+        env = BoptestGymEnvRewardWeightCost(url                   = url,
+                                            actions               = ['oveHeaPumY_u'],
+                                            observations          = OrderedDict([('reaTZon_y',(280.,310.))]), 
+                                            random_start_time     = True,
+                                            excluding_periods     = excluding_periods,
+                                            max_episode_length    = 1*24*3600,
+                                            warmup_period         = 3*3600,
+                                            step_period           = 900)
+    elif case == 'A':
+        env = BoptestGymEnvRewardWeightCost(url                   = url,
+                                            actions               = ['oveHeaPumY_u'],
+                                            observations          = OrderedDict([('time',(0,604800)),
+                                                                     ('reaTZon_y',(280.,310.)),
+                                                                     ('PriceElectricPowerHighlyDynamic',(-0.5,0.14))]), 
+                                            scenario              = {'electricity_price':'highly_dynamic'},
+                                            forecasting_period    = 0, 
+                                            random_start_time     = True,
+                                            excluding_periods     = excluding_periods,
+                                            max_episode_length    = 1*24*3600,
+                                            warmup_period         = 1*24*3600,
+                                            step_period           = 900)
+    if case == 'B':
+        env = BoptestGymEnvRewardWeightCost(url                   = url,
+                                            actions               = ['oveHeaPumY_u'],
+                                            observations          = OrderedDict([('time',(0,604800)),
+                                                                     ('reaTZon_y',(280.,310.)),
+                                                                     ('PriceElectricPowerHighlyDynamic',(-0.5,0.14)),
+                                                                     ('LowerSetp[1]',(280.,310.)),
+                                                                     ('UpperSetp[1]',(280.,310.))]), 
+                                            forecasting_period    = 0, 
+                                            scenario              = {'electricity_price':'highly_dynamic'},
+                                            random_start_time     = True,
+                                            excluding_periods     = excluding_periods,
+                                            max_episode_length    = 1*24*3600,
+                                            warmup_period         = 1*24*3600,
+                                            step_period           = 900)
+    if case == 'C':
+        env = BoptestGymEnvRewardWeightCost(url                   = url,
+                                            actions               = ['oveHeaPumY_u'],
+                                            observations          = OrderedDict([('time',(0,604800)),
+                                                                     ('reaTZon_y',(280.,310.)),
+                                                                     ('PriceElectricPowerHighlyDynamic',(-0.5,0.14)),
+                                                                     ('LowerSetp[1]',(280.,310.)),
+                                                                     ('UpperSetp[1]',(280.,310.))]), 
+                                            forecasting_period    = 3*3600, 
+                                            scenario              = {'electricity_price':'highly_dynamic'},
+                                            random_start_time     = True,
+                                            excluding_periods     = excluding_periods,
+                                            max_episode_length    = 1*24*3600,
+                                            warmup_period         = 1*24*3600,
+                                            step_period           = 900)    
     
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
@@ -67,11 +115,11 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
         model.learn(total_timesteps=int(1e5))
         # Save the agent
         model = A2C.save(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_bestest_hydronic_heatpump'))
+                                      'agents', 'a2c_{}'.format(case)))
     else:
         # Load the trained agent
         model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_bestest_hydronic_heatpump'))
+                                      'agents', 'a2c_{}'.format(case)))
     
     return env, model, start_time_tests
         
