@@ -94,6 +94,9 @@ class partialChecks(object):
         if os.path.exists(ref_filepath):
             # If reference exists, check it
             df_ref = pd.read_csv(ref_filepath, index_col='time')   
+            # Ensure that both, df and df_ref have strings as keys
+            df.columns      = [str(c) for c in df.columns.to_list()]
+            df_ref.columns  = [str(c) for c in df_ref.columns.to_list()]
             # Check all keys in reference are in test
             for key in df_ref.columns.to_list():
                 self.assertTrue(key in df.columns.to_list(), 'Reference key {0} not in test data.'.format(key))

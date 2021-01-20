@@ -168,8 +168,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
     
-    def test_A2C(self, load=True, episode_length_test=2*24*3600,
-                 warmup_period_test=1*24*3600, plot=False):
+    def partial_test_A2C(self, load=True, episode_length_test=1*24*3600,
+                 warmup_period_test=1*24*3600, case='simple', plot=False):
         '''Test for an A2C agent from stable baselines. 
         
         Parameters
@@ -184,7 +184,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             is not modified. 
         episode_length_test : integer, default=2*24*3600
             Length of the testing episode. We keep it short for testing,
-            only two days are used by default. 
+            only one day is used by default. 
         warmup_period_test : integer, default=1*24*3600
             Length of the initialization period for the test. We keep it 
             short for testing. Only one day is used by default. 
@@ -192,18 +192,54 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''        
         
         env, model, start_time_tests = train_A2C.train_A2C(load=load, 
+                                                           case=case,
                                                            tensorboard_log=None)
         
         obs, act, rew, kpi = \
             train_A2C.test_feb(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_feb')
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_feb'.format(case))
         
         obs, act, rew, kpi = \
             train_A2C.test_nov(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_nov')
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_nov'.format(case))
+    
+    def test_A2C_simple(self):
+        '''Test simple agent with only one measurement as observation and
+        one action. The agent has been trained with 1e5 steps. 
         
+        '''
+        
+        # Use two days in this simple test. All others use only one. 
+        self.partial_test_A2C(case='simple', episode_length_test=2*24*3600)
+        
+    def test_A2C_A(self):
+        '''Test case A which extends simple case with `time` as observation
+        and sets the highly_dynamic price scenario. Hence, this test
+        checks the inclusion of time and boundary condition data in the 
+        state space. 
+        
+        '''
+        self.partial_test_A2C(case='A')
+        
+    def test_A2C_B(self):
+        '''Test case B which extends case A with boundary condition data 
+        in the state. Specifically it includes the comfort bounds in the 
+        state. Hence, this test checks the inclusion of boundary condition
+        data in the state space. 
+        
+        '''
+        self.partial_test_A2C(case='B')
+        
+    def test_A2C_C(self):
+        '''Test case C which extends case B with boundary forecast. 
+        Specifically it uses a 3 hours forecasting period. Hence, this 
+        test checks the use of predictive states. 
+        
+        '''
+        self.partial_test_A2C(case='C')
+       
     def test_PPO2(self, load=True, episode_length_test=2*24*3600,
                  warmup_period_test=1*24*3600, plot=False):
         '''Test for an PPO2 agent from stable baselines. 
@@ -336,24 +372,24 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         # Check observation values
         if obs is not None:
-            df = pd.DataFrame(obs, columns=['value'])
-            df.index.name = 'keys'
+            df = pd.DataFrame(obs)
+            df.index.name = 'time'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_{}.csv'.format(label))
-            self.compare_ref_values_df(df, ref_filepath) 
+            self.compare_ref_timeseries_df(df, ref_filepath) 
         
         # Check actions values
         if act is not None:
-            df = pd.DataFrame(act, columns=['value'])
-            df.index.name = 'keys'
+            df = pd.DataFrame(act)
+            df.index.name = 'time'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'actions_{}.csv'.format(label))
-            self.compare_ref_values_df(df, ref_filepath) 
+            self.compare_ref_timeseries_df(df, ref_filepath) 
         
         # Check reward values
         if rew is not None:
-            df = pd.DataFrame(rew, columns=['value'])
-            df.index.name = 'keys'
+            df = pd.DataFrame(rew)
+            df.index.name = 'time'
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_{}.csv'.format(label))
-            self.compare_ref_values_df(df, ref_filepath) 
+            self.compare_ref_timeseries_df(df, ref_filepath) 
             
         if kpi is not None:
             df = pd.DataFrame(data=[kpi]).T
