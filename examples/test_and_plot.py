@@ -11,7 +11,7 @@ from gym.core import Wrapper
 import json
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               plot=False):
+               kpis_to_file=False, plot=False):
     ''' Test model agent in env.
     
     '''
@@ -46,13 +46,16 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     kpis = env.get_kpis()
     
-    if start_time==2678400:
-        ckey='feb'
-    elif start_time==26265600:
-        ckey='nov'
+    if kpis_to_file:
+        if start_time==2678400:
+            ckey='feb'
+        elif start_time==26265600:
+            ckey='nov'
+        else:
+            ckey=str(start_time)
     
-    with open('kpis_{}.json'.format(ckey), 'w') as f:
-        json.dump(kpis, f)
+        with open('kpis_{}.json'.format(ckey), 'w') as f:
+            json.dump(kpis, f)
     
     if plot:
         plot_results(env, rewards)
