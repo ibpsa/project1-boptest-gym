@@ -5,13 +5,12 @@ Created on Jul 17, 2019
 
 '''
 
-import sys
-import os
 import matplotlib.pyplot as plt
+from collections import OrderedDict
+from testing import utilities
 import pandas as pd
 import json
-from collections import OrderedDict
-
+import os
 
 cases = [
          'baseline_feb',
@@ -21,13 +20,16 @@ cases = [
          'B_feb',
          'B_nov',
          'C_feb',
-         'C_nov'
+         'C_nov',
+         'C_1e6_feb',
+         'C_1e6_nov'
          ]
 
 kpis_dic = OrderedDict()
 
 for ckey in cases:
-    kpis_dic[ckey] = json.load(open('kpis_'+ckey+'.json','r'))
+    kpis_dic[ckey] = json.load(open(os.path.join(utilities.get_root_path(), 
+                    'examples','kpis','kpis_'+ckey+'.json'),'r'))
     
 kpis = pd.DataFrame(kpis_dic).T
 cost_feb = []
@@ -45,19 +47,27 @@ for i, r in kpis.iterrows():
     elif 'B' in i:
         color = 'b'
         label = 'B'
+    elif 'C_1e6' in i:
+        color = 'c'
+        label = 'C 1e6'
     elif 'C' in i:
         color = 'c'
         label = 'C'
     elif 'baseline' in i:
         color = 'g'
         label = 'Baseline'
-
+    
+    if '1e6' in i:
+        marker='^'
+    else:
+        marker='o'
+    
     if '_nov' in i:
-        ax.plot(r['cost_tot'], r['tdis_tot'], 'o', markersize=5, linewidth=0.1, label='_nolegend_', color=color)
+        ax.plot(r['cost_tot'], r['tdis_tot'], marker, markersize=5, linewidth=0.1, label='_nolegend_', color=color)
         cost_nov.append(r['cost_tot'])
         tdis_nov.append(r['tdis_tot'])
     else:
-        ax.plot(r['cost_tot'], r['tdis_tot'], 'o', markersize=5, linewidth=0.1, label=label, color=color)
+        ax.plot(r['cost_tot'], r['tdis_tot'], marker, markersize=5, linewidth=0.1, label=label, color=color)
         cost_feb.append(r['cost_tot'])
         tdis_feb.append(r['tdis_tot'])
 
