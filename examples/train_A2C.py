@@ -163,7 +163,7 @@ def test_nov(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=True, case='B', training_timesteps=1e6)
+    env, model, start_time_tests = train_A2C(load=True, case='A')
     episode_length_test = 14*24*3600
     warmup_period_test  = 1*24*3600
     kpis_to_file = True
