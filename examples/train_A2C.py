@@ -134,8 +134,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     
     return env, model, start_time_tests
         
-def test_feb(env, model, start_time_tests, 
-             episode_length_test, warmup_period_test, plot=False):
+def test_feb(env, model, start_time_tests, episode_length_test, 
+             warmup_period_test, kpis_to_file=False, plot=False):
     ''' Perform test in February
     
     '''
@@ -144,11 +144,12 @@ def test_feb(env, model, start_time_tests,
                                                       start_time=start_time_tests[0], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
+                                                      kpis_to_file=kpis_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
-def test_nov(env, model, start_time_tests, 
-             episode_length_test, warmup_period_test, plot=False):
+def test_nov(env, model, start_time_tests, episode_length_test, 
+             warmup_period_test, kpis_to_file=False, plot=False):
     ''' Perform test in November
     
     '''
@@ -157,14 +158,16 @@ def test_nov(env, model, start_time_tests,
                                                       start_time=start_time_tests[1], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
+                                                      kpis_to_file=kpis_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=True, case='B')
+    env, model, start_time_tests = train_A2C(load=True, case='B', training_timesteps=1e6)
     episode_length_test = 14*24*3600
     warmup_period_test  = 1*24*3600
+    kpis_to_file = True
     plot = True
-    test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
-    test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
+    test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
+    test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
     
