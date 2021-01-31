@@ -23,7 +23,8 @@ random.seed(seed)
 def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600], 
               episode_length_test = 14*24*3600, 
               load                = False,
-              case                = 'simple'):
+              case                = 'simple',
+              training_timesteps  = 1e6):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -42,6 +43,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
         needs to be trained (False)
     case : string
         Case to be tested.
+    training_timesteps : integer
+        Total number of timesteps used for training
         
     '''
     excluding_periods = []
@@ -108,7 +111,8 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     env = NormalizedActionWrapper(env)  
     
     # Create a log directory
-    log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'A2C_{}_logdir'.format(case))
+    log_dir = os.path.join(utilities.get_root_path(), 'examples', 
+        'agents', 'A2C_{}_{:.0e}_logdir'.format(case,training_timesteps))
     os.makedirs(log_dir, exist_ok=True)
     
     # Modify the environment to include the callback
@@ -121,7 +125,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                 tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
     if not load: 
-        model.learn(total_timesteps=int(1e6), callback=callback)
+        model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
         model = A2C.save(save_path=os.path.join(log_dir,'last_model'))
     else:
