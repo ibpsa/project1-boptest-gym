@@ -192,8 +192,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''        
         
         env, model, start_time_tests = train_A2C.train_A2C(load=load, 
-                                                           case=case,
-                                                           tensorboard_log=None)
+                                                           case=case)
         
         obs, act, rew, kpi = \
             train_A2C.test_feb(env, model, start_time_tests, 
@@ -263,8 +262,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests = train_PPO2.train_PPO2(load=load, 
-                                                             tensorboard_log=None)
+        env, model, start_time_tests = train_PPO2.train_PPO2(load=load)
         
         obs, act, rew, kpi = \
             train_PPO2.test_feb(env, model, start_time_tests, 
