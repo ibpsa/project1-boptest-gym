@@ -1,7 +1,8 @@
 '''
 Module to test features of the OpenAI-Gym interface for BOPTEST. 
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
-the tests. 
+the tests. Latest tests were passing with BOPTEST commit:
+279f8a0def27483b803c62d0526a79a42fa7f26d
 
 '''
 
