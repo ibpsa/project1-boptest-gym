@@ -4,8 +4,10 @@ case. This case needs to be deployed to run this script.
 
 '''
 
-from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper
+from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, \
+    NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
 from stable_baselines import PPO2
+from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from testing import utilities
 import random
@@ -20,7 +22,8 @@ random.seed(seed)
 def train_PPO2(start_time_tests   = [31*24*3600, 304*24*3600], 
               episode_length_test = 14*24*3600, 
               load                = False,
-              tensorboard_log     = os.path.join('results')):
+              case                = 'simple',
+              training_timesteps  = 1e6):
     '''Method to train (or load a pre-trained) PPO2 agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -37,8 +40,10 @@ def train_PPO2(start_time_tests   = [31*24*3600, 304*24*3600],
     load : boolean
         Boolean indicating whether the algorithm is loaded (True) or 
         needs to be trained (False)
-    tensorboard_log : path
-        Path to directory to load tensorboard logs.
+    case : string
+        Case to be tested.
+    training_timesteps : integer
+        Total number of timesteps used for training
      
     '''
     excluding_periods = []
@@ -60,18 +65,27 @@ def train_PPO2(start_time_tests   = [31*24*3600, 304*24*3600],
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
     
+    # Create a log directory
+    log_dir = os.path.join(utilities.get_root_path(), 'examples', 
+        'agents', 'PPO2_{}_{:.0e}_logdir'.format(case,training_timesteps))
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Modify the environment to include the callback
+    env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
+    
+    # Create the callback: check every 1000 steps 
+    callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
+    
     model = PPO2('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
-                tensorboard_log=tensorboard_log)
+                tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
     if not load: 
-        model.learn(total_timesteps=int(1e5))
-        # Save the agent 
-        model.save(os.path.join(utilities.get_root_path(), 'examples', 
-                                'agents', 'ppo2_bestest_hydronic_heatpump'))  
+        model.learn(total_timesteps=int(training_timesteps), callback=callback)
+        # Save the agent
+        model = PPO2.save(save_path=os.path.join(log_dir,'last_model')) 
     else:
         # Load the trained agent
-        model.load(os.path.join(utilities.get_root_path(), 'examples', 
-                                'agents', 'ppo2_bestest_hydronic_heatpump'))  
+        model = PPO2.load(load_path=os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests
         

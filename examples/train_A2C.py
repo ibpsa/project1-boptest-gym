@@ -4,8 +4,10 @@ case. This case needs to be deployed to run this script.
 
 '''
 
-from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper
+from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, \
+    NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
 from stable_baselines import A2C
+from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
 from testing import utilities
@@ -21,8 +23,8 @@ random.seed(seed)
 def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600], 
               episode_length_test = 14*24*3600, 
               load                = False,
-              tensorboard_log     = os.path.join('results'),
-              case                = 'simple'):
+              case                = 'simple',
+              training_timesteps  = 1e6):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -39,10 +41,10 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     load : boolean
         Boolean indicating whether the algorithm is loaded (True) or 
         needs to be trained (False)
-    tensorboard_log : path
-        Path to directory to load tensorboard logs.
     case : string
         Case to be tested.
+    training_timesteps : integer
+        Total number of timesteps used for training
         
     '''
     excluding_periods = []
@@ -108,23 +110,32 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
     
+    # Create a log directory
+    log_dir = os.path.join(utilities.get_root_path(), 'examples', 
+        'agents', 'A2C_{}_{:.0e}_logdir'.format(case,training_timesteps))
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Modify the environment to include the callback
+    env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
+    
+    # Create the callback: check every 1000 steps 
+    callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
+    
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
-                tensorboard_log=tensorboard_log)
+                tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
     if not load: 
-        model.learn(total_timesteps=int(1e5))
+        model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
-        model = A2C.save(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_{}'.format(case)))
+        model = A2C.save(save_path=os.path.join(log_dir,'last_model'))
     else:
         # Load the trained agent
-        model = A2C.load(os.path.join(utilities.get_root_path(), 'examples',
-                                      'agents', 'a2c_{}'.format(case)))
+        model = A2C.load(load_path=os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests
         
-def test_feb(env, model, start_time_tests, 
-             episode_length_test, warmup_period_test, plot=False):
+def test_feb(env, model, start_time_tests, episode_length_test, 
+             warmup_period_test, kpis_to_file=False, plot=False):
     ''' Perform test in February
     
     '''
@@ -133,11 +144,12 @@ def test_feb(env, model, start_time_tests,
                                                       start_time=start_time_tests[0], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
+                                                      kpis_to_file=kpis_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
-def test_nov(env, model, start_time_tests, 
-             episode_length_test, warmup_period_test, plot=False):
+def test_nov(env, model, start_time_tests, episode_length_test, 
+             warmup_period_test, kpis_to_file=False, plot=False):
     ''' Perform test in November
     
     '''
@@ -146,14 +158,16 @@ def test_nov(env, model, start_time_tests,
                                                       start_time=start_time_tests[1], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
+                                                      kpis_to_file=kpis_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=True)
+    env, model, start_time_tests = train_A2C(load=True, case='A')
     episode_length_test = 14*24*3600
-    warmup_period_test  = 3*24*3600
+    warmup_period_test  = 1*24*3600
+    kpis_to_file = True
     plot = True
-    test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
-    test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, plot)
+    test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
+    test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
     

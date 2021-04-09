@@ -78,7 +78,7 @@ def plot_results(env, rewards):
     forecast['time_forecast'] = forecast.pop('time')
     res_all.update(forecast)
     
-    _ = plt.figure(figsize=(10,8))
+    _, axs = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=(8,5))
     
     meas_names = ['reaTZon_y'] # measurements
     cInp_names = ['reaHeaPumY_y'] # control inputs
@@ -97,22 +97,19 @@ def plot_results(env, rewards):
     res_meas = {meas: np.array(res_all[meas]) for meas in meas_names}
     res_cInp = {cInp: np.array(res_all[cInp]) for cInp in cInp_names}
 
-    ax1 = plt.subplot(3, 1, 1)
     for meas in res_meas.keys():
-        plt.plot(res_time_days, res_meas[meas]-273.15, label=meas)
+        axs[0].plot(res_time_days, res_meas[meas]-273.15, 'b', linewidth=1, label=meas)
         
-    plt.plot(res_time_days, res_lSet-273.15)
-    plt.plot(res_time_days, res_uSet-273.15)
-    plt.legend()
-    ax1.set_ylabel('Zone temperature\n($^\circ$C)')
+    axs[0].plot(res_time_days, res_lSet-273.15, 'k', linewidth=1.3)
+    axs[0].plot(res_time_days, res_uSet-273.15, 'k', linewidth=1.3)
+    axs[0].set_ylabel('Zone temperature\n($^\circ$C)')
     
-    ax2 = plt.subplot(3, 1, 2)
     for cInp in res_cInp.keys():
-        plt.plot(res_time_days, res_cInp[cInp], label=cInp)
-    ax2.set_ylabel('Heat pump\nmodulating signal\n(-)')
-    ax2twin = ax2.twinx()
-    ax2twin.plot(forecast_time, res_pric, 'grey', linewidth=1, label='Price')
-    ax2twin.set_ylabel('(EUR/kWh)')
+        axs[1].plot(res_time_days, res_cInp[cInp], 'b', linewidth=1, label=cInp)
+    axs[1].set_ylabel('Heat pump\nmodulating signal\n(-)')
+    axtwin = axs[1].twinx()
+    axtwin.plot(forecast_time, res_pric, 'grey', linewidth=1, label='Price')
+    axtwin.set_ylabel('(EUR/kWh)')
       
     rewards_time_days = np.arange(env.start_time, 
                                   env.start_time+env.max_episode_length,
@@ -121,9 +118,9 @@ def plot_results(env, rewards):
                              fill_value='extrapolate')
     rewards_reindexed = f(res_time_days)
     
-    ax3 = plt.subplot(3, 1, 3)
-    plt.plot(res_time_days, rewards_reindexed, label='rewards')
-    ax3.set_ylabel('Rewards\n(-)')
+    axs[2].plot(res_time_days, rewards_reindexed, 'b', linewidth=1, label='rewards')
+    axs[2].set_ylabel('Rewards\n(-)')
+    axs[2].set_xlabel('Day of the year')
     
     plt.show()   
     
