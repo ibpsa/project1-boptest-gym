@@ -1,5 +1,5 @@
 '''
-Module to train shortly train an A2C agent for the bestest_hydronic_heatpump 
+Module to shortly train an A2C agent for the bestest_hydronic_heatpump 
 case. This case needs to be deployed to run this script. This example is 
 rather used for testing to prove the use of variable episode lengths when
 training an agent. 
