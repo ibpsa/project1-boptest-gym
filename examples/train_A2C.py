@@ -20,7 +20,7 @@ seed = 123456
 # Seed for random starting times of episodes
 random.seed(seed)
 
-def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600], 
+def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600], 
               episode_length_test = 14*24*3600, 
               load                = False,
               case                = 'simple',
@@ -61,7 +61,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
                                             max_episode_length    = 1*24*3600,
-                                            warmup_period         = 3*3600,
+                                            warmup_period         = 7*24*3600,
                                             step_period           = 900)
     elif case == 'A':
         env = BoptestGymEnvRewardWeightCost(url                   = url,
@@ -74,7 +74,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
                                             max_episode_length    = 1*24*3600,
-                                            warmup_period         = 1*24*3600,
+                                            warmup_period         = 7*24*3600,
                                             step_period           = 900)
     if case == 'B':
         env = BoptestGymEnvRewardWeightCost(url                   = url,
@@ -89,7 +89,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
                                             max_episode_length    = 1*24*3600,
-                                            warmup_period         = 1*24*3600,
+                                            warmup_period         = 7*24*3600,
                                             step_period           = 900)
     if case == 'C':
         env = BoptestGymEnvRewardWeightCost(url                   = url,
@@ -104,7 +104,7 @@ def train_A2C(start_time_tests    = [31*24*3600, 304*24*3600],
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
                                             max_episode_length    = 1*24*3600,
-                                            warmup_period         = 1*24*3600,
+                                            warmup_period         = 7*24*3600,
                                             step_period           = 900)    
     
     env = NormalizedObservationWrapper(env)
@@ -163,9 +163,11 @@ def test_nov(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=True, case='A')
+    env, model, start_time_tests = train_A2C(load=False, case='A')
+    env, model, start_time_tests = train_A2C(load=False, case='B')
+    env, model, start_time_tests = train_A2C(load=False, case='C')
     episode_length_test = 14*24*3600
-    warmup_period_test  = 1*24*3600
+    warmup_period_test  = 7*24*3600
     kpis_to_file = True
     plot = True
     test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
