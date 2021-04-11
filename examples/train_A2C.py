@@ -22,6 +22,8 @@ random.seed(seed)
 
 def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600], 
               episode_length_test = 14*24*3600, 
+              warmup_period       = 1*24*3600,
+              max_episode_length  = 1*24*3600,
               load                = False,
               case                = 'simple',
               training_timesteps  = 1e6):
@@ -60,8 +62,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                                             observations          = OrderedDict([('reaTZon_y',(280.,310.))]), 
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
-                                            max_episode_length    = 1*24*3600,
-                                            warmup_period         = 7*24*3600,
+                                            max_episode_length    = max_episode_length,
+                                            warmup_period         = warmup_period,
                                             step_period           = 900)
     elif case == 'A':
         env = BoptestGymEnvRewardWeightCost(url                   = url,
@@ -73,8 +75,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                                             forecasting_period    = 0, 
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
-                                            max_episode_length    = 1*24*3600,
-                                            warmup_period         = 7*24*3600,
+                                            max_episode_length    = max_episode_length,
+                                            warmup_period         = warmup_period,
                                             step_period           = 900)
     if case == 'B':
         env = BoptestGymEnvRewardWeightCost(url                   = url,
@@ -88,8 +90,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                                             scenario              = {'electricity_price':'highly_dynamic'},
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
-                                            max_episode_length    = 1*24*3600,
-                                            warmup_period         = 7*24*3600,
+                                            max_episode_length    = max_episode_length,
+                                            warmup_period         = warmup_period,
                                             step_period           = 900)
     if case == 'C':
         env = BoptestGymEnvRewardWeightCost(url                   = url,
@@ -103,8 +105,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                                             scenario              = {'electricity_price':'highly_dynamic'},
                                             random_start_time     = True,
                                             excluding_periods     = excluding_periods,
-                                            max_episode_length    = 1*24*3600,
-                                            warmup_period         = 7*24*3600,
+                                            max_episode_length    = max_episode_length,
+                                            warmup_period         = warmup_period,
                                             step_period           = 900)    
     
     env = NormalizedObservationWrapper(env)
