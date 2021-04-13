@@ -129,10 +129,10 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     if not load: 
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
-        model = A2C.save(save_path=os.path.join(log_dir,'last_model'))
+        model.save(os.path.join(log_dir,'last_model'))
     else:
         # Load the trained agent
-        model = A2C.load(load_path=os.path.join(log_dir,'last_model'))
+        model = A2C.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests
         
