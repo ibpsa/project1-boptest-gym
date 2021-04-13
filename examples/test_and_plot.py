@@ -69,11 +69,14 @@ def plot_results(env, rewards):
     df_res = pd.DataFrame()
     for point in list(env.all_measurement_vars.keys()) + list(env.all_input_vars.keys()):
         # Retrieve all simlation data
-        res = requests.put('{0}/results'.format(env.url), data={'point_name':point,'start_time':0, 'final_time':3.1536e7}).json()
+        res = requests.put('{0}/results'.format(env.url), data={'point_name':point,
+                                                                'start_time':env.start_time, 
+                                                                'final_time':3.1536e7}).json()
         df_res = pd.concat((df_res,pd.DataFrame(data=res[point], index=res['time'],columns=[point])), axis=1)
     df_res.index.name = 'time'
     df_res.reset_index(inplace=True)
-        
+    df_res = reindex(df_res)
+    
     # Retrieve boundary condition data. 
     # Only way we have is through the forecast request. Take 10 points per step:
     env.reset()
@@ -81,25 +84,33 @@ def plot_results(env, rewards):
     requests.put('{0}/forecast_parameters'.format(env.url),
                  data=forecast_parameters)
     forecast = requests.get('{0}/forecast'.format(env.url)).json()
-    
     df_for = pd.DataFrame(forecast)
+    df_for = reindex(df_for)
+    df_for.drop('time', axis=1, inplace=True)
     
-    df = pd.concat((reindex(df_res),reindex(df_for)), axis=1)
-    df.dropna(axis=1,inplace=True) # there is one time column with nans...
+    df = pd.concat((df_res,df_for), axis=1)
 
     df = create_datetime(df)
+    
+    rewards_time_days = np.arange(env.start_time, 
+                              env.start_time+env.max_episode_length,
+                              env.step_period)/3600./24.
+    f = interpolate.interp1d(rewards_time_days, rewards, kind='zero',
+                             fill_value='extrapolate')
+    res_time_days = np.array(res['time'])/3600./24.
+    rewards_reindexed = f(res_time_days)
     
     _, axs = plt.subplots(5, sharex=True, figsize=(8,6))
     x_time = df.index.to_pydatetime()
 
     axs[0].plot(x_time, df['reaTZon_y']  -273.15, color='darkorange',   linestyle='-', linewidth=1, label='_nolegend_')
-    axs[0].plot(x_time, df['TSetLow[1]'] -273.15, color='gray',         linewidth=1, label='Comfort setp.')
-    axs[0].plot(x_time, df['TSetUpp[1]'] -273.15, color='gray',         linewidth=1, label='_nolegend_')
+    axs[0].plot(x_time, df['LowerSetp[1]'] -273.15, color='gray',         linewidth=1, label='Comfort setp.')
+    axs[0].plot(x_time, df['UpperSetp[1]'] -273.15, color='gray',         linewidth=1, label='_nolegend_')
     axs[0].set_yticks(np.arange(15, 31, 5))
     axs[0].set_ylabel('Operative\ntemperature\n($^\circ$C)')
     
     axt = axs[0].twinx()
-    axt.plot(x_time, df['pri'], color='dimgray', linestyle='dotted', linewidth=1, label='Price')
+    axt.plot(x_time, df['PriceElectricPowerHighlyDynamic'], color='dimgray', linestyle='dotted', linewidth=1, label='Price')
     axs[0].plot([],[], color='dimgray', linestyle='-', linewidth=1, label='Price')
     
     axt.set_ylim(0,0.3)
@@ -110,12 +121,20 @@ def plot_results(env, rewards):
     axs[1].plot(x_time, df['reaHeaPumY_y'],   color='darkorange',     linestyle='-', linewidth=1, label='_nolegend_')
     axs[1].set_ylabel('Heat pump\nmodulation\nsignal\n( - )')
     
-    axs[2].plot(x_time, df['tdis_tot'], color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
-    axs[2].set_ylabel('Thermal\ndiscomfort\n($Kh$)')
+    #=================================================================
+    # axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')
+    # axs[2].set_ylabel('Rewards\n(-)')
+    # axs[2].set_xlabel('Day of the year')
+    #=================================================================
     
-    axs[3].plot(x_time, df['cost_tot'], color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
-    axs[3].set_yticks(np.arange(0, 151, 50))
-    axs[3].set_ylabel('Operational\ncost\n(EUR)')
+    #=================================================================
+    # axs[2].plot(x_time, rewards, color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
+    # axs[2].set_ylabel('Thermal\ndiscomfort\n($Kh$)')
+    # 
+    # axs[3].plot(x_time, df['cost_tot'], color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
+    # axs[3].set_yticks(np.arange(0, 151, 50))
+    # axs[3].set_ylabel('Operational\ncost\n(EUR)')
+    #=================================================================
     
     axs[4].plot(x_time, df['TDryBul'] - 273.15, color='royalblue', linestyle='-', linewidth=1, label='_nolegend_')
     axs[4].set_ylabel('Ambient\ntemperature\n($^\circ$C)')
@@ -126,9 +145,7 @@ def plot_results(env, rewards):
     axt.set_ylabel('Solar\nirradiation\n($W$)')
     
     
-    axs[4].plot([],[], color='deepskyblue', linestyle='-', linewidth=1, label='MPC, $T_h=12h$')
-    axs[4].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='MPC, $T_h=24h$')
-    axs[4].plot([],[], color='green',       linestyle='-', linewidth=1, label='Baseline')
+    axs[4].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='RL')
     axs[4].plot([],[], color='dimgray',     linestyle='dotted', linewidth=1, label='Price')
     axs[4].plot([],[], color='royalblue',   linestyle='-', linewidth=1, label='$T_a$')
     axs[4].plot([],[], color='gold',        linestyle='-', linewidth=1, label='$\dot{Q}_{rad}$')
