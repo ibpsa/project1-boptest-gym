@@ -4,13 +4,14 @@ case. This case needs to be deployed to run this script.
 
 '''
 
-from boptestGymEnv import BoptestGymEnvRewardWeightDiscomfort, NormalizedActionWrapper, \
+from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
     NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
 from stable_baselines import A2C
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
 from testing import utilities
+import requests
 import random
 import os
 
@@ -57,8 +58,30 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
+    class BoptestGymEnvCustomReward(BoptestGymEnv):
+        '''Define a custom reward for this building
+        
+        '''
+        def compute_reward(self):
+            '''Custom reward function
+            
+            '''
+            
+            # Compute BOPTEST core kpis
+            kpis = requests.get('{0}/kpi'.format(self.url)).json()
+            
+            # Calculate objective integrand function at this point
+            objective_integrand = kpis['cost_tot']*0.1 + 1*kpis['tdis_tot']
+            
+            # Compute reward
+            reward = -(objective_integrand - self.objective_integrand)
+            
+            self.objective_integrand = objective_integrand
+            
+            return reward
+    
     if case == 'simple':
-        env = BoptestGymEnvRewardWeightDiscomfort(
+        env = BoptestGymEnvCustomReward(
                             url                   = url,
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('reaTZon_y',(280.,310.))]), 
@@ -69,7 +92,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             step_period           = 900,
                             render_episodes       = render)
     elif case == 'A':
-        env = BoptestGymEnvRewardWeightDiscomfort(
+        env = BoptestGymEnvCustomReward(
                             url                   = url,
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
@@ -84,7 +107,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             step_period           = 900,
                             render_episodes       = render)
     if case == 'B':
-        env = BoptestGymEnvRewardWeightDiscomfort(
+        env = BoptestGymEnvCustomReward(
                             url                   = url,
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
@@ -101,7 +124,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             step_period           = 900,
                             render_episodes       = render)
     if case == 'C':
-        env = BoptestGymEnvRewardWeightDiscomfort(
+        env = BoptestGymEnvCustomReward(
                             url                   = url,
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
