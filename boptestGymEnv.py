@@ -5,6 +5,7 @@ Created on Jun 4, 2020
 
 '''
 
+import matplotlib.pyplot as plt
 import random
 import gym
 import copy
@@ -22,6 +23,8 @@ from stable_baselines.common.env_checker import check_env
 from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines.common.callbacks import BaseCallback
 
+
+from examples.test_and_plot import plot_results
 
 class BoptestGymEnv(gym.Env):
     '''
@@ -45,7 +48,8 @@ class BoptestGymEnv(gym.Env):
                  start_time         = 0,
                  warmup_period      = 0,
                  scenario           = {'electricity_price':'constant'},
-                 step_period        = 900):
+                 step_period        = 900,
+                 render_episodes    = False):
         '''
         Parameters
         ----------
@@ -106,6 +110,8 @@ class BoptestGymEnv(gym.Env):
             `highly_dynamic`
         step_period: integer
             Sampling time in seconds
+        render_episodes: boolean
+            True to render every episode
             
         '''
         
@@ -123,6 +129,7 @@ class BoptestGymEnv(gym.Env):
         self.forecasting_period = forecasting_period
         self.step_period        = step_period
         self.scenario           = scenario
+        self.render_episodes    = render_episodes
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
         
@@ -238,6 +245,10 @@ class BoptestGymEnv(gym.Env):
         self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
                                        high = np.array(self.upper_act_bounds), 
                                        dtype= np.float32)
+        
+        if self.render_episodes:
+            plt.ion()
+            self.fig = plt.gcf()
 
     def __str__(self):
         '''
@@ -403,6 +414,8 @@ class BoptestGymEnv(gym.Env):
         # Get observations at the end of the initialization period
         observations = self.get_observations(res)
         
+        self.episode_rewards = []
+
         return observations
 
     def step(self, action):
@@ -444,9 +457,15 @@ class BoptestGymEnv(gym.Env):
         
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
+        self.episode_rewards.append(reward)
         
         # Define whether we've finished the episode
         done = self.compute_done(res, reward)
+        
+        if done and self.render_episodes:
+            plt.ion()
+            self.fig = plt.gcf()
+            self.render()
         
         # Optionally we can pass additional info, we are not using that for now
         info = {}
@@ -456,7 +475,7 @@ class BoptestGymEnv(gym.Env):
                 
         return observations, reward, done, info
     
-    def render(self, mode='console'):
+    def render(self, mode='episodes'):
         '''
         Renders the process evolution 
         
@@ -466,8 +485,11 @@ class BoptestGymEnv(gym.Env):
             Mode to be used for the renderization
         
         '''
-        if mode != 'console':
+        if mode != 'episodes':
             raise NotImplementedError()
+        else:
+            self.fig.clear()
+            plot_results(self, self.episode_rewards)
 
     def close(self):
         pass
