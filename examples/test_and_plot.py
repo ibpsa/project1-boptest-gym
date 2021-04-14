@@ -65,9 +65,11 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     return observations, actions, rewards, kpis
 
-def plot_results(env, rewards):
+def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
     df_res = pd.DataFrame()
-    for point in list(env.all_measurement_vars.keys()) + list(env.all_input_vars.keys()):
+    if points is None:
+        points = list(env.all_measurement_vars.keys()) + list(env.all_input_vars.keys())
+    for point in points:
         # Retrieve all simlation data
         res = requests.put('{0}/results'.format(env.url), data={'point_name':point,
                                                                 'start_time':env.start_time, 
