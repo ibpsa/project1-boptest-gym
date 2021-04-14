@@ -115,6 +115,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     # Create a log directory
     log_dir = os.path.join(utilities.get_root_path(), 'examples', 
         'agents', 'A2C_{}_{:.0e}_logdir'.format(case,training_timesteps))
+    log_dir = log_dir.replace('+', '')
     os.makedirs(log_dir, exist_ok=True)
     
     # Modify the environment to include the callback
