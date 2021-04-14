@@ -1078,6 +1078,40 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         
         return reward
     
+class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
+    '''Boptest gym environment that redefines the reward function to 
+    weight more the discomfort when compared with the default reward
+    function. 
+    
+    '''
+    
+    def compute_reward(self):
+        '''Custom reward function that penalizes more the discomfort
+        and thus more the operational cost.
+        
+        Returns
+        -------
+        reward: float
+            Reward of last state-action-state' tuple
+        
+        '''
+        
+        # Define relative weight for discomfort 
+        w = 10
+        
+        # Compute BOPTEST core kpis
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        
+        # Calculate objective integrand function at this point
+        objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
+        
+        # Compute reward
+        reward = -(objective_integrand - self.objective_integrand)
+        
+        self.objective_integrand = objective_integrand
+        
+        return reward
+    
 class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
     '''Boptest gym environment that redefines the reward function to 
     weight more the operational cost when compared with the default reward
