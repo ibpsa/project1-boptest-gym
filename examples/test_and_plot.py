@@ -79,7 +79,8 @@ def plot_results(env, rewards):
     
     # Retrieve boundary condition data. 
     # Only way we have is through the forecast request. Take 10 points per step:
-    env.reset()
+    requests.put('{0}/initialize'.format(env.url), data={'start_time':env.start_time,
+                                                         'warmup_period':0}).json()
     forecast_parameters = {'horizon':env.max_episode_length, 'interval':env.step_period/10}
     requests.put('{0}/forecast_parameters'.format(env.url),
                  data=forecast_parameters)
@@ -93,14 +94,22 @@ def plot_results(env, rewards):
     df = create_datetime(df)
     
     rewards_time_days = np.arange(env.start_time, 
-                              env.start_time+env.max_episode_length,
-                              env.step_period)/3600./24.
+                                  env.start_time+env.max_episode_length,
+                                  env.step_period)/3600./24.
     f = interpolate.interp1d(rewards_time_days, rewards, kind='zero',
                              fill_value='extrapolate')
-    res_time_days = np.array(res['time'])/3600./24.
+    res_time_days = np.array(df['time'])/3600./24.
     rewards_reindexed = f(res_time_days)
     
-    _, axs = plt.subplots(5, sharex=True, figsize=(8,6))
+    if not plt.get_fignums():
+        # no window(s) open
+        # fig = plt.figure(figsize=(10,8))
+        _, axs = plt.subplots(4, sharex=True, figsize=(8,6))
+    else:
+        # get current figure. Combine this with plt.ion(), plt.figure()
+        fig = plt.gcf()
+        axs = fig.subplots(nrows=4, ncols=1, sharex=True)
+            
     x_time = df.index.to_pydatetime()
 
     axs[0].plot(x_time, df['reaTZon_y']  -273.15, color='darkorange',   linestyle='-', linewidth=1, label='_nolegend_')
@@ -121,11 +130,9 @@ def plot_results(env, rewards):
     axs[1].plot(x_time, df['reaHeaPumY_y'],   color='darkorange',     linestyle='-', linewidth=1, label='_nolegend_')
     axs[1].set_ylabel('Heat pump\nmodulation\nsignal\n( - )')
     
-    #=================================================================
-    # axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')
-    # axs[2].set_ylabel('Rewards\n(-)')
-    # axs[2].set_xlabel('Day of the year')
-    #=================================================================
+    axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')
+    axs[2].set_ylabel('Rewards\n(-)')
+    axs[2].set_xlabel('Day of the year')
     
     #=================================================================
     # axs[2].plot(x_time, rewards, color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
@@ -136,27 +143,28 @@ def plot_results(env, rewards):
     # axs[3].set_ylabel('Operational\ncost\n(EUR)')
     #=================================================================
     
-    axs[4].plot(x_time, df['TDryBul'] - 273.15, color='royalblue', linestyle='-', linewidth=1, label='_nolegend_')
-    axs[4].set_ylabel('Ambient\ntemperature\n($^\circ$C)')
-    axs[4].set_yticks(np.arange(-5, 16, 5))
-    axt = axs[4].twinx()
+    axs[3].plot(x_time, df['TDryBul'] - 273.15, color='royalblue', linestyle='-', linewidth=1, label='_nolegend_')
+    axs[3].set_ylabel('Ambient\ntemperature\n($^\circ$C)')
+    axs[3].set_yticks(np.arange(-5, 16, 5))
+    axt = axs[3].twinx()
     
     axt.plot(x_time, df['HGloHor'], color='gold', linestyle='-', linewidth=1, label='$\dot{Q}_rad$')
     axt.set_ylabel('Solar\nirradiation\n($W$)')
     
     
-    axs[4].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='RL')
-    axs[4].plot([],[], color='dimgray',     linestyle='dotted', linewidth=1, label='Price')
-    axs[4].plot([],[], color='royalblue',   linestyle='-', linewidth=1, label='$T_a$')
-    axs[4].plot([],[], color='gold',        linestyle='-', linewidth=1, label='$\dot{Q}_{rad}$')
-    axs[4].legend(fancybox=True, ncol=6, bbox_to_anchor=(1.06, -0.3)) 
+    axs[3].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='RL')
+    axs[3].plot([],[], color='dimgray',     linestyle='dotted', linewidth=1, label='Price')
+    axs[3].plot([],[], color='royalblue',   linestyle='-', linewidth=1, label='$T_a$')
+    axs[3].plot([],[], color='gold',        linestyle='-', linewidth=1, label='$\dot{Q}_{rad}$')
+    axs[3].legend(fancybox=True, ncol=6, bbox_to_anchor=(1.06, -0.3)) 
     
-    axs[4].xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+    axs[3].xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
     
     plt.tight_layout()
     
     plt.savefig('results_sim.pdf', bbox_inches='tight')
     
+    plt.pause(0.001)
     plt.show()  
 
     

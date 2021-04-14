@@ -26,7 +26,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
               max_episode_length  = 1*24*3600,
               load                = False,
               case                = 'simple',
-              training_timesteps  = 1e6):
+              training_timesteps  = 1e6,
+              render              = True):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
