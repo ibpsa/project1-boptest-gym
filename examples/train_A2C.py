@@ -153,9 +153,9 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
-    # Create the callback: check every 1000 steps 
+    # Create the callback test and save the agent
     callback = SaveAndTestCallback(env, check_freq=960, save_freq=10000,
-                                   log_dir=log_dir, test_on=(45-7)*24*3600)
+                                   log_dir=log_dir, test=True)
     
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
                 tensorboard_log=log_dir, n_cpu_tf_sess=1)
