@@ -71,7 +71,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot']*0.001 + 1*kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']/3. + 0.1*kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)
