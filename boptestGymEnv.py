@@ -24,7 +24,7 @@ from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines.common.callbacks import BaseCallback
 
 
-from examples.test_and_plot import plot_results
+from examples.test_and_plot import plot_results, test_agent
 
 class BoptestGymEnv(gym.Env):
     '''
@@ -1141,7 +1141,7 @@ class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
         
         return done
 
-class SaveOnBestTrainingRewardCallback(BaseCallback):
+class SaveAndTestCallback(BaseCallback):
     '''
     Callback for saving a model (the check is done every `check_freq` 
     steps) based on the training reward (in practice, we recommend using 
@@ -1149,31 +1149,48 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
     around a `stable_baselines.bench.Monitor` wrapper to generate the 
     monitoring files that are then loaded using the 
     `stable_baselines.results_plotter.load_results` method.  
+    This callback also tests the environment every `check_freq` 
+    using deterministic=True. Useful to ensure that the agent is learning 
+    properly. 
 
     '''
     
-    def __init__(self, check_freq=1000, log_dir='agents', verbose=1):
+    def __init__(self, env=None, check_freq=1000, save_freq=10000, 
+                 log_dir='agents', verbose=1, test_on=None):
         '''
         Constructor for the callback. 
         
         Parameters
         ----------
+        env: BoptestGymEnv
+            Environment passed here to perform tests
         check_freq: integer, default is 1000
-            Number of steps to perform check
+            Number of steps to perform check and test
+                check_freq: integer, default is 1000
+        save_freq: integer, default is 10000
+            Number of steps to store model independently of
+            performance
         log_dir: string, default is 'agents'
             Path to the folder where the model will be saved. 
             It must contain the file created by an 
             `stable_baselines.bench.Monitor` wrapper. 
         verbose: integer
             Verbose level for the callback
+        test_on: integer or None
+            If integer, the agent is tested every `check_freq` 
+            and the test starts on the number of seconds from 
+            the beginning of the year as specified by test_on. 
+            If None, the agent does not get tested. 
         
         '''
-        super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
+        super(SaveAndTestCallback, self).__init__(verbose)
+        self.env = env
         self.check_freq = check_freq
-        self.save_freq = self.check_freq*10
+        self.save_freq = save_freq
         self.log_dir = log_dir
         self.save_path = os.path.join(log_dir, 'best_model')
         self.best_mean_reward = -np.inf
+        self.test_on = test_on
 
     def _init_callback(self) -> None:
         '''
@@ -1196,6 +1213,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             this case we always return `True`. 
         
         '''
+        
+        # Save every self.save_freq steps independently of performance
+        if self.n_calls % self.save_freq == 0:
+            self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
+        
         if self.n_calls % self.check_freq == 0:
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), 'timesteps')
@@ -1213,10 +1235,13 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                     if self.verbose > 0:
                         print("Saving new best model to {}".format(self.save_path))
                         self.model.save(self.save_path)
-        
-                # Save every 10000 steps independently of performance
-                if self.n_calls % self.save_freq == 0:
-                    self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
+
+            if self.test_on is not None:
+                print('Testing the agent.................................')
+                test_agent(self.env, self.model, self.test_on, 
+                           self.env.max_episode_length, self.env.warmup_period, 
+                           kpis_to_file=True, plot=False)   
+                self.env.reset() 
         
         return True
 

@@ -11,7 +11,6 @@ import pandas as pd
 import matplotlib.dates as mdates
 from gym.core import Wrapper
 import json
-from matplotlib.pyplot import axis
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
                kpis_to_file=False, plot=False):
@@ -59,6 +58,10 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
         with open('kpis_{}.json'.format(ckey), 'w') as f:
             json.dump(kpis, f)
+            
+        pd.DataFrame(observations).to_csv('observations.csv')
+        pd.DataFrame(rewards).to_csv('rewards.csv')
+        pd.DataFrame(actions).to_csv('actions.csv')
     
     if plot:
         plot_results(env, rewards)
