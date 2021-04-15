@@ -58,37 +58,53 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
         with open('kpis_{}.json'.format(ckey), 'w') as f:
             json.dump(kpis, f)
-            
-        pd.DataFrame(observations).to_csv('observations.csv')
-        pd.DataFrame(rewards).to_csv('rewards.csv')
-        pd.DataFrame(actions).to_csv('actions.csv')
     
     if plot:
         plot_results(env, rewards)
     
+    # Back to random start time, just in case we're testing in the loop
+    if isinstance(env,Wrapper): 
+        env.unwrapped.random_start_time = True
+    else:
+        env.random_start_time = True
+    
     return observations, actions, rewards, kpis
 
 def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
+    
     df_res = pd.DataFrame()
     if points is None:
         points = list(env.all_measurement_vars.keys()) + list(env.all_input_vars.keys())
-    for point in points:
-        # Retrieve all simlation data
-        res = requests.put('{0}/results'.format(env.url), data={'point_name':point,
-                                                                'start_time':env.start_time, 
-                                                                'final_time':3.1536e7}).json()
-        df_res = pd.concat((df_res,pd.DataFrame(data=res[point], index=res['time'],columns=[point])), axis=1)
+        
+    old_API = False
+    if old_API:
+        res = requests.get('{0}/results'.format(env.url)).json()
+        res_all = {}
+        res_all.update(res['u'])
+        res_all.update(res['y'])
+        res = res_all
+                
+        for point in points:
+            df_res = pd.concat((df_res,pd.DataFrame(data=res[point], index=res['time'],
+                                                    columns=[point])), axis=1)
+    else:
+        for point in points:
+            # Retrieve all simlation data
+            res = requests.put('{0}/results'.format(env.url), data={'point_name':point,
+                                                                    'start_time':env.start_time+1, 
+                                                                    # do not return the last warmup point to don't confuse with actions taken by the agent
+                                                                    'final_time':3.1536e7}).json()
+            df_res = pd.concat((df_res,pd.DataFrame(data=res[point], index=res['time'],columns=[point])), axis=1)
+    
+        
     df_res.index.name = 'time'
     df_res.reset_index(inplace=True)
     df_res = reindex(df_res)
     
     # Retrieve boundary condition data. 
     # Only way we have is through the forecast request. Take 10 points per step:
-    requests.put('{0}/initialize'.format(env.url), data={'start_time':env.start_time,
+    requests.put('{0}/initialize'.format(env.url), data={'start_time':df_res['time'].iloc[0],
                                                          'warmup_period':0}).json()
-    forecast_parameters = {'horizon':env.max_episode_length, 'interval':env.step_period/10}
-    requests.put('{0}/forecast_parameters'.format(env.url),
-                 data=forecast_parameters)
     forecast = requests.get('{0}/forecast'.format(env.url)).json()
     df_for = pd.DataFrame(forecast)
     df_for = reindex(df_for)
@@ -98,7 +114,9 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
 
     df = create_datetime(df)
     
-    rewards_time_days = np.arange(env.start_time, 
+    df.dropna(axis=0, inplace=True)
+    
+    rewards_time_days = np.arange(df_res['time'].iloc[0], 
                                   env.start_time+env.max_episode_length,
                                   env.step_period)/3600./24.
     f = interpolate.interp1d(rewards_time_days, rewards, kind='zero',
@@ -137,16 +155,6 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
     
     axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')
     axs[2].set_ylabel('Rewards\n(-)')
-    axs[2].set_xlabel('Day of the year')
-    
-    #=================================================================
-    # axs[2].plot(x_time, rewards, color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
-    # axs[2].set_ylabel('Thermal\ndiscomfort\n($Kh$)')
-    # 
-    # axs[3].plot(x_time, df['cost_tot'], color='darkorange',   linestyle='-',   linewidth=1, label='_nolegend_')
-    # axs[3].set_yticks(np.arange(0, 151, 50))
-    # axs[3].set_ylabel('Operational\ncost\n(EUR)')
-    #=================================================================
     
     axs[3].plot(x_time, df['TDryBul'] - 273.15, color='royalblue', linestyle='-', linewidth=1, label='_nolegend_')
     axs[3].set_ylabel('Ambient\ntemperature\n($^\circ$C)')
@@ -155,7 +163,6 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
     
     axt.plot(x_time, df['HGloHor'], color='gold', linestyle='-', linewidth=1, label='$\dot{Q}_rad$')
     axt.set_ylabel('Solar\nirradiation\n($W$)')
-    
     
     axs[3].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='RL')
     axs[3].plot([],[], color='dimgray',     linestyle='dotted', linewidth=1, label='Price')

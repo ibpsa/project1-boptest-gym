@@ -463,8 +463,6 @@ class BoptestGymEnv(gym.Env):
         done = self.compute_done(res, reward)
         
         if done and self.render_episodes:
-            plt.ion()
-            self.fig = plt.gcf()
             self.render()
         
         # Optionally we can pass additional info, we are not using that for now
@@ -488,6 +486,8 @@ class BoptestGymEnv(gym.Env):
         if mode != 'episodes':
             raise NotImplementedError()
         else:
+            plt.ion()
+            self.fig = plt.gcf()
             self.fig.clear()
             plot_results(self, self.episode_rewards)
 
@@ -1156,7 +1156,7 @@ class SaveAndTestCallback(BaseCallback):
     '''
     
     def __init__(self, env=None, check_freq=1000, save_freq=10000, 
-                 log_dir='agents', verbose=1, test_on=None):
+                 log_dir='agents', verbose=1, test=True):
         '''
         Constructor for the callback. 
         
@@ -1176,11 +1176,9 @@ class SaveAndTestCallback(BaseCallback):
             `stable_baselines.bench.Monitor` wrapper. 
         verbose: integer
             Verbose level for the callback
-        test_on: integer or None
-            If integer, the agent is tested every `check_freq` 
-            and the test starts on the number of seconds from 
-            the beginning of the year as specified by test_on. 
-            If None, the agent does not get tested. 
+        test: boolean
+            If True, the agent is tested every `check_freq` 
+            with deterministic=True 
         
         '''
         super(SaveAndTestCallback, self).__init__(verbose)
@@ -1190,7 +1188,7 @@ class SaveAndTestCallback(BaseCallback):
         self.log_dir = log_dir
         self.save_path = os.path.join(log_dir, 'best_model')
         self.best_mean_reward = -np.inf
-        self.test_on = test_on
+        self.test = test
 
     def _init_callback(self) -> None:
         '''
@@ -1236,11 +1234,16 @@ class SaveAndTestCallback(BaseCallback):
                         print("Saving new best model to {}".format(self.save_path))
                         self.model.save(self.save_path)
 
-            if self.test_on is not None:
+            if self.test:
                 print('Testing the agent.................................')
-                test_agent(self.env, self.model, self.test_on, 
+                test_agent(self.env, self.model, self.env.start_time, 
                            self.env.max_episode_length, self.env.warmup_period, 
                            kpis_to_file=True, plot=False)   
+                # Force to render if `render_episodes` is not active
+                if not self.env.render_episodes:
+                    self.env.render(mode='episodes')
+                # Reset the environment just in case that `self.check_freq`
+                # does not coincide with a terminal state
                 self.env.reset() 
         
         return True
