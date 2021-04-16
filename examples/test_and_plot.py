@@ -90,10 +90,22 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     df_res = reindex(df_res)
     
     # Retrieve boundary condition data. 
-    # Only way we have is through the forecast request. Take 10 points per step:
-    requests.put('{0}/initialize'.format(env.url), data={'start_time':df_res['time'].iloc[0],
-                                                         'warmup_period':0}).json()
+    # Only way we have is through the forecast request. 
+    requests.put('{0}/initialize'.format(env.url), 
+                 data={'start_time':df_res['time'].iloc[0],
+                       'warmup_period':0}).json()
+    # Store original forecast parameters
+    forecast_parameters_original = requests.get('{0}/forecast_parameters'.format(env.url))
+    # Set forecast parameters for test. Take 10 points per step. 
+    forecast_parameters = {'horizon':env.max_episode_length, 
+                           'interval':env.step_period/10}
+    requests.put('{0}/forecast_parameters'.format(env.url),
+                 data=forecast_parameters)
     forecast = requests.get('{0}/forecast'.format(env.url)).json()
+    # Back to original parameters, just in case we're testing during training
+    requests.put('{0}/forecast_parameters'.format(env.url),
+                 data=forecast_parameters_original)
+        
     df_for = pd.DataFrame(forecast)
     df_for = reindex(df_for)
     df_for.drop('time', axis=1, inplace=True)
