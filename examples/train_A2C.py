@@ -101,7 +101,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
                             step_period           = 900,
-                            render_episodes       = render)
+                            render_episodes       = render,
+                            log_dir               = log_dir)
     elif case == 'A':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
@@ -116,7 +117,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
                             step_period           = 900,
-                            render_episodes       = render)
+                            render_episodes       = render,
+                            log_dir               = log_dir)
     if case == 'B':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
@@ -133,7 +135,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
                             step_period           = 900,
-                            render_episodes       = render)
+                            render_episodes       = render,
+                            log_dir               = log_dir)
     if case == 'C':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
@@ -150,7 +153,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
                             step_period           = 900,
-                            render_episodes       = render)
+                            render_episodes       = render,
+                            log_dir               = log_dir)
     
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
