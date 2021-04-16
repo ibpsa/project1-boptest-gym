@@ -3,14 +3,16 @@ Common functionality to test and plot an agent
 
 '''
 
-import requests
 import matplotlib.pyplot as plt
 from scipy import interpolate
+from gym.core import Wrapper
+import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
-import matplotlib.dates as mdates
-from gym.core import Wrapper
+import requests
 import json
+import os
+
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
                log_dir=os. getcwd(), kpis_to_file=False, plot=False):
