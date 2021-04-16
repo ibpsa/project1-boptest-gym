@@ -70,7 +70,8 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     df_res = pd.DataFrame()
     if points is None:
-        points = list(env.all_measurement_vars.keys()) + list(env.all_input_vars.keys())
+        points = list(env.all_measurement_vars.keys()) + \
+                 list(env.all_input_vars.keys())
         
     for point in points:
         # Retrieve all simulation data
@@ -136,8 +137,8 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     x_time = df.index.to_pydatetime()
 
     axs[0].plot(x_time, df['reaTZon_y']  -273.15, color='darkorange',   linestyle='-', linewidth=1, label='_nolegend_')
-    axs[0].plot(x_time, df['LowerSetp[1]'] -273.15, color='gray',         linewidth=1, label='Comfort setp.')
-    axs[0].plot(x_time, df['UpperSetp[1]'] -273.15, color='gray',         linewidth=1, label='_nolegend_')
+    axs[0].plot(x_time, df['LowerSetp[1]'] -273.15, color='gray',       linewidth=1, label='Comfort setp.')
+    axs[0].plot(x_time, df['UpperSetp[1]'] -273.15, color='gray',       linewidth=1, label='_nolegend_')
     axs[0].set_yticks(np.arange(15, 31, 5))
     axs[0].set_ylabel('Operative\ntemperature\n($^\circ$C)')
     
@@ -181,10 +182,14 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
 
     
 def reindex(df, interval=60, start=None, stop=None):
-    # Define the index. Make sure last point is included if 
-    # possible. If interval is not an exact divisor of stop,
-    # the closest possible point under stop will be the end 
-    # point in order to keep interval unchanged among index.
+    '''
+    Define the index. Make sure last point is included if 
+    possible. If interval is not an exact divisor of stop,
+    the closest possible point under stop will be the end 
+    point in order to keep interval unchanged among index.
+    
+    ''' 
+    
     if start is None:
         start = df['time'][df.index[0]]
     if stop is None:
@@ -206,8 +211,11 @@ def reindex(df, interval=60, start=None, stop=None):
 
 
 def create_datetime(df):
+    '''
+    Create a datetime index for the data
     
-    # Create a datetime index for the data
+    '''
+    
     datetime = []
     for t in df['time']:
         datetime.append(pd.Timestamp('2020/1/1') + pd.Timedelta(t,'s'))
