@@ -53,9 +53,11 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
         If true, it renders every episode while training.
         
     '''
+    
     excluding_periods = []
     for start_time_test in start_time_tests:
-        excluding_periods.append((start_time_test,start_time_test+episode_length_test))
+        excluding_periods.append((start_time_test,
+                                  start_time_test+episode_length_test))
     # Summer period (from June 21st till September 22nd). 
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
@@ -65,6 +67,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
         'agents', 'A2C_{}_{:.0e}_logdir'.format(case,training_timesteps))
     log_dir = log_dir.replace('+', '')
     os.makedirs(log_dir, exist_ok=True)
+    
+    # Redefine reward function
     class BoptestGymEnvCustomReward(BoptestGymEnv):
         '''Define a custom reward for this building
         
