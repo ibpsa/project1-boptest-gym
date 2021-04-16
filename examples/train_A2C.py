@@ -49,6 +49,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
         Case to be tested.
     training_timesteps : integer
         Total number of timesteps used for training
+    render : boolean
+        If true, it renders every episode while training.
         
     '''
     excluding_periods = []
