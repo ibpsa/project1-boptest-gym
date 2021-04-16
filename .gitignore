@@ -2,3 +2,4 @@ examples/results/
 examples/agents/monitored_A2C/monitor.csv
 examples/agents/variable_episode_A2C/monitor.csv
 *.pyc
+*events.out.tfevents*
