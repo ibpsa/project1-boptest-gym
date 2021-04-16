@@ -27,8 +27,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
               max_episode_length  = 1*24*3600,
               load                = False,
               case                = 'simple',
-              training_timesteps  = 1e6,
-              render              = True):
+              training_timesteps  = 1e3,
+              render              = False):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -156,7 +156,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
     # Create the callback test and save the agent
-    callback = SaveAndTestCallback(env, check_freq=960, save_freq=10000,
+    callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
                                    log_dir=log_dir, test=True)
     
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
