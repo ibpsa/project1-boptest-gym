@@ -37,8 +37,8 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     start_time_tests : list of integers
         Time in seconds from the beginning of the year that will be used 
         for testing. These periods should be excluded in the training 
-        process. By default the first day of February and the first day of
-        November are used. 
+        process. By default the peak and typical heat periods for the 
+        bestest hydronic case with a heat pump are used. 
     episode_length_test : integer
         Number of seconds indicating the length of the testing periods. By
         default two weeks are reserved for testing. 
@@ -170,9 +170,9 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     
     return env, model, start_time_tests
         
-def test_feb(env, model, start_time_tests, episode_length_test, 
-             warmup_period_test, kpis_to_file=False, plot=False):
-    ''' Perform test in February
+def test_peak(env, model, start_time_tests, episode_length_test, 
+              warmup_period_test, kpis_to_file=False, plot=False):
+    ''' Perform test in peak heat period (February). 
     
     '''
 
@@ -184,9 +184,9 @@ def test_feb(env, model, start_time_tests, episode_length_test,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
-def test_nov(env, model, start_time_tests, episode_length_test, 
-             warmup_period_test, kpis_to_file=False, plot=False):
-    ''' Perform test in November
+def test_typi(env, model, start_time_tests, episode_length_test, 
+              warmup_period_test, kpis_to_file=False, plot=False):
+    ''' Perform test in typical heat period (November)
     
     '''
 
@@ -206,6 +206,6 @@ if __name__ == "__main__":
     warmup_period_test  = 7*24*3600
     kpis_to_file = True
     plot = True
-    test_feb(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
-    test_nov(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
+    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
+    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
     
