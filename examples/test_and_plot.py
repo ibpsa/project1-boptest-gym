@@ -13,7 +13,7 @@ from gym.core import Wrapper
 import json
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               kpis_to_file=False, plot=False):
+               log_dir=os. getcwd(), kpis_to_file=False, plot=False):
     ''' Test model agent in env.
     
     '''
@@ -49,14 +49,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     kpis = env.get_kpis()
     
     if kpis_to_file:
-        if start_time==2678400:
-            ckey='feb'
-        elif start_time==26265600:
-            ckey='nov'
-        else:
-            ckey=str(start_time)
-    
-        with open('kpis_{}.json'.format(ckey), 'w') as f:
+        with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(start_time))), 'w') as f:
             json.dump(kpis, f)
     
     if plot:
@@ -70,7 +63,8 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     return observations, actions, rewards, kpis
 
-def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
+def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
+                 log_dir=os.getcwd()):
     
     df_res = pd.DataFrame()
     if points is None:
@@ -174,7 +168,7 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y']):
     
     plt.tight_layout()
     
-    plt.savefig('results_sim.pdf', bbox_inches='tight')
+    plt.savefig(os.path.join(log_dir, 'results_sim.pdf'), bbox_inches='tight')
     
     plt.pause(0.001)
     plt.show()  
