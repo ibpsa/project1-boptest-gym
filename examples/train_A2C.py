@@ -211,8 +211,8 @@ if __name__ == "__main__":
     env, model, start_time_tests = train_A2C(load=False, case='A')
     env, model, start_time_tests = train_A2C(load=False, case='B')
     env, model, start_time_tests = train_A2C(load=False, case='C')
-    episode_length_test = 14*24*3600
     warmup_period_test  = 7*24*3600
+    episode_length_test = 14*24*3600
     kpis_to_file = True
     plot = True
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
