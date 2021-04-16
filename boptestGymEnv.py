@@ -47,7 +47,8 @@ class BoptestGymEnv(gym.Env):
                  warmup_period      = 0,
                  scenario           = {'electricity_price':'constant'},
                  step_period        = 900,
-                 render_episodes    = False):
+                 render_episodes    = False,
+                 log_dir            = os.getcwd()):
         '''
         Parameters
         ----------
@@ -110,6 +111,8 @@ class BoptestGymEnv(gym.Env):
             Sampling time in seconds
         render_episodes: boolean
             True to render every episode
+        log_dir: string    
+            Directory to store results like plots or KPIs
             
         '''
         
@@ -128,6 +131,7 @@ class BoptestGymEnv(gym.Env):
         self.step_period        = step_period
         self.scenario           = scenario
         self.render_episodes    = render_episodes
+        self.log_dir            = log_dir
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
         
@@ -487,7 +491,7 @@ class BoptestGymEnv(gym.Env):
             plt.ion()
             self.fig = plt.gcf()
             self.fig.clear()
-            plot_results(self, self.episode_rewards)
+            plot_results(self, self.episode_rewards, log_dir=self.log_dir)
 
     def close(self):
         pass
@@ -1236,7 +1240,7 @@ class SaveAndTestCallback(BaseCallback):
                 print('Testing the agent.................................')
                 test_agent(self.env, self.model, self.env.start_time, 
                            self.env.max_episode_length, self.env.warmup_period, 
-                           kpis_to_file=True, plot=False)   
+                           kpis_to_file=False, plot=False, log_dir=self.log_dir)   
                 # Force to render if `render_episodes` is not active
                 if not self.env.render_episodes:
                     self.env.render(mode='episodes')
