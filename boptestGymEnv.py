@@ -22,7 +22,6 @@ from stable_baselines.common.env_checker import check_env
 from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines.common.callbacks import BaseCallback
 
-
 from examples.test_and_plot import plot_results, test_agent
 
 class BoptestGymEnv(gym.Env):
