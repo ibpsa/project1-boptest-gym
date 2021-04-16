@@ -72,26 +72,18 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     if points is None:
         points = list(env.all_measurement_vars.keys()) + list(env.all_input_vars.keys())
         
-    old_API = False
-    if old_API:
-        res = requests.get('{0}/results'.format(env.url)).json()
-        res_all = {}
-        res_all.update(res['u'])
-        res_all.update(res['y'])
-        res = res_all
-                
-        for point in points:
-            df_res = pd.concat((df_res,pd.DataFrame(data=res[point], index=res['time'],
-                                                    columns=[point])), axis=1)
-    else:
-        for point in points:
-            # Retrieve all simlation data
-            res = requests.put('{0}/results'.format(env.url), data={'point_name':point,
-                                                                    'start_time':env.start_time+1, 
-                                                                    # do not return the last warmup point to don't confuse with actions taken by the agent
-                                                                    'final_time':3.1536e7}).json()
-            df_res = pd.concat((df_res,pd.DataFrame(data=res[point], index=res['time'],columns=[point])), axis=1)
-    
+    for point in points:
+        # Retrieve all simulation data
+        # We use env.start_time+1 to ensure that we don't return the last 
+        # point from the initialization period to don't confuse it with 
+        # actions taken by the agent
+        res = requests.put('{0}/results'.format(env.url), 
+                           data={'point_name':point,
+                                 'start_time':env.start_time+1, 
+                                 'final_time':3.1536e7}).json()
+        df_res = pd.concat((df_res,pd.DataFrame(data=res[point], 
+                                                index=res['time'],
+                                                columns=[point])), axis=1)
         
     df_res.index.name = 'time'
     df_res.reset_index(inplace=True)
