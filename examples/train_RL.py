@@ -163,19 +163,20 @@ def train_RL(algorithm        = 'SAC',
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
-    # Define RL agent
-    if algorithm == 'SAC':
-        model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                    learning_rate=3e-4, batch_size=96, ent_coef='auto',
-                    buffer_size=365*96, learning_starts=96, train_freq=1,
-                    tensorboard_log=log_dir, n_cpu_tf_sess=1)
-
-    elif algorithm == 'A2C':
-        model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                    learning_rate=7e-4, n_steps=4, ent_coef=1,
-                    tensorboard_log=log_dir, n_cpu_tf_sess=1)
-    
     if not load: 
+        
+        # Define RL agent
+        if algorithm == 'SAC':
+            model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                        learning_rate=3e-4, batch_size=96, ent_coef='auto',
+                        buffer_size=365*96, learning_starts=96, train_freq=1,
+                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+    
+        elif algorithm == 'A2C':
+            model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                        learning_rate=7e-4, n_steps=4, ent_coef=1,
+                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+        
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
                                        log_dir=log_dir, test=True)
@@ -183,6 +184,7 @@ def train_RL(algorithm        = 'SAC',
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
         model.save(os.path.join(log_dir,'last_model'))
+        
     else:
         # Load the trained agent
         if algorithm == 'SAC':
@@ -225,11 +227,11 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='A')
-    env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='B')
-    env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='C')
+    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A')
+    #env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='B')
+    #env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='C')
     warmup_period_test  = 7*24*3600
-    episode_length_test = 14*24*3600
+    episode_length_test = 3*24*3600
     kpis_to_file = True
     plot = False # set plot to Flase when render is True
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
