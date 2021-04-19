@@ -15,7 +15,7 @@ import os
 
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               log_dir=os. getcwd(), kpis_to_file=False, plot=False):
+               log_dir=os.getcwd(), kpis_to_file=False, plot=False):
     ''' Test model agent in env.
     
     '''
