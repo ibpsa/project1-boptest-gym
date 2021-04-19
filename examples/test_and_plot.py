@@ -51,7 +51,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     kpis = env.get_kpis()
     
     if kpis_to_file:
-        with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(start_time))), 'w') as f:
+        with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
             json.dump(kpis, f)
     
     if plot:
@@ -175,7 +175,9 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
-    plt.savefig(os.path.join(log_dir, 'results_sim.pdf'), bbox_inches='tight')
+    plt.savefig(os.path.join(log_dir, 
+                'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
+                bbox_inches='tight')
     
     plt.pause(0.001)
     plt.show()  
