@@ -21,7 +21,7 @@ seed = 123456
 # Seed for random starting times of episodes
 random.seed(seed)
 
-def train_RL(algorithm        = 'SAC',
+def train_RL(algorithm           = 'SAC',
              start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600], 
              episode_length_test = 14*24*3600, 
              warmup_period       = 1*24*3600,
