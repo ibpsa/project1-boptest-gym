@@ -181,7 +181,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             `load=True` reduces the testing time considerably by directly 
             loading a pre-trained agent. Independently of whether the 
             agent is trained or not during testing, the results should be 
-            exactly the same as far as the seed in `examples.train_A2C` 
+            exactly the same as far as the seed in `examples.train_RL` 
             is not modified. 
         episode_length_test : integer, default=2*24*3600
             Length of the testing episode. We keep it short for testing,
@@ -192,8 +192,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests = train_A2C.train_A2C(load=load, 
-                                                           case=case)
+        env, model, start_time_tests = train_A2C.train_RL(algorithm='A2C',
+                                                          load=load, 
+                                                          case=case)
         
         obs, act, rew, kpi = \
             train_A2C.test_feb(env, model, start_time_tests, 

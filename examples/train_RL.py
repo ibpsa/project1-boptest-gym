@@ -1,12 +1,12 @@
 '''
-Module to train and test an A2C agent for the bestest_hydronic_heatpump 
+Module to train and test a RL agent for the bestest_hydronic_heatpump 
 case. This case needs to be deployed to run this script.  
 
 '''
 
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
     NormalizedObservationWrapper, SaveAndTestCallback
-from stable_baselines import A2C
+from stable_baselines import A2C, SAC
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
@@ -21,14 +21,15 @@ seed = 123456
 # Seed for random starting times of episodes
 random.seed(seed)
 
-def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600], 
-              episode_length_test = 14*24*3600, 
-              warmup_period       = 1*24*3600,
-              max_episode_length  = 1*24*3600,
-              load                = False,
-              case                = 'simple',
-              training_timesteps  = 3e5,
-              render              = False):
+def train_RL(algorithm        = 'SAC',
+             start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600], 
+             episode_length_test = 14*24*3600, 
+             warmup_period       = 1*24*3600,
+             max_episode_length  = 1*24*3600,
+             load                = False,
+             case                = 'simple',
+             training_timesteps  = 3e5,
+             render              = True):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -64,7 +65,7 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     
     # Create a log directory
     log_dir = os.path.join(utilities.get_root_path(), 'examples', 
-        'agents', 'A2C_{}_{:.0e}_logdir'.format(case,training_timesteps))
+        'agents', '{}_{}_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
     log_dir = log_dir.replace('+', '')
     os.makedirs(log_dir, exist_ok=True)
     
@@ -162,20 +163,29 @@ def train_A2C(start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600],
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
-    # Create the callback test and save the agent
-    callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
-                                   log_dir=log_dir, test=True)
-    
-    model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
-                tensorboard_log=log_dir, n_cpu_tf_sess=1)
+    # Define RL agent
+    if algorithm == 'SAC':
+        model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                    learning_rate=3e-4, batch_size=96, ent_coef='auto',
+                    buffer_size=365*96, learning_starts=96, train_freq=1,
+                    tensorboard_log=log_dir, n_cpu_tf_sess=1)
+
+    elif algorithm == 'A2C':
+        model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                    learning_rate=7e-4, n_steps=4, ent_coef=1,
+                    tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
     if not load: 
+        # Create the callback test and save the agent while training
+        callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
+                                       log_dir=log_dir, test=True)
+        # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
         model.save(os.path.join(log_dir,'last_model'))
     else:
         # Load the trained agent
-        model = A2C.load(os.path.join(log_dir,'last_model'))
+        model.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests
         
@@ -208,13 +218,13 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests = train_A2C(load=False, case='A')
-    env, model, start_time_tests = train_A2C(load=False, case='B')
-    env, model, start_time_tests = train_A2C(load=False, case='C')
+    env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='A')
+    env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='B')
+    env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='C')
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
     kpis_to_file = True
-    plot = True
+    plot = False
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
     test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, kpis_to_file, plot)
     
