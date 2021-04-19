@@ -185,7 +185,10 @@ def train_RL(algorithm        = 'SAC',
         model.save(os.path.join(log_dir,'last_model'))
     else:
         # Load the trained agent
-        model.load(os.path.join(log_dir,'last_model'))
+        if algorithm == 'SAC':
+            model = SAC.load(os.path.join(log_dir,'last_model'))
+        elif algorithm == 'A2C':
+            model = A2C.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests, log_dir
         
