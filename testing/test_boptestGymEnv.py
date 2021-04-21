@@ -324,7 +324,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         # Check that we obtain always same monitoring parameters
         ref_filepath = os.path.join(utilities.get_root_path(), 
-                    'testing', 'references', 'variable_episode_monitor.csv')
+                    'testing', 'references', 'variable_episode_monitoring.csv')
         self.compare_ref_timeseries_df(monitor, ref_filepath)
         
         # Remove model to prove further testing
