@@ -2,18 +2,18 @@
 Module to test features of the OpenAI-Gym interface for BOPTEST. 
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
 the tests. Latest tests were passing with BOPTEST commit:
-c471db86d45d066695f17ad9f83ddbca900debe4
+c8c64973babbf99c32947777cf3f69ed7af55a35
 
 '''
 
 import unittest
-import utilities
 import os
 import pandas as pd
 import random
 import shutil
+from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
-    run_variable_episode, train_A2C, train_PPO2
+    run_variable_episode, train_RL
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines.common.env_checker import check_env
@@ -192,19 +192,21 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests = train_A2C.train_RL(algorithm='A2C',
-                                                          load=load, 
-                                                          case=case)
+        env, model, start_time_tests, _ = train_RL.train_RL(algorithm='A2C',
+                                                            load=load, 
+                                                            case=case,
+                                                            render=False,
+                                                            training_timesteps=1e6)
         
         obs, act, rew, kpi = \
-            train_A2C.test_feb(env, model, start_time_tests, 
+            train_RL.test_peak(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_feb'.format(case))
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_peak'.format(case))
         
         obs, act, rew, kpi = \
-            train_A2C.test_nov(env, model, start_time_tests, 
+            train_RL.test_typi(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_nov'.format(case))
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_typi'.format(case))
     
     def test_A2C_simple(self):
         '''Test simple agent with only one measurement as observation and
@@ -317,7 +319,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Utilities require index to have time as index name (even this is not the case here)
         monitor.index.name = 'time'
         
-        # Transfor to numeric
+        # Transform to numeric
         monitor = monitor.apply(lambda col:pd.to_numeric(col, errors='coerce'))
         
         # Check that we obtain always same monitoring parameters
