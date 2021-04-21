@@ -29,7 +29,7 @@ def train_RL(algorithm           = 'SAC',
              load                = False,
              case                = 'simple',
              training_timesteps  = 3e5,
-             render              = True):
+             render              = False):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
