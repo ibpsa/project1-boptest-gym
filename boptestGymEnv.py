@@ -16,6 +16,7 @@ import json
 import os
 
 from collections import OrderedDict
+from scipy import interpolate
 from pprint import pformat
 from gym import spaces
 from stable_baselines.common.env_checker import check_env
@@ -42,7 +43,8 @@ class BoptestGymEnv(gym.Env):
                  max_episode_length = 3*3600,
                  random_start_time  = False,
                  excluding_periods  = None,
-                 forecasting_period = None,
+                 regressive_period  = None,
+                 predictive_period  = None,
                  start_time         = 0,
                  warmup_period      = 0,
                  scenario           = {'electricity_price':'constant'},
@@ -86,15 +88,28 @@ class BoptestGymEnv(gym.Env):
             excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                                 (304*24*3600, 304*24*3600+14*24*3600)]
             This is only used when `random_start_time=True`
-        forecasting_period: integer, default is None
-            Number of seconds for the forecasting horizon. The observations
-            will be extended for each of the forecasting variables indicated
+        regressive_period: integer, default is None
+            Number of seconds for the regressive horizon. The observations
+            will be extended for each of the measurement variables indicated
+            in the `observations` dictionary argument. Specifically, a number 
+            of `int(self.regressive_period/self.step_period)` observations per
+            measurement variable will be included in the observation space.
+            Each of these observations correspond to the past observation 
+            of the measurement variable `j` steps ago. This is used in partially
+            observable MDPs to compensate for the hidden states. 
+            Note that it is NOT allowed to use `regressive_period=0` since that
+            would represent a case where you want to include a measurement at
+            the current time in the observation space, which is directly done
+            when adding such measurement to the `observations` argument. 
+        predictive_period: integer, default is None
+            Number of seconds for the prediction horizon. The observations
+            will be extended for each of the predictive variables indicated
             in the `observations` dictionary argument. Specifically, a number
-            of `int(self.forecasting_period/self.step_period)` observations per 
-            forecasting variable will be included in the observation space.
+            of `int(self.predictive_period/self.step_period)` observations per 
+            predictive variable will be included in the observation space.
             Each of these observations correspond to the foresighted 
             variable `i` steps ahead from the actual observation time. 
-            Note that it's allowed to use `forecasting_period=0` when the
+            Note that it's allowed to use `predictive_period=0` when the
             intention is to retrieve boundary condition data at the actual
             observation time, useful e.g. for temperature setpoints or 
             ambient temperature. 
@@ -127,11 +142,18 @@ class BoptestGymEnv(gym.Env):
         self.start_time         = start_time
         self.warmup_period      = warmup_period
         self.reward             = reward
-        self.forecasting_period = forecasting_period
+        self.predictive_period  = predictive_period
+        self.regressive_period  = regressive_period
         self.step_period        = step_period
         self.scenario           = scenario
         self.render_episodes    = render_episodes
         self.log_dir            = log_dir
+        
+        # Avoid requesting data before the beginning of the year
+        if self.regressive_period is not None:
+            self.bgn_year_margin = self.regressive_period
+        else:
+            self.bgn_year_margin = 0
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
         
@@ -142,8 +164,8 @@ class BoptestGymEnv(gym.Env):
         self.name = requests.get('{0}/name'.format(url)).json()
         # Measurements available
         self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()
-        # Forecasting variables available
-        self.all_forecasting_vars = requests.get('{0}/forecast'.format(url)).json()
+        # Predictive variables available
+        self.all_predictive_vars = requests.get('{0}/forecast'.format(url)).json()
         # Inputs available
         self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()
         # Default simulation step
@@ -165,9 +187,9 @@ class BoptestGymEnv(gym.Env):
                      'upper bounds of each variable. '\
                      'Variable "{}" does not follow this format. '.format(obs))
         
-        # Assert that observations belong either to measurements or to forecasting variables
+        # Assert that observations belong either to measurements or to predictive variables
         for obs in self.observations:
-            if not (obs=='time' or obs in self.all_measurement_vars.keys() or obs in self.all_forecasting_vars.keys()):
+            if not (obs=='time' or obs in self.all_measurement_vars.keys() or obs in self.all_predictive_vars.keys()):
                 raise ReferenceError(\
                  '"{0}" does not belong to neither the set of '\
                  'test case measurements nor to the set of '\
@@ -175,7 +197,7 @@ class BoptestGymEnv(gym.Env):
                  'Set of measurements: \n{1}\n'\
                  'Set of forecasting variables: \n{2}'.format(obs, 
                                                               list(self.all_measurement_vars.keys()), 
-                                                              list(self.all_forecasting_vars.keys()) ))
+                                                              list(self.all_predictive_vars.keys()) ))
         
         # observations = measurements + predictions
         self.measurement_vars = [obs for obs in self.observations if (obs in self.all_measurement_vars)]
@@ -196,21 +218,62 @@ class BoptestGymEnv(gym.Env):
         self.lower_obs_bounds.extend([observations[obs][0] for obs in self.measurement_vars])
         self.upper_obs_bounds.extend([observations[obs][1] for obs in self.measurement_vars])
         
-        # Check if agent uses predictions in state and parse forecasting variables
-        self.is_predictive = False
-        self.forecasting_vars = []
-        if any([obs in self.all_forecasting_vars for obs in observations]):
-            self.is_predictive = True
-            self.forecasting_vars = [obs for obs in observations if \
-                                     (obs in self.all_forecasting_vars and obs!='time')]
+        # Check if agent uses regressive states and extend observations with these
+        self.is_regressive = False
+        if self.regressive_period is not None:
+            self.is_regressive = True
+            # Do a sanity check
+            if self.regressive_period == 0 or self.regressive_period<0:
+                raise ValueError(\
+                 'The regressive_period cannot be 0 or negative. '\
+                 'If you just want to add a measurement variabe to the '\
+                 'set of observations it is enough to add it to the '\
+                 'observations argument. ')
+            self.regressive_vars = self.measurement_vars
         
-            # Number of discrete forecasting steps. If forecasting_period=0, 
-            # then only 1 step is taken: the actual time step. 
-            self.fore_n = int(self.forecasting_period/self.step_period)+1
+            # Number of discrete regressive steps. 
+            # If regressive_period=3600, and step_period=900
+            # then we have 4 regressive steps: 
+            # regr_1, regr_2, regr_3, regr_4 (actual not taken here)
+            # regr_4 is the time step furthest away in the past
+            self.regr_n = int(self.regressive_period/self.step_period)
             
-            # Extend observations to have one observation per forecasting step
-            for obs in self.forecasting_vars:
-                obs_list = [obs+'_pred_{}'.format(int(i*self.step_period)) for i in range(self.fore_n)]
+            # Extend observations to have one observation per regressive step
+            for obs in self.regressive_vars:
+                obs_list = [obs+'_regr_{}'.format(int(i*self.step_period)) for i in range(self.regr_n)]
+                obs_lbou = [observations[obs][0]]*len(obs_list)
+                obs_ubou = [observations[obs][1]]*len(obs_list)
+                self.observations.extend(obs_list)
+                self.lower_obs_bounds.extend(obs_lbou)
+                self.upper_obs_bounds.extend(obs_ubou)
+        
+        # Check if agent uses predictions in state and parse predictive variables
+        self.is_predictive = False
+        self.predictive_vars = []
+        if any([obs in self.all_predictive_vars for obs in observations]):
+            self.is_predictive = True
+            
+            # Do a sanity check
+            if self.predictive_period<0:
+                raise ValueError(\
+                 'The predictive_period cannot be negative. '\
+                 'Set the predictive_period to be 0 or higher than 0 ')
+            
+            # Parse predictive vars
+            self.predictive_vars = [obs for obs in observations if \
+                                   (obs in self.all_predictive_vars and obs!='time')]
+        
+            # Number of discrete predictive steps. If predictive_period=0, 
+            # then only 1 step is taken: the actual time step. 
+            # If predictive_period=3600, and step_period=900
+            # then we have 5 predictive steps: 
+            # pred_0, pred_1, pred_2, pred_3, pred_4 (actual taken here)
+            # pred_4 is the time step furthest away in the future
+            self.pred_n = int(self.predictive_period/self.step_period)+1
+            
+            # Extend observations to have one observation per predictive step
+            for obs in self.predictive_vars:
+                obs_list = [obs+'_pred_{}'.format(int(i*self.step_period)) for i in range(self.pred_n)]
                 obs_lbou = [observations[obs][0]]*len(obs_list)
                 obs_ubou = [observations[obs][1]]*len(obs_list)
                 self.observations.extend(obs_list)
@@ -218,7 +281,7 @@ class BoptestGymEnv(gym.Env):
                 self.upper_obs_bounds.extend(obs_ubou)
         
             # If predictive, the margin should be extended        
-            self.end_year_margin = self.max_episode_length + self.forecasting_period
+            self.end_year_margin = self.max_episode_length + self.predictive_period
         
         # Define gym observation space
         self.observation_space = spaces.Box(low  = np.array(self.lower_obs_bounds), 
@@ -293,7 +356,7 @@ class BoptestGymEnv(gym.Env):
         summary['BOPTEST CASE INFORMATION'] = OrderedDict()
         summary['BOPTEST CASE INFORMATION']['Test case name'] = pformat(self.name)
         summary['BOPTEST CASE INFORMATION']['All measurement variables'] = pformat(self.all_measurement_vars)
-        summary['BOPTEST CASE INFORMATION']['All forecasting variables'] = pformat(list(self.all_forecasting_vars.keys()))
+        summary['BOPTEST CASE INFORMATION']['All forecasting variables'] = pformat(list(self.all_predictive_vars.keys()))
         summary['BOPTEST CASE INFORMATION']['All input variables'] = pformat(self.all_input_vars)
         summary['BOPTEST CASE INFORMATION']['Default simulation step (seconds)'] = pformat(self.step_def)
         summary['BOPTEST CASE INFORMATION']['Default forecasting parameters (seconds)'] = pformat(self.forecast_def)
@@ -303,10 +366,12 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION'] = OrderedDict()
         summary['GYM ENVIRONMENT INFORMATION']['Observation space'] = pformat(self.observation_space)
         summary['GYM ENVIRONMENT INFORMATION']['Action space'] = pformat(self.action_space)
+        summary['GYM ENVIRONMENT INFORMATION']['Is a regressive environment'] = pformat(self.is_regressive)
         summary['GYM ENVIRONMENT INFORMATION']['Is a predictive environment'] = pformat(self.is_predictive)
-        summary['GYM ENVIRONMENT INFORMATION']['Forecasting period (seconds)'] = pformat(self.forecasting_period)
+        summary['GYM ENVIRONMENT INFORMATION']['Regressive period (seconds)'] = pformat(self.regressive_period)
+        summary['GYM ENVIRONMENT INFORMATION']['Predictive period (seconds)'] = pformat(self.predictive_period)
         summary['GYM ENVIRONMENT INFORMATION']['Measurement variables used in observation space'] = pformat(self.measurement_vars)
-        summary['GYM ENVIRONMENT INFORMATION']['Forecasting variables used in observation space'] = pformat(self.forecasting_vars)
+        summary['GYM ENVIRONMENT INFORMATION']['Predictive variables used in observation space'] = pformat(self.predictive_vars)
         summary['GYM ENVIRONMENT INFORMATION']['Sampling time (seconds)'] = pformat(self.step_period)
         summary['GYM ENVIRONMENT INFORMATION']['Random start time'] = pformat(self.random_start_time)
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
@@ -378,7 +443,8 @@ class BoptestGymEnv(gym.Env):
             overlapped. 
             
             '''
-            start_time = random.randint(0, 3.1536e+7-self.end_year_margin)
+            start_time = random.randint(0+self.bgn_year_margin, 
+                                        3.1536e+7-self.end_year_margin)
             episode = (start_time, start_time+self.max_episode_length)
             if self.excluding_periods is not None:
                 for period in self.excluding_periods:
@@ -406,7 +472,7 @@ class BoptestGymEnv(gym.Env):
         
         # Set forecasting parameters if predictive
         if self.is_predictive:
-            forecast_parameters = {'horizon':self.forecasting_period, 'interval':self.step_period}
+            forecast_parameters = {'horizon':self.predictive_period, 'interval':self.step_period}
             requests.put('{0}/forecast_parameters'.format(self.url),
                          data=forecast_parameters)
         
@@ -464,15 +530,16 @@ class BoptestGymEnv(gym.Env):
         # Define whether we've finished the episode
         done = self.compute_done(res, reward)
         
-        if done and self.render_episodes:
-            self.render()
-        
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
         # Get observations at the end of this time step
         observations = self.get_observations(res)
-                
+        
+        # Render episode if finished and requested
+        if done and self.render_episodes:
+            self.render()
+        
         return observations, reward, done, info
     
     def render(self, mode='episodes'):
@@ -566,9 +633,9 @@ class BoptestGymEnv(gym.Env):
 
     def get_observations(self, res):
         '''
-        Get the observations, i.e. the conjunction of measurements and 
-        forecasting variables if any. Also transforms the output to have
-        the right format. 
+        Get the observations, i.e. the conjunction of measurements, 
+        regressive and predictive variables if any. Also transforms 
+        the output to have the right format. 
         
         Parameters
         ----------
@@ -595,13 +662,26 @@ class BoptestGymEnv(gym.Env):
         # Get measurements at the end of the simulation step
         for obs in self.measurement_vars:
             observations.append(res[obs])
-        
+                
+        # Get regressions if this is a regressive agent
+        if self.is_regressive:
+            regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
+            for var in self.regressive_vars:
+                res_var = requests.put('{0}/results'.format(self.url), 
+                                       data={'point_name':var,
+                                             'start_time':res['time']-self.regressive_period, 
+                                             'final_time':res['time']}).json()
+                f = interpolate.interp1d(res_var['time'],
+                    res_var[var], kind='linear')
+                res_var_reindexed = f(regr_index)
+                observations.extend(list(res_var_reindexed))
+
         # Get predictions if this is a predictive agent
         if self.is_predictive:
-            forecast = requests.get('{0}/forecast'.format(self.url)).json()
-            for var in self.forecasting_vars:
-                for i in range(self.fore_n):
-                    observations.append(forecast[var][i])
+            predictions = requests.get('{0}/forecast'.format(self.url)).json()
+            for var in self.predictive_vars:
+                for i in range(self.pred_n):
+                    observations.append(predictions[var][i])
             
         # Reformat observations
         observations = np.array(observations).astype(np.float32)
