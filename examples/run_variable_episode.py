@@ -6,7 +6,7 @@ training an agent.
 
 '''
 
-from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper, SaveOnBestTrainingRewardCallback
+from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper, SaveAndTestCallback
 from stable_baselines import A2C
 from stable_baselines.bench import Monitor
 from testing import utilities
@@ -100,7 +100,7 @@ def train_A2C_with_variable_episode(start_time_tests    = [31*24*3600, 304*24*36
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
     # Create the callback: check every 10 steps. We keep it very short for testing 
-    callback = SaveOnBestTrainingRewardCallback(check_freq=10, log_dir=log_dir)
+    callback = SaveAndTestCallback(env, check_freq=10, log_dir=log_dir)
     
     # Initialize the agent
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,

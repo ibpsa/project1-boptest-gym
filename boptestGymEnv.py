@@ -5,9 +5,9 @@ Created on Jun 4, 2020
 
 '''
 
+import matplotlib.pyplot as plt
 import random
 import gym
-import copy
 import requests
 import numpy as np
 import pandas as pd
@@ -22,6 +22,7 @@ from stable_baselines.common.env_checker import check_env
 from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines.common.callbacks import BaseCallback
 
+from examples.test_and_plot import plot_results, test_agent
 
 class BoptestGymEnv(gym.Env):
     '''
@@ -45,7 +46,9 @@ class BoptestGymEnv(gym.Env):
                  start_time         = 0,
                  warmup_period      = 0,
                  scenario           = {'electricity_price':'constant'},
-                 step_period        = 900):
+                 step_period        = 900,
+                 render_episodes    = False,
+                 log_dir            = os.getcwd()):
         '''
         Parameters
         ----------
@@ -106,6 +109,10 @@ class BoptestGymEnv(gym.Env):
             `highly_dynamic`
         step_period: integer
             Sampling time in seconds
+        render_episodes: boolean
+            True to render every episode
+        log_dir: string    
+            Directory to store results like plots or KPIs
             
         '''
         
@@ -123,6 +130,8 @@ class BoptestGymEnv(gym.Env):
         self.forecasting_period = forecasting_period
         self.step_period        = step_period
         self.scenario           = scenario
+        self.render_episodes    = render_episodes
+        self.log_dir            = log_dir
         # Avoid surpassing the end of the year during an episode
         self.end_year_margin = self.max_episode_length
         
@@ -238,6 +247,10 @@ class BoptestGymEnv(gym.Env):
         self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
                                        high = np.array(self.upper_act_bounds), 
                                        dtype= np.float32)
+        
+        if self.render_episodes:
+            plt.ion()
+            self.fig = plt.gcf()
 
     def __str__(self):
         '''
@@ -403,6 +416,8 @@ class BoptestGymEnv(gym.Env):
         # Get observations at the end of the initialization period
         observations = self.get_observations(res)
         
+        self.episode_rewards = []
+
         return observations
 
     def step(self, action):
@@ -444,9 +459,13 @@ class BoptestGymEnv(gym.Env):
         
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
+        self.episode_rewards.append(reward)
         
         # Define whether we've finished the episode
         done = self.compute_done(res, reward)
+        
+        if done and self.render_episodes:
+            self.render()
         
         # Optionally we can pass additional info, we are not using that for now
         info = {}
@@ -456,7 +475,7 @@ class BoptestGymEnv(gym.Env):
                 
         return observations, reward, done, info
     
-    def render(self, mode='console'):
+    def render(self, mode='episodes'):
         '''
         Renders the process evolution 
         
@@ -466,8 +485,13 @@ class BoptestGymEnv(gym.Env):
             Mode to be used for the renderization
         
         '''
-        if mode != 'console':
+        if mode != 'episodes':
             raise NotImplementedError()
+        else:
+            plt.ion()
+            self.fig = plt.gcf()
+            self.fig.clear()
+            plot_results(self, self.episode_rewards, log_dir=self.log_dir)
 
     def close(self):
         pass
@@ -1056,6 +1080,40 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         
         return reward
     
+class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
+    '''Boptest gym environment that redefines the reward function to 
+    weight more the discomfort when compared with the default reward
+    function. 
+    
+    '''
+    
+    def compute_reward(self):
+        '''Custom reward function that penalizes more the discomfort
+        and thus more the operational cost.
+        
+        Returns
+        -------
+        reward: float
+            Reward of last state-action-state' tuple
+        
+        '''
+        
+        # Define relative weight for discomfort 
+        w = 10
+        
+        # Compute BOPTEST core kpis
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        
+        # Calculate objective integrand function at this point
+        objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
+        
+        # Compute reward
+        reward = -(objective_integrand - self.objective_integrand)
+        
+        self.objective_integrand = objective_integrand
+        
+        return reward
+    
 class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
     '''Boptest gym environment that redefines the reward function to 
     weight more the operational cost when compared with the default reward
@@ -1085,7 +1143,7 @@ class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
         
         return done
 
-class SaveOnBestTrainingRewardCallback(BaseCallback):
+class SaveAndTestCallback(BaseCallback):
     '''
     Callback for saving a model (the check is done every `check_freq` 
     steps) based on the training reward (in practice, we recommend using 
@@ -1093,31 +1151,46 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
     around a `stable_baselines.bench.Monitor` wrapper to generate the 
     monitoring files that are then loaded using the 
     `stable_baselines.results_plotter.load_results` method.  
+    This callback also tests the environment every `check_freq` 
+    using deterministic=True. Useful to ensure that the agent is learning 
+    properly. 
 
     '''
     
-    def __init__(self, check_freq=1000, log_dir='agents', verbose=1):
+    def __init__(self, env=None, check_freq=1000, save_freq=10000, 
+                 log_dir='agents', verbose=1, test=False):
         '''
         Constructor for the callback. 
         
         Parameters
         ----------
+        env: BoptestGymEnv
+            Environment passed here to perform tests
         check_freq: integer, default is 1000
-            Number of steps to perform check
+            Number of steps to perform check and test
+                check_freq: integer, default is 1000
+        save_freq: integer, default is 10000
+            Number of steps to store model independently of
+            performance
         log_dir: string, default is 'agents'
             Path to the folder where the model will be saved. 
             It must contain the file created by an 
             `stable_baselines.bench.Monitor` wrapper. 
         verbose: integer
             Verbose level for the callback
+        test: boolean
+            If True, the agent is tested every `check_freq` 
+            with deterministic=True 
         
         '''
-        super(SaveOnBestTrainingRewardCallback, self).__init__(verbose)
+        super(SaveAndTestCallback, self).__init__(verbose)
+        self.env = env
         self.check_freq = check_freq
-        self.save_freq = self.check_freq*10
+        self.save_freq = save_freq
         self.log_dir = log_dir
         self.save_path = os.path.join(log_dir, 'best_model')
         self.best_mean_reward = -np.inf
+        self.test = test
 
     def _init_callback(self) -> None:
         '''
@@ -1140,6 +1213,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             this case we always return `True`. 
         
         '''
+        
+        # Save every self.save_freq steps independently of performance
+        if self.n_calls % self.save_freq == 0:
+            self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
+        
         if self.n_calls % self.check_freq == 0:
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), 'timesteps')
@@ -1157,10 +1235,18 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                     if self.verbose > 0:
                         print("Saving new best model to {}".format(self.save_path))
                         self.model.save(self.save_path)
-        
-                # Save every 10000 steps independently of performance
-                if self.n_calls % self.save_freq == 0:
-                    self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
+
+            if self.test:
+                print('Testing the agent.................................')
+                test_agent(self.env, self.model, self.env.start_time, 
+                           self.env.max_episode_length, self.env.warmup_period, 
+                           kpis_to_file=False, plot=False, log_dir=self.log_dir)   
+                # Force to render if `render_episodes` is not active
+                if not self.env.render_episodes:
+                    self.env.render(mode='episodes')
+                # Reset the environment just in case that `self.check_freq`
+                # does not coincide with a terminal state
+                self.env.reset() 
         
         return True
 

@@ -2,18 +2,18 @@
 Module to test features of the OpenAI-Gym interface for BOPTEST. 
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
 the tests. Latest tests were passing with BOPTEST commit:
-c471db86d45d066695f17ad9f83ddbca900debe4
+c8c64973babbf99c32947777cf3f69ed7af55a35
 
 '''
 
 import unittest
-import utilities
 import os
 import pandas as pd
 import random
 import shutil
+from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
-    run_variable_episode, train_A2C, train_PPO2
+    run_variable_episode, train_RL
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines.common.env_checker import check_env
@@ -181,7 +181,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             `load=True` reduces the testing time considerably by directly 
             loading a pre-trained agent. Independently of whether the 
             agent is trained or not during testing, the results should be 
-            exactly the same as far as the seed in `examples.train_A2C` 
+            exactly the same as far as the seed in `examples.train_RL` 
             is not modified. 
         episode_length_test : integer, default=2*24*3600
             Length of the testing episode. We keep it short for testing,
@@ -192,18 +192,21 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests = train_A2C.train_A2C(load=load, 
-                                                           case=case)
+        env, model, start_time_tests, _ = train_RL.train_RL(algorithm='A2C',
+                                                            load=load, 
+                                                            case=case,
+                                                            render=False,
+                                                            training_timesteps=1e6)
         
         obs, act, rew, kpi = \
-            train_A2C.test_feb(env, model, start_time_tests, 
+            train_RL.test_peak(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_feb'.format(case))
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_peak'.format(case))
         
         obs, act, rew, kpi = \
-            train_A2C.test_nov(env, model, start_time_tests, 
+            train_RL.test_typi(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_nov'.format(case))
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_typi'.format(case))
     
     def test_A2C_simple(self):
         '''Test simple agent with only one measurement as observation and
@@ -239,41 +242,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''
         self.partial_test_A2C(case='C')
-       
-    def test_PPO2(self, load=True, episode_length_test=2*24*3600,
-                 warmup_period_test=1*24*3600, plot=False):
-        '''Test for an PPO2 agent from stable baselines. 
-        
-        Parameters
-        ----------
-        load : boolean, default=True
-            If `load=False`, then this test case will be a long test run 
-            since the agent will be trained during the tests. Setting 
-            `load=True` reduces the testing time considerably by directly 
-            loading a pre-trained agent. Independently of whether the 
-            agent is trained or not during testing, the results should be 
-            exactly the same as far as the seed in `examples.train_PPO2` 
-            is not modified. 
-        episode_length_test : integer, default=2*24*3600
-            Length of the testing episode. We keep it short for testing,
-            only two days are used by default. 
-        warmup_period_test : integer, default=1*24*3600
-            Length of the initialization period for the test. We keep it 
-            short for testing. Only one day is used by default. 
-        
-        '''        
-        
-        env, model, start_time_tests = train_PPO2.train_PPO2(load=load)
-        
-        obs, act, rew, kpi = \
-            train_PPO2.test_feb(env, model, start_time_tests, 
-                               episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_feb')
-        
-        obs, act, rew, kpi = \
-            train_PPO2.test_nov(env, model, start_time_tests, 
-                               episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_nov')
 
     def test_save_callback(self):
         '''
@@ -351,12 +319,12 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Utilities require index to have time as index name (even this is not the case here)
         monitor.index.name = 'time'
         
-        # Transfor to numeric
+        # Transform to numeric
         monitor = monitor.apply(lambda col:pd.to_numeric(col, errors='coerce'))
         
         # Check that we obtain always same monitoring parameters
         ref_filepath = os.path.join(utilities.get_root_path(), 
-                    'testing', 'references', 'variable_episode_monitor.csv')
+                    'testing', 'references', 'variable_episode_monitoring.csv')
         self.compare_ref_timeseries_df(monitor, ref_filepath)
         
         # Remove model to prove further testing
