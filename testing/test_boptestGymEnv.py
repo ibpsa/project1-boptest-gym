@@ -240,41 +240,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''
         self.partial_test_A2C(case='C')
-       
-    def test_PPO2(self, load=True, episode_length_test=2*24*3600,
-                 warmup_period_test=1*24*3600, plot=False):
-        '''Test for an PPO2 agent from stable baselines. 
-        
-        Parameters
-        ----------
-        load : boolean, default=True
-            If `load=False`, then this test case will be a long test run 
-            since the agent will be trained during the tests. Setting 
-            `load=True` reduces the testing time considerably by directly 
-            loading a pre-trained agent. Independently of whether the 
-            agent is trained or not during testing, the results should be 
-            exactly the same as far as the seed in `examples.train_PPO2` 
-            is not modified. 
-        episode_length_test : integer, default=2*24*3600
-            Length of the testing episode. We keep it short for testing,
-            only two days are used by default. 
-        warmup_period_test : integer, default=1*24*3600
-            Length of the initialization period for the test. We keep it 
-            short for testing. Only one day is used by default. 
-        
-        '''        
-        
-        env, model, start_time_tests = train_PPO2.train_PPO2(load=load)
-        
-        obs, act, rew, kpi = \
-            train_PPO2.test_feb(env, model, start_time_tests, 
-                               episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_feb')
-        
-        obs, act, rew, kpi = \
-            train_PPO2.test_nov(env, model, start_time_tests, 
-                               episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='PPO2_nov')
 
     def test_save_callback(self):
         '''
