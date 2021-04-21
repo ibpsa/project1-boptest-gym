@@ -1158,7 +1158,7 @@ class SaveAndTestCallback(BaseCallback):
     '''
     
     def __init__(self, env=None, check_freq=1000, save_freq=10000, 
-                 log_dir='agents', verbose=1, test=True):
+                 log_dir='agents', verbose=1, test=False):
         '''
         Constructor for the callback. 
         
