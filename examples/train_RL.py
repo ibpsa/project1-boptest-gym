@@ -227,13 +227,17 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A')
-    #env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='B')
-    #env, model, start_time_tests = train_RL(algorithm='SAC', load=False, case='C')
+    render = False
+    plot = not render # Plot does not work together with render
+    
+    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', render=render)
+    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', render=render)
+    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', render=render)
+    
     warmup_period_test  = 7*24*3600
-    episode_length_test = 3*24*3600
+    episode_length_test = 14*24*3600
     kpis_to_file = True
-    plot = False # set plot to Flase when render is True
+
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
     test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
     
