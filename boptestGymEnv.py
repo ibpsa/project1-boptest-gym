@@ -669,10 +669,15 @@ class BoptestGymEnv(gym.Env):
             for var in self.regressive_vars:
                 res_var = requests.put('{0}/results'.format(self.url), 
                                        data={'point_name':var,
-                                             'start_time':res['time']-self.regressive_period, 
-                                             'final_time':res['time']}).json()
+                                             'start_time':regr_index[-1], 
+                                             'final_time':regr_index[0]}).json()
+                # fill_value='extrapolate' is needed for the very few cases when
+                # res_var['time'] is not returned to be exactly between 
+                # regr_index[-1] and regr_index[0] but shorter. In these cases
+                # we extrapolate linearly to reach the desired value at the extreme
+                # of the regression period.                              
                 f = interpolate.interp1d(res_var['time'],
-                    res_var[var], kind='linear')
+                    res_var[var], kind='linear', fill_value='extrapolate') 
                 res_var_reindexed = f(regr_index)
                 observations.extend(list(res_var_reindexed))
 
