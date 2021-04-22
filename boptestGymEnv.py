@@ -240,7 +240,7 @@ class BoptestGymEnv(gym.Env):
             
             # Extend observations to have one observation per regressive step
             for obs in self.regressive_vars:
-                obs_list = [obs+'_regr_{}'.format(int(i*self.step_period)) for i in range(self.regr_n)]
+                obs_list = [obs+'_regr_{}'.format(int(i*self.step_period)+1) for i in range(self.regr_n)]
                 obs_lbou = [observations[obs][0]]*len(obs_list)
                 obs_ubou = [observations[obs][1]]*len(obs_list)
                 self.observations.extend(obs_list)
