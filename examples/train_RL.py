@@ -163,11 +163,14 @@ def train_RL(algorithm           = 'SAC',
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
                                                      ('reaTZon_y',(280.,310.)),
+                                                     ('TDryBul',(265,303)),
+                                                     ('HGloHor',(0,991)),
+                                                     ('InternalGainsRad[1]',(0,219)),
                                                      ('PriceElectricPowerHighlyDynamic',(-0.4,0.4)),
                                                      ('LowerSetp[1]',(280.,310.)),
                                                      ('UpperSetp[1]',(280.,310.))]), 
-                            predictive_period     = 3*3600, 
-                            regressive_period     = 3*3600, 
+                            predictive_period     = 24*3600, 
+                            regressive_period     = 6*3600, 
                             scenario              = {'electricity_price':'highly_dynamic'},
                             random_start_time     = True,
                             excluding_periods     = excluding_periods,
@@ -253,6 +256,7 @@ if __name__ == "__main__":
     env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', render=render)
     env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', render=render)
     env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', render=render)
+    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='D', training_timesteps=1e6, render=render)
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
