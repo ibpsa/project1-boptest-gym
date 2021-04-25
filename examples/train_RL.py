@@ -5,8 +5,8 @@ case. This case needs to be deployed to run this script.
 '''
 
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
-    NormalizedObservationWrapper, SaveAndTestCallback
-from stable_baselines import A2C, SAC
+    NormalizedObservationWrapper, SaveAndTestCallback, DiscretizedActionWrapper
+from stable_baselines import A2C, SAC, DQN
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
@@ -191,13 +191,20 @@ def train_RL(algorithm           = 'SAC',
         # Define RL agent
         if algorithm == 'SAC':
             model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        learning_rate=3e-4, batch_size=96, ent_coef='auto',
+                        learning_rate=3e-4, batch_size=96, ent_coef='10',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
         elif algorithm == 'A2C':
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=7e-4, n_steps=4, ent_coef=1,
+                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+            
+        elif algorithm == 'DQN':
+            env = DiscretizedActionWrapper(env,n_bins_act=10)
+            model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                        learning_rate=5e-4, batch_size=96, 
+                        buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
         # Create the callback test and save the agent while training
@@ -213,6 +220,8 @@ def train_RL(algorithm           = 'SAC',
         if algorithm == 'SAC':
             model = SAC.load(os.path.join(log_dir,'last_model'))
         elif algorithm == 'A2C':
+            model = A2C.load(os.path.join(log_dir,'last_model'))
+        elif algorithm == 'DQN':
             model = A2C.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests, log_dir
@@ -250,13 +259,13 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    render = False
+    render = True
     plot = not render # Plot does not work together with render
     
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='D', training_timesteps=1e6, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', training_timesteps=3e5, render=render)
+    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', load=False, case='D', training_timesteps=1e6, render=render)
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
