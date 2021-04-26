@@ -923,15 +923,15 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         low     = self.action_space.low
         high    = self.action_space.high
         
-        # Calculate dimension of observation space
-        n_act = low.flatten().shape[0]
+        # Calculate dimension of action space
+        self.n_act = low.flatten().shape[0]
         
         # Obtain values of discretized action space
         self.val_bins_act   = [np.linspace(l, h, n_bins_act + 1) for l, h in
                                zip(low.flatten(), high.flatten())]
         
         # Instantiate discretized action space
-        self.action_space = spaces.Discrete(n_bins_act ** n_act)
+        self.action_space = spaces.Discrete(n_bins_act ** self.n_act)
 
     def action(self, action_wrapper):
         '''This method accepts a single parameter (the modified action
@@ -958,14 +958,11 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         
         '''
         
-        # Get the bin indexes for each element of this observation
-        indexes = [np.digitize([x], bins)[0]
-                  for x, bins in zip(action_wrapper.flatten(), self.val_bins_act)]
-        
-        # Return values from indexes
-        action = []
-        for act_i, index in enumerate(indexes):
-            action.append(self.val_bins_act[act_i][index-1])
+        # Get the action values from bin indexes
+        action = [bins[x]
+                  for x, bins in zip(action_wrapper.flatten(), 
+                                     self.val_bins_act)]
+
         action = np.asarray(action).astype(self.env.action_space.dtype)
         
         return action
