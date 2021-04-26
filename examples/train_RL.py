@@ -191,7 +191,7 @@ def train_RL(algorithm           = 'SAC',
         # Define RL agent
         if algorithm == 'SAC':
             model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        learning_rate=3e-4, batch_size=96, ent_coef='10',
+                        learning_rate=3e-4, batch_size=96, ent_coef='auto',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
@@ -222,7 +222,7 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'A2C':
             model = A2C.load(os.path.join(log_dir,'last_model'))
         elif algorithm == 'DQN':
-            model = A2C.load(os.path.join(log_dir,'last_model'))
+            model = DQN.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests, log_dir
         
