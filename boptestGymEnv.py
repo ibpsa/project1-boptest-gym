@@ -931,7 +931,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
                                zip(low.flatten(), high.flatten())]
         
         # Instantiate discretized action space
-        self.action_space = spaces.Discrete(n_bins_act ** self.n_act)
+        self.action_space = spaces.Discrete((n_bins_act+1) ** self.n_act)
 
     def action(self, action_wrapper):
         '''This method accepts a single parameter (the modified action
