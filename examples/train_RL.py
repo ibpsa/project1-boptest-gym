@@ -222,6 +222,7 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'A2C':
             model = A2C.load(os.path.join(log_dir,'last_model'))
         elif algorithm == 'DQN':
+            env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests, log_dir
