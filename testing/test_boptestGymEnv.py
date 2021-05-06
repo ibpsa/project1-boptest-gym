@@ -215,7 +215,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         
         # Use two days in this simple test. All others use only one. 
-        self.partial_test_A2C(case='simple', algorithm='A2C', episode_length_test=2*24*3600)
+        self.partial_test_RL(case='simple', algorithm='A2C', episode_length_test=2*24*3600)
         
     def test_A2C_A(self):
         '''Test case A which extends simple case with `time` as observation
@@ -224,7 +224,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         state space. 
         
         '''
-        self.partial_test_A2C(case='A', algorithm='A2C')
+        self.partial_test_RL(case='A', algorithm='A2C')
         
     def test_A2C_B(self):
         '''Test case B which extends case A with boundary condition data 
@@ -233,7 +233,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         data in the state space. 
         
         '''
-        self.partial_test_A2C(case='B', algorithm='A2C')
+        self.partial_test_RL(case='B', algorithm='A2C')
         
     def test_A2C_C(self):
         '''Test case C which extends case B with boundary forecast. 
@@ -241,7 +241,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         test checks the use of predictive states. 
         
         '''
-        self.partial_test_A2C(case='C', algorithm='A2C')
+        self.partial_test_RL(case='C', algorithm='A2C')
         
     def test_DQN_D(self):
         '''Test case D which is far more complex than previous cases. 
