@@ -5,8 +5,8 @@ case. This case needs to be deployed to run this script.
 '''
 
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
-    NormalizedObservationWrapper, SaveAndTestCallback
-from stable_baselines import A2C, SAC
+    NormalizedObservationWrapper, SaveAndTestCallback, DiscretizedActionWrapper
+from stable_baselines import A2C, SAC, DQN
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
@@ -22,10 +22,10 @@ seed = 123456
 random.seed(seed)
 
 def train_RL(algorithm           = 'SAC',
-             start_time_tests    = [(45-7)*24*3600, (310-7)*24*3600], 
+             start_time_tests    = [(23-7)*24*3600, (115-7)*24*3600], 
              episode_length_test = 14*24*3600, 
              warmup_period       = 1*24*3600,
-             max_episode_length  = 1*24*3600,
+             max_episode_length  = 7*24*3600,
              load                = False,
              case                = 'simple',
              training_timesteps  = 3e5,
@@ -112,7 +112,7 @@ def train_RL(algorithm           = 'SAC',
                                                      ('reaTZon_y',(280.,310.)),
                                                      ('PriceElectricPowerHighlyDynamic',(-0.4,0.4))]), 
                             scenario              = {'electricity_price':'highly_dynamic'},
-                            forecasting_period    = 0, 
+                            predictive_period     = 0, 
                             random_start_time     = True,
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
@@ -129,7 +129,7 @@ def train_RL(algorithm           = 'SAC',
                                                      ('PriceElectricPowerHighlyDynamic',(-0.4,0.4)),
                                                      ('LowerSetp[1]',(280.,310.)),
                                                      ('UpperSetp[1]',(280.,310.))]), 
-                            forecasting_period    = 0, 
+                            predictive_period     = 0, 
                             scenario              = {'electricity_price':'highly_dynamic'},
                             random_start_time     = True,
                             excluding_periods     = excluding_periods,
@@ -147,13 +147,36 @@ def train_RL(algorithm           = 'SAC',
                                                      ('PriceElectricPowerHighlyDynamic',(-0.4,0.4)),
                                                      ('LowerSetp[1]',(280.,310.)),
                                                      ('UpperSetp[1]',(280.,310.))]), 
-                            forecasting_period    = 3*3600, 
+                            predictive_period     = 3*3600, 
                             scenario              = {'electricity_price':'highly_dynamic'},
                             random_start_time     = True,
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
                             step_period           = 900,
+                            render_episodes       = render,
+                            log_dir               = log_dir)
+        
+    if case == 'D':
+        env = BoptestGymEnvCustomReward(
+                            url                   = url,
+                            actions               = ['oveHeaPumY_u'],
+                            observations          = OrderedDict([('time',(0,604800)),
+                                                     ('reaTZon_y',(280.,310.)),
+                                                     ('TDryBul',(265,303)),
+                                                     ('HGloHor',(0,991)),
+                                                     ('InternalGainsRad[1]',(0,219)),
+                                                     ('PriceElectricPowerHighlyDynamic',(-0.4,0.4)),
+                                                     ('LowerSetp[1]',(280.,310.)),
+                                                     ('UpperSetp[1]',(280.,310.))]), 
+                            predictive_period     = 24*3600, 
+                            regressive_period     = 6*3600, 
+                            scenario              = {'electricity_price':'highly_dynamic'},
+                            random_start_time     = True,
+                            excluding_periods     = excluding_periods,
+                            max_episode_length    = max_episode_length,
+                            warmup_period         = warmup_period,
+                            step_period           = 3600,
                             render_episodes       = render,
                             log_dir               = log_dir)
     
@@ -176,6 +199,13 @@ def train_RL(algorithm           = 'SAC',
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=7e-4, n_steps=4, ent_coef=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
+            
+        elif algorithm == 'DQN':
+            env = DiscretizedActionWrapper(env,n_bins_act=10)
+            model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                        learning_rate=5e-4, batch_size=24, 
+                        buffer_size=365*24, learning_starts=24, train_freq=1,
+                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
@@ -191,6 +221,9 @@ def train_RL(algorithm           = 'SAC',
             model = SAC.load(os.path.join(log_dir,'last_model'))
         elif algorithm == 'A2C':
             model = A2C.load(os.path.join(log_dir,'last_model'))
+        elif algorithm == 'DQN':
+            env = DiscretizedActionWrapper(env,n_bins_act=10)
+            model = DQN.load(os.path.join(log_dir,'last_model'))
     
     return env, model, start_time_tests, log_dir
         
@@ -227,12 +260,13 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    render = False
+    render = True
     plot = not render # Plot does not work together with render
     
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', training_timesteps=3e5, render=render)
+    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', load=False, case='D', training_timesteps=1e6, render=render)
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600

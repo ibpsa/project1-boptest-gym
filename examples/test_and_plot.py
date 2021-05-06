@@ -66,7 +66,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     return observations, actions, rewards, kpis
 
 def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
-                 log_dir=os.getcwd()):
+                 log_dir=os.getcwd(), plot_to_file=False):
     
     df_res = pd.DataFrame()
     if points is None:
@@ -175,9 +175,10 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
-    plt.savefig(os.path.join(log_dir, 
-                'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
-                bbox_inches='tight')
+    if plot_to_file:
+        plt.savefig(os.path.join(log_dir, 
+                    'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
+                    bbox_inches='tight')
     
     plt.pause(0.001)
     plt.show()  

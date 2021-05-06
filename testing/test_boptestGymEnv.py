@@ -2,7 +2,7 @@
 Module to test features of the OpenAI-Gym interface for BOPTEST. 
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
 the tests. Latest tests were passing with BOPTEST commit:
-c8c64973babbf99c32947777cf3f69ed7af55a35
+538acebc318e1d5461434cdef1e883ef3e3b4a8c
 
 '''
 
@@ -169,9 +169,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
     
-    def partial_test_A2C(self, load=True, episode_length_test=1*24*3600,
-                 warmup_period_test=1*24*3600, case='simple', plot=False):
-        '''Test for an A2C agent from stable baselines. 
+    def partial_test_RL(self, algorithm='A2C', load=True, episode_length_test=1*24*3600,
+                        warmup_period_test=1*24*3600, case='simple', plot=False):
+        '''Test for an RL agent from stable baselines. 
         
         Parameters
         ----------
@@ -192,7 +192,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''        
         
-        env, model, start_time_tests, _ = train_RL.train_RL(algorithm='A2C',
+        env, model, start_time_tests, _ = train_RL.train_RL(algorithm=algorithm,
                                                             load=load, 
                                                             case=case,
                                                             render=False,
@@ -201,12 +201,12 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, act, rew, kpi = \
             train_RL.test_peak(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_peak'.format(case))
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='{0}_{1}_peak'.format(algorithm,case))
         
         obs, act, rew, kpi = \
             train_RL.test_typi(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='A2C_{}_typi'.format(case))
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='{0}_{1}_typi'.format(algorithm,case))
     
     def test_A2C_simple(self):
         '''Test simple agent with only one measurement as observation and
@@ -215,7 +215,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         
         # Use two days in this simple test. All others use only one. 
-        self.partial_test_A2C(case='simple', episode_length_test=2*24*3600)
+        self.partial_test_RL(case='simple', algorithm='A2C', episode_length_test=2*24*3600)
         
     def test_A2C_A(self):
         '''Test case A which extends simple case with `time` as observation
@@ -224,7 +224,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         state space. 
         
         '''
-        self.partial_test_A2C(case='A')
+        self.partial_test_RL(case='A', algorithm='A2C')
         
     def test_A2C_B(self):
         '''Test case B which extends case A with boundary condition data 
@@ -233,7 +233,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         data in the state space. 
         
         '''
-        self.partial_test_A2C(case='B')
+        self.partial_test_RL(case='B', algorithm='A2C')
         
     def test_A2C_C(self):
         '''Test case C which extends case B with boundary forecast. 
@@ -241,7 +241,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         test checks the use of predictive states. 
         
         '''
-        self.partial_test_A2C(case='C')
+        self.partial_test_RL(case='C', algorithm='A2C')
+        
+    def test_DQN_D(self):
+        '''Test case D which is far more complex than previous cases. 
+        Particularly it also uses regressive states discrete action space.  
+        
+        '''
+        self.partial_test_RL(case='D', algorithm='DQN')
 
     def test_save_callback(self):
         '''
