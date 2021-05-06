@@ -242,6 +242,13 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''
         self.partial_test_A2C(case='C', algorithm='A2C')
+        
+    def test_DQN_D(self):
+        '''Test case D which is far more complex than previous cases. 
+        Particularly it also uses regressive states discrete action space.  
+        
+        '''
+        self.partial_test_RL(case='D', algorithm='DQN')
 
     def test_save_callback(self):
         '''
