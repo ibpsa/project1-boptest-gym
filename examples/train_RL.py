@@ -176,7 +176,7 @@ def train_RL(algorithm           = 'SAC',
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
-                            step_period           = 900,
+                            step_period           = 3600,
                             render_episodes       = render,
                             log_dir               = log_dir)
     
@@ -203,8 +203,8 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'DQN':
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        learning_rate=5e-4, batch_size=96, 
-                        buffer_size=365*96, learning_starts=96, train_freq=1,
+                        learning_rate=5e-4, batch_size=24, 
+                        buffer_size=365*24, learning_starts=24, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
         # Create the callback test and save the agent while training
