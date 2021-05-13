@@ -8,3 +8,4 @@ examples/agents/variable_episode_A2C/monitor.csv
 *monitor.csv*
 *.pdf
 *.prefs
+examples/kpis/
