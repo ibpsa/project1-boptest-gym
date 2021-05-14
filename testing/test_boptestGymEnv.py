@@ -169,16 +169,17 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
     
-    def partial_test_RL(self, algorithm='A2C', load=True, episode_length_test=1*24*3600,
-                        warmup_period_test=1*24*3600, case='simple', plot=False):
+    def partial_test_RL(self, algorithm='A2C', mode='load', episode_length_test=1*24*3600,
+                        warmup_period_test=1*24*3600, case='simple', training_timesteps=1e6,
+                        expert_traj=None, plot=False):
         '''Test for an RL agent from stable baselines. 
         
         Parameters
         ----------
-        load : boolean, default=True
-            If `load=False`, then this test case will be a long test run 
-            since the agent will be trained during the tests. Setting 
-            `load=True` reduces the testing time considerably by directly 
+        mode : string, default='load'
+            Mode to obtain the RL agent. If `mode=train` then the agent
+            will be trained and thus this test case will take long. Setting 
+            `mode=load` reduces the testing time considerably by directly 
             loading a pre-trained agent. Independently of whether the 
             agent is trained or not during testing, the results should be 
             exactly the same as far as the seed in `examples.train_RL` 
@@ -189,24 +190,42 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         warmup_period_test : integer, default=1*24*3600
             Length of the initialization period for the test. We keep it 
             short for testing. Only one day is used by default. 
+        case : string, default='simple'
+            Case to be tested. 
+        training_timesteps : int, default=1e6
+            Number of timesteps to be used for learning in the test. 
+        expert_traj : string, default=None
+            Path to expert trajectory if pretraining through behavior 
+            cloning is to be used.  
+        plot : boolean
+            If True the test will plot the time series trajectory. 
         
         '''        
         
         env, model, start_time_tests, _ = train_RL.train_RL(algorithm=algorithm,
-                                                            load=load, 
+                                                            mode=mode, 
                                                             case=case,
                                                             render=False,
-                                                            training_timesteps=1e6)
+                                                            training_timesteps=training_timesteps,
+                                                            expert_traj=expert_traj)
         
         obs, act, rew, kpi = \
             train_RL.test_peak(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='{0}_{1}_peak'.format(algorithm,case))
+        if expert_traj is None:
+            label = '{0}_{1}_peak'.format(algorithm,case)
+        else:
+            label = '{0}_{1}_peak_pretrained'.format(algorithm,case)
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label)
         
         obs, act, rew, kpi = \
             train_RL.test_typi(env, model, start_time_tests, 
                                episode_length_test, warmup_period_test, plot)
-        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label='{0}_{1}_typi'.format(algorithm,case))
+        if expert_traj is None:
+            label = '{0}_{1}_typi'.format(algorithm,case)
+        else:
+            label = '{0}_{1}_typi_pretrained'.format(algorithm,case)
+        self.check_obs_act_rew_kpi(obs,act,rew,kpi,label)
     
     def test_A2C_simple(self):
         '''Test simple agent with only one measurement as observation and
@@ -249,6 +268,34 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''
         self.partial_test_RL(case='D', algorithm='DQN')
+        
+    def test_behavior_cloning_cont(self):
+        '''Check that an agent using continuous action space (in this case
+        we use A2C) can be pretrained using behavior cloning from an 
+        expert trajectory that needs to be generated beforehand. The test
+        pretrains the agent with 1000 epochs and directly tests its 
+        performance without further learning. 
+        
+        '''
+        expert_traj = os.path.join(utilities.get_root_path(),'examples',
+                                   'trajectories','expert_traj_cont_28.npz')
+        self.partial_test_RL(case='D', algorithm='A2C', mode='train', 
+                             training_timesteps=0,
+                             expert_traj=expert_traj)
+        
+    def test_behavior_cloning_disc(self):
+        '''Check that an agent using discrete action space (in this case
+        we use DQN) can be pretrained using behavior cloning from an 
+        expert trajectory that needs to be generated beforehand. The test
+        pretrains the agent with 1000 epochs and directly tests its 
+        performance without further learning. 
+        
+        '''
+        expert_traj = os.path.join(utilities.get_root_path(),'examples',
+                           'trajectories','expert_traj_disc_28.npz')
+        self.partial_test_RL(case='D', algorithm='DQN', mode='train',
+                             training_timesteps=0, 
+                             expert_traj=expert_traj)
 
     def test_save_callback(self):
         '''
