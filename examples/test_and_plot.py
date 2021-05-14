@@ -162,7 +162,7 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     axs[3].set_yticks(np.arange(-5, 16, 5))
     axt = axs[3].twinx()
     
-    axt.plot(x_time, df['HGloHor'], color='gold', linestyle='-', linewidth=1, label='$\dot{Q}_rad$')
+    axt.plot(x_time, df['HDirNor'], color='gold', linestyle='-', linewidth=1, label='$\dot{Q}_rad$')
     axt.set_ylabel('Solar\nirradiation\n($W$)')
     
     axs[3].plot([],[], color='darkorange',  linestyle='-', linewidth=1, label='RL')
