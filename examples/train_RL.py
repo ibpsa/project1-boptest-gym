@@ -1,11 +1,17 @@
 '''
 Module to train and test a RL agent for the bestest_hydronic_heatpump 
 case. This case needs to be deployed to run this script.  
+To load the ExpertDataset it's needed to comment the first line in stable_baselines\gail\_init_.py
+from stable_baselines.gail.model import GAIL
+If further issues are encountered related to the np.ndarrais for pretraining, it may happen that
+numpy is installed twice. Check:
+https://stackoverflow.com/questions/54943168/problem-with-tensorflow-tf-sessionrun-wrapper-expected-all-values-in-input-dic
 
 '''
 
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
     NormalizedObservationWrapper, SaveAndTestCallback, DiscretizedActionWrapper
+from stable_baselines.gail import ExpertDataset
 from stable_baselines import A2C, SAC, DQN
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
