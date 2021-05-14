@@ -32,10 +32,11 @@ def train_RL(algorithm           = 'SAC',
              episode_length_test = 14*24*3600, 
              warmup_period       = 1*24*3600,
              max_episode_length  = 7*24*3600,
-             load                = False,
+             mode                = 'train',
              case                = 'simple',
              training_timesteps  = 3e5,
-             render              = False):
+             render              = False,
+             expert_traj         = None):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -49,15 +50,17 @@ def train_RL(algorithm           = 'SAC',
     episode_length_test : integer
         Number of seconds indicating the length of the testing periods. By
         default two weeks are reserved for testing. 
-    load : boolean
-        Boolean indicating whether the algorithm is loaded (True) or 
-        needs to be trained (False)
+    mode : string
+        Either train, load, or empty.
     case : string
         Case to be tested.
     training_timesteps : integer
         Total number of timesteps used for training
     render : boolean
         If true, it renders every episode while training.
+    expert_traj : string
+        Path to expert trajectory in .npz format. If not None, the agent 
+        will be pretrained using behavior cloning with these data. 
         
     '''
     
@@ -192,7 +195,7 @@ def train_RL(algorithm           = 'SAC',
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
-    if not load: 
+    if mode == 'train': 
         
         # Define RL agent
         if algorithm == 'SAC':
@@ -213,6 +216,12 @@ def train_RL(algorithm           = 'SAC',
                         buffer_size=365*24, learning_starts=24, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
+        if expert_traj is not None:
+            # Do not shuffle (randomize) to obtain deterministic result
+            dataset = ExpertDataset(expert_path=expert_traj, randomize=False,
+                                    traj_limitation=1, batch_size=96)
+            model.pretrain(dataset, n_epochs=1000)
+        
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
                                        log_dir=log_dir, test=True)
@@ -221,7 +230,7 @@ def train_RL(algorithm           = 'SAC',
         # Save the agent
         model.save(os.path.join(log_dir,'last_model'))
         
-    else:
+    elif mode == 'load':
         # Load the trained agent
         if algorithm == 'SAC':
             model = SAC.load(os.path.join(log_dir,'last_model'))
@@ -230,6 +239,12 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'DQN':
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN.load(os.path.join(log_dir,'last_model'))
+            
+    elif mode == 'empty':
+        model = None
+    
+    else:
+        raise ValueError('mode should be either train, load, or empty')
     
     return env, model, start_time_tests, log_dir
         
