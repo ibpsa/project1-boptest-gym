@@ -1,11 +1,17 @@
 '''
 Module to train and test a RL agent for the bestest_hydronic_heatpump 
 case. This case needs to be deployed to run this script.  
+To load the ExpertDataset it's needed to comment the first line in stable_baselines\gail\_init_.py
+from stable_baselines.gail.model import GAIL
+If further issues are encountered related to the np.ndarrais for pretraining, it may happen that
+numpy is installed twice. Check:
+https://stackoverflow.com/questions/54943168/problem-with-tensorflow-tf-sessionrun-wrapper-expected-all-values-in-input-dic
 
 '''
 
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
     NormalizedObservationWrapper, SaveAndTestCallback, DiscretizedActionWrapper
+from stable_baselines.gail import ExpertDataset
 from stable_baselines import A2C, SAC, DQN
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
@@ -26,10 +32,11 @@ def train_RL(algorithm           = 'SAC',
              episode_length_test = 14*24*3600, 
              warmup_period       = 1*24*3600,
              max_episode_length  = 7*24*3600,
-             load                = False,
+             mode                = 'train',
              case                = 'simple',
              training_timesteps  = 3e5,
-             render              = False):
+             render              = False,
+             expert_traj         = None):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -43,15 +50,17 @@ def train_RL(algorithm           = 'SAC',
     episode_length_test : integer
         Number of seconds indicating the length of the testing periods. By
         default two weeks are reserved for testing. 
-    load : boolean
-        Boolean indicating whether the algorithm is loaded (True) or 
-        needs to be trained (False)
+    mode : string
+        Either train, load, or empty.
     case : string
         Case to be tested.
     training_timesteps : integer
         Total number of timesteps used for training
     render : boolean
         If true, it renders every episode while training.
+    expert_traj : string
+        Path to expert trajectory in .npz format. If not None, the agent 
+        will be pretrained using behavior cloning with these data. 
         
     '''
     
@@ -164,7 +173,7 @@ def train_RL(algorithm           = 'SAC',
                             observations          = OrderedDict([('time',(0,604800)),
                                                      ('reaTZon_y',(280.,310.)),
                                                      ('TDryBul',(265,303)),
-                                                     ('HGloHor',(0,991)),
+                                                     ('HDirNor',(0,862)),
                                                      ('InternalGainsRad[1]',(0,219)),
                                                      ('PriceElectricPowerHighlyDynamic',(-0.4,0.4)),
                                                      ('LowerSetp[1]',(280.,310.)),
@@ -176,7 +185,7 @@ def train_RL(algorithm           = 'SAC',
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
-                            step_period           = 3600,
+                            step_period           = 900,
                             render_episodes       = render,
                             log_dir               = log_dir)
     
@@ -186,7 +195,7 @@ def train_RL(algorithm           = 'SAC',
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
-    if not load: 
+    if mode == 'train': 
         
         # Define RL agent
         if algorithm == 'SAC':
@@ -207,6 +216,12 @@ def train_RL(algorithm           = 'SAC',
                         buffer_size=365*24, learning_starts=24, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
+        if expert_traj is not None:
+            # Do not shuffle (randomize) to obtain deterministic result
+            dataset = ExpertDataset(expert_path=expert_traj, randomize=False,
+                                    traj_limitation=1, batch_size=96)
+            model.pretrain(dataset, n_epochs=1000)
+        
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
                                        log_dir=log_dir, test=True)
@@ -215,7 +230,7 @@ def train_RL(algorithm           = 'SAC',
         # Save the agent
         model.save(os.path.join(log_dir,'last_model'))
         
-    else:
+    elif mode == 'load':
         # Load the trained agent
         if algorithm == 'SAC':
             model = SAC.load(os.path.join(log_dir,'last_model'))
@@ -224,6 +239,12 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'DQN':
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN.load(os.path.join(log_dir,'last_model'))
+            
+    elif mode == 'empty':
+        model = None
+    
+    else:
+        raise ValueError('mode should be either train, load, or empty')
     
     return env, model, start_time_tests, log_dir
         
@@ -263,10 +284,12 @@ if __name__ == "__main__":
     render = True
     plot = not render # Plot does not work together with render
     
-    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', training_timesteps=3e5, render=render)
-    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', training_timesteps=3e5, render=render)
-    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', training_timesteps=3e5, render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', load=False, case='D', training_timesteps=1e6, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='B', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
+    
+    env, model, start_time_tests, log_dir = train_RL(algorithm='A2C', mode='train', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_cont_28.npz'))
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
