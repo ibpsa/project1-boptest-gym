@@ -284,10 +284,12 @@ if __name__ == "__main__":
     render = True
     plot = not render # Plot does not work together with render
     
-    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='A', training_timesteps=3e5, render=render)
-    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='B', training_timesteps=3e5, render=render)
-    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', load=True, case='C', training_timesteps=3e5, render=render)
-    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', load=False, case='D', training_timesteps=1e6, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='B', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
+    #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
+    
+    env, model, start_time_tests, log_dir = train_RL(algorithm='A2C', mode='train', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_cont_28.npz'))
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
