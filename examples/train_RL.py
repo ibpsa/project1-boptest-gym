@@ -212,8 +212,9 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'DQN':
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        learning_rate=5e-4, batch_size=24, 
-                        buffer_size=365*24, learning_starts=24, train_freq=1,
+                        exploration_initial_eps=1.0, exploration_final_eps=0.1,
+                        learning_rate=5e-4, batch_size=96, 
+                        buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
         if expert_traj is not None:
@@ -289,7 +290,7 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
-    env, model, start_time_tests, log_dir = train_RL(algorithm='A2C', mode='train', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_cont_28.npz'))
+    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='train', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'))
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
