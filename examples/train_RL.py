@@ -212,8 +212,8 @@ def train_RL(algorithm           = 'SAC',
         elif algorithm == 'DQN':
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        exploration_initial_eps=1.0, exploration_final_eps=0.1,
-                        learning_rate=5e-4, batch_size=96, target_network_update_freq=96,
+                        exploration_initial_eps=0.1, exploration_final_eps=0.01,
+                        learning_rate=5e-4, batch_size=7*96, target_network_update_freq=1,
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
