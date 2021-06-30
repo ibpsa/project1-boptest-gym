@@ -198,18 +198,18 @@ def train_RL(algorithm           = 'SAC',
     if mode == 'train': 
         
         # Define RL agent
-        if algorithm == 'SAC':
+        if 'SAC' in algorithm:
             model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=3e-4, batch_size=96, ent_coef='auto',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
-        elif algorithm == 'A2C':
+        elif 'A2C' in algorithm:
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=7e-4, n_steps=4, ent_coef=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
             
-        elif algorithm == 'DQN':
+        elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=5e-4, batch_size=24, 
@@ -232,11 +232,11 @@ def train_RL(algorithm           = 'SAC',
         
     elif mode == 'load':
         # Load the trained agent
-        if algorithm == 'SAC':
+        if 'SAC' in algorithm:
             model = SAC.load(os.path.join(log_dir,'last_model'))
-        elif algorithm == 'A2C':
+        elif 'A2C' in algorithm:
             model = A2C.load(os.path.join(log_dir,'last_model'))
-        elif algorithm == 'DQN':
+        elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN.load(os.path.join(log_dir,'last_model'))
             
