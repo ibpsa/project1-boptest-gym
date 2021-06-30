@@ -21,7 +21,8 @@ import requests
 import random
 import os
 
-url = 'http://127.0.0.1:5000'
+url     = 'http://127.0.0.1:5000'
+url_RC  = 'http://127.0.0.1:8080'
 seed = 123456
 
 # Seed for random starting times of episodes
@@ -36,7 +37,8 @@ def train_RL(algorithm           = 'SAC',
              case                = 'simple',
              training_timesteps  = 3e5,
              render              = False,
-             expert_traj         = None):
+             expert_traj         = None,
+             return_RC           = False):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -61,6 +63,8 @@ def train_RL(algorithm           = 'SAC',
     expert_traj : string
         Path to expert trajectory in .npz format. If not None, the agent 
         will be pretrained using behavior cloning with these data. 
+    return_RC : boolean
+        True to return the same environment but pointing to the RC port
         
     '''
     
@@ -77,6 +81,13 @@ def train_RL(algorithm           = 'SAC',
         'agents', '{}_{}_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
     log_dir = log_dir.replace('+', '')
     os.makedirs(log_dir, exist_ok=True)
+    
+    if return_RC:
+        # Create a log directory
+        log_dir_RC = os.path.join(utilities.get_root_path(), 'examples', 
+            'agents', '{}_{}_{:.0e}_logdir_RC'.format(algorithm,case,training_timesteps))
+        log_dir_RC = log_dir.replace('+', '')
+        os.makedirs(log_dir_RC, exist_ok=True)
     
     # Redefine reward function
     class BoptestGymEnvCustomReward(BoptestGymEnv):
@@ -188,12 +199,40 @@ def train_RL(algorithm           = 'SAC',
                             step_period           = 900,
                             render_episodes       = render,
                             log_dir               = log_dir)
+        
+    if case == 'D' and return_RC:
+        env_RC = BoptestGymEnvCustomReward(
+                            url                   = url_RC,
+                            actions               = ['oveHeaPumY_u'],
+                            observations          = OrderedDict([('time',(0,604800)),
+                                                     ('reaTZon_y',(280.,310.)),
+                                                     ('TDryBul',(265,303)),
+                                                     ('HDirNor',(0,862)),
+                                                     ('InternalGainsRad[1]',(0,219)),
+                                                     ('PriceElectricPowerHighlyDynamic',(-0.4,0.4)),
+                                                     ('LowerSetp[1]',(280.,310.)),
+                                                     ('UpperSetp[1]',(280.,310.))]), 
+                            predictive_period     = 24*3600, 
+                            regressive_period     = 6*3600, 
+                            scenario              = {'electricity_price':'highly_dynamic'},
+                            random_start_time     = True,
+                            excluding_periods     = excluding_periods,
+                            max_episode_length    = max_episode_length,
+                            warmup_period         = warmup_period,
+                            step_period           = 900,
+                            render_episodes       = render,
+                            log_dir               = log_dir_RC)
     
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
     
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
+    
+    if return_RC:
+        env_RC = NormalizedObservationWrapper(env_RC)
+        env_RC = NormalizedActionWrapper(env_RC)
+        env_RC = Monitor(env=env_RC, filename=os.path.join(log_dir,'monitor_RC.csv'))
     
     if mode == 'train': 
         
@@ -247,11 +286,11 @@ def train_RL(algorithm           = 'SAC',
     else:
         raise ValueError('mode should be either train, load, or empty')
     
-    return env, model, start_time_tests, log_dir
+    return env, model, start_time_tests, log_dir, env_RC
         
 def test_peak(env, model, start_time_tests, episode_length_test, 
               warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
-              plot=False):
+              plot=False, env_RC=None):
     ''' Perform test in peak heat period (February). 
     
     '''
@@ -262,12 +301,13 @@ def test_peak(env, model, start_time_tests, episode_length_test,
                                                       warmup_period=warmup_period_test,
                                                       log_dir=log_dir,
                                                       kpis_to_file=kpis_to_file,
-                                                      plot=plot)
+                                                      plot=plot,
+                                                      env_RC=env_RC)
     return observations, actions, rewards, kpis
 
 def test_typi(env, model, start_time_tests, episode_length_test, 
               warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
-              plot=False):
+              plot=False, env_RC=None):
     ''' Perform test in typical heat period (November)
     
     '''
@@ -278,11 +318,12 @@ def test_typi(env, model, start_time_tests, episode_length_test,
                                                       warmup_period=warmup_period_test,
                                                       log_dir=log_dir,
                                                       kpis_to_file=kpis_to_file,
-                                                      plot=plot)
+                                                      plot=plot, 
+                                                      env_RC=env_RC)
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    render = True
+    render = False
     plot = not render # Plot does not work together with render
     
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
@@ -290,12 +331,12 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
-    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='train', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'))
+    env, model, start_time_tests, log_dir, env_RC = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), return_RC=True)
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
     kpis_to_file = True
 
-    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
-    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
+    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot, env_RC)
+    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot, env_RC)
     

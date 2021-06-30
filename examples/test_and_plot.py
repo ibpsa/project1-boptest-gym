@@ -15,7 +15,7 @@ import os
 
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               log_dir=os.getcwd(), kpis_to_file=False, plot=False):
+               log_dir=os.getcwd(), kpis_to_file=False, plot=False, env_RC=None):
     ''' Test model agent in env.
     
     '''
@@ -34,6 +34,21 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     # Reset environment
     obs = env.reset()
+    
+    if env_RC is not None:
+        if isinstance(env_RC,Wrapper): 
+            env_RC.unwrapped.random_start_time   = False
+            env_RC.unwrapped.start_time          = start_time
+            env_RC.unwrapped.max_episode_length  = episode_length
+            env_RC.unwrapped.warmup_period       = warmup_period
+        else:
+            env_RC.random_start_time   = False
+            env_RC.start_time          = start_time
+            env_RC.max_episode_length  = episode_length
+            env_RC.warmup_period       = warmup_period
+            
+        # Reset environment
+        obs_RC = env_RC.reset()
     
     # Simulation loop
     done = False
