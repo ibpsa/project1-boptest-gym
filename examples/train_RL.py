@@ -92,7 +92,7 @@ def train_RL(algorithm           = 'SAC',
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot']*12.*16. + 10*kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']*12.*16. + 100*kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)
