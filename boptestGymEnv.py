@@ -1240,7 +1240,7 @@ class SaveAndTestCallback(BaseCallback):
     '''
     
     def __init__(self, env=None, check_freq=1000, save_freq=10000, 
-                 log_dir='agents', verbose=1, test=False):
+                 log_dir='agents', verbose=1, test=False, initial_step=0):
         '''
         Constructor for the callback. 
         
@@ -1263,6 +1263,9 @@ class SaveAndTestCallback(BaseCallback):
         test: boolean
             If True, the agent is tested every `check_freq` 
             with deterministic=True 
+        initial_step: integer
+            Defines the initial step in case the model has been 
+            loaded for continual learning. 
         
         '''
         super(SaveAndTestCallback, self).__init__(verbose)
@@ -1273,6 +1276,7 @@ class SaveAndTestCallback(BaseCallback):
         self.save_path = os.path.join(log_dir, 'best_model')
         self.best_mean_reward = -np.inf
         self.test = test
+        self.initial_step = 0
 
     def _init_callback(self) -> None:
         '''
@@ -1297,8 +1301,9 @@ class SaveAndTestCallback(BaseCallback):
         '''
         
         # Save every self.save_freq steps independently of performance
+        # Note that self.n_calls starts by 1
         if self.n_calls % self.save_freq == 0:
-            self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
+            self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls+self.initial_step)))
         
         if self.n_calls % self.check_freq == 0:
             # Retrieve training reward

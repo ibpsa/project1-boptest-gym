@@ -36,6 +36,8 @@ def train_RL(algorithm           = 'SAC',
              mode                = 'train',
              case                = 'simple',
              training_timesteps  = 3e5,
+             exploration_initial_eps = 0.1,
+             from_model          = None,
              render              = False,
              expert_traj         = None,
              return_RC           = False):
@@ -53,11 +55,16 @@ def train_RL(algorithm           = 'SAC',
         Number of seconds indicating the length of the testing periods. By
         default two weeks are reserved for testing. 
     mode : string
-        Either train, load, or empty.
+        Either train, load, continue, or empty.
     case : string
         Case to be tested.
     training_timesteps : integer
         Total number of timesteps used for training
+    exploration_initial_eps : integer
+        Initial exploration rate
+    from_model : string
+        Model from which to continue learning. To be combined with 
+        mode=continue. So far only supported with DQN. 
     render : boolean
         If true, it renders every episode while training.
     expert_traj : string
@@ -251,12 +258,12 @@ def train_RL(algorithm           = 'SAC',
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        exploration_initial_eps=0.1, exploration_final_eps=0.01,
+                        exploration_initial_eps=exploration_initial_eps, exploration_final_eps=0.01,
                         learning_rate=5e-4, batch_size=7*96, target_network_update_freq=1,
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
-        if expert_traj is not None:
+        if expert_traj is not None and mode!='continue':
             # Do not shuffle (randomize) to obtain deterministic result
             dataset = ExpertDataset(expert_path=expert_traj, randomize=False,
                                     traj_limitation=1, batch_size=96)
@@ -279,6 +286,26 @@ def train_RL(algorithm           = 'SAC',
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN.load(os.path.join(log_dir,'last_model'))
+            
+    elif mode == 'continue':
+        if 'DQN' in algorithm:
+            env = DiscretizedActionWrapper(env,n_bins_act=10)
+            model = DQN.load(os.path.join(log_dir,from_model))
+            model.set_env(env)
+            
+            # Derive the initial_step from which this model is going to learn
+            initial_step = int(from_model.split('_')[1])
+            
+            # Deduct the steps that we've already learned
+            training_timesteps = training_timesteps - initial_step
+            
+            # Create the callback test and save the agent while training
+            callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
+                                           log_dir=log_dir, test=True, initial_step=initial_step)
+            # Main training loop
+            model.learn(total_timesteps=int(training_timesteps), callback=callback)
+            # Save the agent
+            model.save(os.path.join(log_dir,'last_model'))
             
     elif mode == 'empty':
         model = None
@@ -323,7 +350,7 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    render = False
+    render = True
     plot = not render # Plot does not work together with render
     
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
@@ -331,7 +358,10 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
-    env, model, start_time_tests, log_dir, env_RC = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), return_RC=True)
+    env, model, start_time_tests, log_dir, env_RC = \
+        train_RL(algorithm='DQN', mode='continue', case='D', training_timesteps=1e6, 
+                 render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
+                 return_RC=False, from_model='model_690000')
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
