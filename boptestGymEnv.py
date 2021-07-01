@@ -1276,7 +1276,7 @@ class SaveAndTestCallback(BaseCallback):
         self.save_path = os.path.join(log_dir, 'best_model')
         self.best_mean_reward = -np.inf
         self.test = test
-        self.initial_step = 0
+        self.initial_step = initial_step
 
     def _init_callback(self) -> None:
         '''
