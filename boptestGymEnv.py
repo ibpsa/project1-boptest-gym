@@ -542,6 +542,54 @@ class BoptestGymEnv(gym.Env):
         
         return observations, reward, done, info
     
+    def imagine(self, action, initial_states):
+        '''
+        Imagine the effect of an action from the current state
+        
+        Parameters
+        ----------
+        action: list
+            List of actions computed by the agent to be imagined 
+            in this step
+        initial_states: dictionary
+            List of initial states to be set when imagining the action
+            
+        Returns
+        -------
+        observations: numpy array
+            Observations imagined at the end of this time step
+        reward: float
+            Reward for the state-action pair imagined
+        done: boolean
+            Always set to false when steps are imagined
+        info: dictionary
+            Additional information for this step
+        
+        '''
+        
+        # Initialize inputs to send through BOPTEST Rest API
+        u = {}
+        
+        # Assign values to inputs if any
+        for i, act in enumerate(self.actions):
+            # Assign value
+            u[act] = action[i]
+            
+            # Indicate that the input is active
+            u[act.replace('_u','_activate')] = 1.
+                
+        # Advance a BOPTEST simulation
+        res = requests.post('{0}/imagine'.format(self.url), 
+                            data={'u':u, 'initial_states':initial_states}).json()
+
+        # Compute reward of this (state-action-state') tuple
+        reward = self.compute_reward()
+        
+        # Get observations at the end of this time step
+        observations = self.get_observations(res)
+        
+        return observations, reward
+    
     def render(self, mode='episodes'):
         '''
         Renders the process evolution 

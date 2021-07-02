@@ -6,6 +6,7 @@ Common functionality to test and plot an agent
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from gym.core import Wrapper
+from collections import OrderedDict
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -48,7 +49,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             env_RC.warmup_period       = warmup_period
             
         # Reset environment
-        obs_RC = env_RC.reset()
+        _ = env_RC.reset()
     
     # Simulation loop
     done = False
@@ -57,8 +58,26 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     rewards = []
     print('Simulating...')
     while done is False:
-        action, _ = model.predict(obs, deterministic=True)
+        # initial_states = env_RC.estimate_states(obs)
+        initial_states = {'_start_mod.bui.zon.capZon.heaPor.T': 293.15,
+                          '_start_mod.bui.zon.capWal.heaPor.T': 293.15,
+                          '_start_mod.bui.zon.capInt.heaPor.T': 293.15,
+                          '_start_mod.bui.zon.capEmb.heaPor.T': 293.15,
+                          }
+        actions_rewards = OrderedDict()
+        actions_observs = OrderedDict()
+        actions_returns = OrderedDict()
+        for action in range(11):
+            actions_observs[action],  actions_rewards[action] = env_RC.imagine(action, initial_states)
+            _, q_values = model.predict(actions_observs[action], deterministic=True)
+            actions_returns[action] = actions_rewards[action] + model.gamma*np.argmax(q_values) 
+        action = max(actions_returns, key=actions_rewards.get)
+        
+        # Advance the actual environment
         obs, reward, done, _ = env.step(action)
+        # Advance the simple environment
+        obs_RC, reward_RC, done_RC, _ = env_RC.step(action)
+        
         observations.append(obs)
         actions.append(action)
         rewards.append(reward)

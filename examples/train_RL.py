@@ -350,7 +350,7 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    render = True
+    render = False
     plot = not render # Plot does not work together with render
     
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
@@ -359,9 +359,9 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
     env, model, start_time_tests, log_dir, env_RC = \
-        train_RL(algorithm='DQN', mode='continue', case='D', training_timesteps=1e6, 
+        train_RL(algorithm='DQN_RC', mode='load', case='D', training_timesteps=1e6, 
                  render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
-                 return_RC=False, from_model='model_690000')
+                 return_RC=True, from_model='last_model')
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
