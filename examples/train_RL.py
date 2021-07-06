@@ -238,11 +238,6 @@ def train_RL(algorithm           = 'SAC',
     # Modify the environment to include the callback
     env = Monitor(env=env, filename=os.path.join(log_dir,'monitor.csv'))
     
-    if return_RC:
-        env_RC = NormalizedObservationWrapper(env_RC)
-        env_RC = NormalizedActionWrapper(env_RC)
-        env_RC = Monitor(env=env_RC, filename=os.path.join(log_dir,'monitor_RC.csv'))
-    
     if mode == 'train': 
         
         # Define RL agent
@@ -314,6 +309,12 @@ def train_RL(algorithm           = 'SAC',
     
     else:
         raise ValueError('mode should be either train, load, continue, or empty')
+    
+    if return_RC:
+        env_RC = NormalizedObservationWrapper(env_RC)
+        env_RC = NormalizedActionWrapper(env_RC)
+        env_RC = Monitor(env=env_RC, filename=os.path.join(log_dir,'monitor_RC.csv'))
+        env_RC = DiscretizedActionWrapper(env_RC,n_bins_act=10)
     
     return env, model, start_time_tests, log_dir, env_RC
         
