@@ -542,18 +542,15 @@ class BoptestGymEnv(gym.Env):
         
         return observations, reward, done, info
     
-    def imagine(self, action, initial_states):
+    def imagine(self, action):
         '''
         Imagine the effect of an action from the current state
         
         Parameters
         ----------
         action: list
-            List of actions computed by the agent to be imagined 
-            in this step
-        initial_states: dictionary
-            List of initial states to be set when imagining the action
-            
+            List of actions to be imagined by the agent in this step
+        
         Returns
         -------
         observations: numpy array
@@ -577,10 +574,10 @@ class BoptestGymEnv(gym.Env):
             
             # Indicate that the input is active
             u[act.replace('_u','_activate')] = 1.
-                
-        # Advance a BOPTEST simulation
+        
+        # Imagine a BOPTEST simulation
         res = requests.post('{0}/imagine'.format(self.url), 
-                            data={'u':u, 'initial_states':initial_states}).json()
+                            data={'u':u}).json()
 
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
@@ -590,6 +587,29 @@ class BoptestGymEnv(gym.Env):
         
         return observations, reward
     
+    def set_states(self, initial_states):
+        '''Set the initial states of the test case
+        
+        Parameters
+        ----------
+        initial_states: dictionary
+            List of initial states to be set in the model
+            
+        '''
+        
+        # Set initial states
+        res = requests.post('{0}/set_states'.format(self.url), 
+                            data=initial_states).json()
+                            
+        # Compute reward of this (state-action-state') tuple
+        reward = self.compute_reward()
+        
+        # Get observations at the end of this time step
+        observations = self.get_observations(res)
+        
+        return observations, reward
+        
+        
     def render(self, mode='episodes'):
         '''
         Renders the process evolution 

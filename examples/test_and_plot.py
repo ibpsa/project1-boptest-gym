@@ -6,7 +6,6 @@ Common functionality to test and plot an agent
 import matplotlib.pyplot as plt
 from scipy import interpolate
 from gym.core import Wrapper
-from collections import OrderedDict
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -14,6 +13,12 @@ import requests
 import json
 import os
 
+initial_states = {}
+initial_states['mod.bui.zon.capZon.TSta'] = 350.15
+initial_states['mod.bui.zon.capWal.TSta'] = 350.15
+initial_states['mod.bui.zon.capInt.TSta'] = 350.15
+initial_states['mod.bui.zon.capEmb.TSta'] = 350.15
+initial_states['mod.bui.hea.capFlo.TSta'] = 350.15
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
                log_dir=os.getcwd(), kpis_to_file=False, plot=False, env_RC=None):
@@ -59,24 +64,27 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     print('Simulating...')
     while done is False:
         # initial_states = env_RC.estimate_states(obs)
-        initial_states = {'_start_mod.bui.zon.capZon.heaPor.T': 293.15,
-                          '_start_mod.bui.zon.capWal.heaPor.T': 293.15,
-                          '_start_mod.bui.zon.capInt.heaPor.T': 293.15,
-                          '_start_mod.bui.zon.capEmb.heaPor.T': 293.15,
-                          }
-        actions_rewards = OrderedDict()
-        actions_observs = OrderedDict()
-        actions_returns = OrderedDict()
-        for action in range(11):
-            actions_observs[action],  actions_rewards[action] = env_RC.imagine(action, initial_states)
-            _, q_values = model.predict(actions_observs[action], deterministic=True)
-            actions_returns[action] = actions_rewards[action] + model.gamma*np.argmax(q_values) 
-        action = max(actions_returns, key=actions_rewards.get)
+        action, _ = model.predict(obs, deterministic=True)
+        obs, reward = env_RC.set_states(initial_states)
+        # The following is just to advance start_time
+        obs, reward, done, _ = env_RC.step(action)
         
-        # Advance the actual environment
-        obs, reward, done, _ = env.step(action)
-        # Advance the simple environment
-        obs_RC, reward_RC, done_RC, _ = env_RC.step(action)
+#=====================================================================
+#         actions_rewards = OrderedDict()
+#         actions_observs = OrderedDict()
+#         actions_returns = OrderedDict()
+#         for action in range(11):
+#             env_RC.unwrapped.objective_integrand = 0.
+#             actions_observs[action],  actions_rewards[action] = env_RC.imagine([action], initial_states)
+#             _, q_values = model.predict(actions_observs[action], deterministic=True)
+#             actions_returns[action] = actions_rewards[action] + model.gamma*np.argmax(q_values) 
+#         action = max(actions_returns, key=actions_rewards.get)
+# 
+#         # Advance the actual environment
+#         obs, reward, done, _ = env.step([action])
+#         # Advance the simple environment
+#         obs_RC, reward_RC, done_RC, _ = env_RC.step(action)
+#=====================================================================
         
         observations.append(obs)
         actions.append(action)
@@ -88,7 +96,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
             json.dump(kpis, f)
     
-    if plot:
+    if True:
         plot_results(env, rewards)
     
     # Back to random start time, just in case we're testing in the loop

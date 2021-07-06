@@ -95,6 +95,8 @@ def train_RL(algorithm           = 'SAC',
             'agents', '{}_{}_{:.0e}_logdir_RC'.format(algorithm,case,training_timesteps))
         log_dir_RC = log_dir.replace('+', '')
         os.makedirs(log_dir_RC, exist_ok=True)
+    else:
+        env_RC = None
     
     # Redefine reward function
     class BoptestGymEnvCustomReward(BoptestGymEnv):
@@ -263,7 +265,7 @@ def train_RL(algorithm           = 'SAC',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
         
-        if expert_traj is not None and mode!='continue':
+        if expert_traj is not None:
             # Do not shuffle (randomize) to obtain deterministic result
             dataset = ExpertDataset(expert_path=expert_traj, randomize=False,
                                     traj_limitation=1, batch_size=96)
@@ -311,7 +313,7 @@ def train_RL(algorithm           = 'SAC',
         model = None
     
     else:
-        raise ValueError('mode should be either train, load, or empty')
+        raise ValueError('mode should be either train, load, continue, or empty')
     
     return env, model, start_time_tests, log_dir, env_RC
         
@@ -364,7 +366,7 @@ if __name__ == "__main__":
                  return_RC=True, from_model='last_model')
     
     warmup_period_test  = 7*24*3600
-    episode_length_test = 14*24*3600
+    episode_length_test = 1*24*3600
     kpis_to_file = True
 
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot, env_RC)
