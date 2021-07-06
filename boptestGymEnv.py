@@ -549,7 +549,10 @@ class BoptestGymEnv(gym.Env):
         ----------
         initial_states: dictionary
             List of initial states to be set in the model
-            
+        action: list
+            List of actions computed by the agent to be imagined for one 
+            step period
+        
         '''
         
         # Initialize inputs to send through BOPTEST Rest API
@@ -1016,6 +1019,9 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         action = np.asarray(action).astype(self.env.action_space.dtype)
         
         return action
+
+    def imagine(self, initial_states, action):
+        return self.env.imagine(initial_states, self.action(action))
       
 class NormalizedObservationWrapper(gym.ObservationWrapper):
     '''This wrapper normalizes the values of the observation space to lie
@@ -1074,6 +1080,10 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
             (self.observation_space.high-self.observation_space.low)-1
         
         return observation_wrapper
+    
+    def imagine(self, initial_states, action):
+        observation, reward = self.env.imagine(initial_states, action)
+        return self.observation(observation), reward
      
 class NormalizedActionWrapper(gym.ActionWrapper):
     '''This wrapper normalizes the values of the action space to lie
@@ -1142,6 +1152,9 @@ class NormalizedActionWrapper(gym.ActionWrapper):
         '''
         
         return self.low + (0.5*(action_wrapper+1.0)*(self.high-self.low))
+    
+    def imagine(self, initial_states, action):
+        return self.env.imagine(initial_states, self.action(action))
 
 class BoptestGymEnvRewardClipping(BoptestGymEnv):
     '''Boptest gym environment that redefines the reward function to be a 
