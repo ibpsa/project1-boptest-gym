@@ -65,7 +65,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     while done is False:
         # initial_states = env_RC.estimate_states(obs)
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward = env_RC.set_states(initial_states)
+        obs, reward = env_RC.imagine(initial_states)
         # The following is just to advance start_time
         obs, reward, done, _ = env_RC.step(action)
         

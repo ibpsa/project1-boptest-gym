@@ -542,52 +542,7 @@ class BoptestGymEnv(gym.Env):
         
         return observations, reward, done, info
     
-    def imagine(self, action):
-        '''
-        Imagine the effect of an action from the current state
-        
-        Parameters
-        ----------
-        action: list
-            List of actions to be imagined by the agent in this step
-        
-        Returns
-        -------
-        observations: numpy array
-            Observations imagined at the end of this time step
-        reward: float
-            Reward for the state-action pair imagined
-        done: boolean
-            Always set to false when steps are imagined
-        info: dictionary
-            Additional information for this step
-        
-        '''
-        
-        # Initialize inputs to send through BOPTEST Rest API
-        u = {}
-        
-        # Assign values to inputs if any
-        for i, act in enumerate(self.actions):
-            # Assign value
-            u[act] = action[i]
-            
-            # Indicate that the input is active
-            u[act.replace('_u','_activate')] = 1.
-        
-        # Imagine a BOPTEST simulation
-        res = requests.post('{0}/imagine'.format(self.url), 
-                            data={'u':u}).json()
-
-        # Compute reward of this (state-action-state') tuple
-        reward = self.compute_reward()
-        
-        # Get observations at the end of this time step
-        observations = self.get_observations(res)
-        
-        return observations, reward
-    
-    def set_states(self, initial_states):
+    def imagine(self, initial_states):
         '''Set the initial states of the test case
         
         Parameters
@@ -598,7 +553,7 @@ class BoptestGymEnv(gym.Env):
         '''
         
         # Set initial states
-        res = requests.post('{0}/set_states'.format(self.url), 
+        res = requests.post('{0}/imagine'.format(self.url), 
                             data=initial_states).json()
                             
         # Compute reward of this (state-action-state') tuple
@@ -739,6 +694,9 @@ class BoptestGymEnv(gym.Env):
                                        data={'point_name':var,
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()
+                df=pd.DataFrame(res_var)
+                plt.plot(df['time'],df['reaTZon_y'])
+                plt.show()
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -748,6 +706,8 @@ class BoptestGymEnv(gym.Env):
                     res_var[var], kind='linear', fill_value='extrapolate') 
                 res_var_reindexed = f(regr_index)
                 observations.extend(list(res_var_reindexed))
+                
+                plt.plot(regr_index, res_var_reindexed)
 
         # Get predictions if this is a predictive agent
         if self.is_predictive:
