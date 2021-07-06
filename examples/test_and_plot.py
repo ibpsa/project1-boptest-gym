@@ -14,11 +14,11 @@ import json
 import os
 
 initial_states = {}
-initial_states['mod.bui.zon.capZon.TSta'] = 350.15
-initial_states['mod.bui.zon.capWal.TSta'] = 350.15
-initial_states['mod.bui.zon.capInt.TSta'] = 350.15
-initial_states['mod.bui.zon.capEmb.TSta'] = 350.15
-initial_states['mod.bui.hea.capFlo.TSta'] = 350.15
+initial_states['mod.bui.zon.capZon.TSta'] = 293.15
+initial_states['mod.bui.zon.capWal.TSta'] = 293.15
+initial_states['mod.bui.zon.capInt.TSta'] = 293.15
+initial_states['mod.bui.zon.capEmb.TSta'] = 293.15
+initial_states['mod.bui.hea.capFlo.TSta'] = 293.15
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
                log_dir=os.getcwd(), kpis_to_file=False, plot=False, env_RC=None):
@@ -63,12 +63,11 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     rewards = []
     print('Simulating...')
     while done is False:
-        # initial_states = env_RC.estimate_states(obs)
-        action, _ = model.predict(obs, deterministic=True)
-        obs, reward = env_RC.imagine(initial_states)
-        # The following is just to advance start_time
-        obs, reward, done, _ = env_RC.step(action)
-        
+        # action, _ = model.predict(obs, deterministic=True)
+        for action in range(11):
+            obs, reward = env_RC.imagine(initial_states, [action])            
+        env_RC.advance_time_only()
+                
 #=====================================================================
 #         actions_rewards = OrderedDict()
 #         actions_observs = OrderedDict()
@@ -87,7 +86,6 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
 #=====================================================================
         
         observations.append(obs)
-        actions.append(action)
         rewards.append(reward)
     
     kpis = env.get_kpis()

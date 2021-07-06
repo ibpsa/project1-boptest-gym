@@ -542,7 +542,7 @@ class BoptestGymEnv(gym.Env):
         
         return observations, reward, done, info
     
-    def imagine(self, initial_states):
+    def imagine(self, initial_states, action):
         '''Set the initial states of the test case
         
         Parameters
@@ -552,9 +552,25 @@ class BoptestGymEnv(gym.Env):
             
         '''
         
-        # Set initial states
+        # Initialize inputs to send through BOPTEST Rest API
+        u = {}
+        
+        # Assign values to inputs if any
+        for i, act in enumerate(self.actions):
+            # Assign value
+            u[act] = action[i]
+            
+            # Indicate that the input is active
+            u[act.replace('_u','_activate')] = 1.
+        
+        # The Flask API does not easily allow nested dictionaries
+        states_and_inputs = {}
+        states_and_inputs.update(initial_states)
+        states_and_inputs.update(u)
+        
+        # Imagine transition
         res = requests.post('{0}/imagine'.format(self.url), 
-                            data=initial_states).json()
+                            data=states_and_inputs).json()
                             
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
@@ -563,7 +579,13 @@ class BoptestGymEnv(gym.Env):
         observations = self.get_observations(res)
         
         return observations, reward
+    
+    def advance_time_only(self):
+        '''Advance case time one step period without simulation. 
         
+        '''
+                
+        requests.put('{0}/advance_time_only'.format(self.url)).json()
         
     def render(self, mode='episodes'):
         '''
