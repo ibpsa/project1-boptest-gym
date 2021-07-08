@@ -14,19 +14,65 @@ import requests
 import json
 import os
 
-initial_states = {}
-initial_states['mod.bui.zon.capZon.TSta'] = 273.15 + 21
-initial_states['mod.bui.zon.capWal.TSta'] = 273.15 + 18
-initial_states['mod.bui.zon.capInt.TSta'] = 273.15 + 22
-initial_states['mod.bui.zon.capEmb.TSta'] = 273.15 + 24
-initial_states['mod.bui.hea.capFlo.TSta'] = 273.15 + 30
+from pyfmi import load_fmu
+from state_estimator.observer_UKF import Observer_UKF
+
+# Set simulation inputs and measurements
+meas_map={'zon.capZon.heaPor.T':    'reaTZon_y'}
+cInp_map={'yHeaPum':                'oveHeaPumY_u'}
+
+dist_map={'TAmb':'weaSta_reaWeaTDryBul_y', 
+          'irr[1]':'weaSta_reaWeaHDirNor_y', 
+          #'intGai[1]':'InternalGainsRad[1]', 
+          #'intGai[2]':'InternalGainsCon[1]', 
+          #'intGai[3]':'InternalGainsLat[1]',
+          #'TSetLow[1]':'LowerSetp[1]',
+          #'TSetUpp[1]':'UpperSetp[1]',
+          #'pri':scenario_pars[scenario['electricity_price']]
+          } 
+
+    
+# Define covariance measurement noise
+cov_meas_noise = 0.
+
+# Set scenario parameters for the simulation
+days_json = {"peak_heat_day": 23, "typical_heat_day": 115}
+year_bgn = pd.Timestamp('20210101 00:00:00')
+
+scenario_pars = {}
+scenario_pars['training'] = {}
+scenario_pars['training']['bgn_sim_time'] = '20210201 00:00:00' 
+scenario_pars['training']['end_sim_time'] = '20210401 00:00:00'
+scenario_pars['peak_heat_day'] = {}
+scenario_pars['peak_heat_day']['bgn_sim_time'] = '20210117 00:00:00' 
+scenario_pars['peak_heat_day']['end_sim_time'] = '20210131 00:00:00' 
+scenario_pars['typical_heat_day'] = {}
+scenario_pars['typical_heat_day']['bgn_sim_time'] = '20210419 00:00:00' 
+scenario_pars['typical_heat_day']['end_sim_time'] = '20210503 00:00:00'
+
+scenario_pars['constant'] = 'PriceElectricPowerConstant'
+scenario_pars['dynamic'] = 'PriceElectricPowerDynamic'
+scenario_pars['highly_dynamic'] = 'PriceElectricPowerHighlyDynamic'
+
+scenario = {'electricity_price':'PriceElectricPowerHighlyDynamic',
+            'time_period':'peak_heat_day'}
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
                log_dir=os.getcwd(), kpis_to_file=False, plot=False, env_RC=None):
     ''' Test model agent in env.
     
     '''
-        
+    
+    if start_time == (days_json['peak_heat_day']-7)*24*3600:
+        scenario['time_period'] = 'peak_heat_day'
+    elif start_time == (days_json['typical_heat_day']-7)*24*3600:
+        scenario['time_period'] = 'typical_heat_day'
+    else:
+        raise KeyError('start_time does not agree with any scenario period') 
+    
+    # Find datetime for starting simulation time
+    time_sim_0 = pd.Timestamp(scenario_pars[scenario['time_period']]['bgn_sim_time'])
+    
     # Set a fixed start time
     if isinstance(env,Wrapper): 
         env.unwrapped.random_start_time   = False
@@ -57,7 +103,69 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         # Reset environment
         _ = env_RC.reset()
     
-    # Simulation loop
+    #=================================================================
+    # STATE OBSERVER
+    #=================================================================
+
+    # Load model for state observer
+    fmu_path='TestCaseOptimization.fmu'
+    model_ukf = load_fmu(fmu_path, enable_logging=True, 
+                         log_file_name='logUkfLoad.txt', log_level=7)
+    
+    # Load the initial states as calculated with the initialization data 
+    initial_state = pd.read_csv('initial_state_{}.csv'.format(scenario['time_period']),
+                                index_col=0)
+    initial_state.index = [time_sim_0]
+    
+    # Instantiate observer
+    env.meas_map   = meas_map
+    env.cInp_map   = cInp_map
+    env.dist_map   = cInp_map
+    env.meas_names = meas_map.keys()
+    env.cInp_names = cInp_map.keys()
+    env.dist_names = dist_map.keys()
+    env.stat_names = initial_state.columns
+    env.time_sim   = [time_sim_0]
+    env.Ts         = env.step_period
+    env.pars_fixed = None
+    
+    env.observer  = Observer_UKF(parent=env, model_ukf = model_ukf, 
+                                 cov_meas_noise = cov_meas_noise,
+                                 stai = initial_state, pars_json_file='ZonWalIntEmb_B_TConTEva_C1.json')      
+    
+    # Define a more accurate set of covariance matrices based on training data
+    # The specific numbers for P_v are obtained from `bb_load_models` when launching the
+    # simulation for 14 days and sampling of 900 s (training conditions)
+    # The specific numbers for P_n are just estimations based on how the measurements 
+    # are obtained (the power is by far much less reliable than the temperature measurments)
+    P_n = {}
+    P_v = {} 
+    P_0 = {} 
+    
+    P_n['zon.capZon.heaPor.T']         = cov_meas_noise
+    
+    P_v['zon.capZon.heaPor.T']         = 0.17764571883198466**2. # As the RMSE obtained for system identification during the training period. Calculated in load_gb_mod 
+    P_v['zon.capWal.heaPor.T']         = P_v['zon.capZon.heaPor.T']*1.1 # This one is calculated as a 10 percent more compared to the empirically obtained process variance of the operational zone temperature
+    P_v['zon.capInt.heaPor.T']         = P_v['zon.capZon.heaPor.T']*1.1 # This one is calculated as a 10 percent more compared to the empirically obtained process variance of the operational zone temperature
+    P_v['zon.capEmb.heaPor.T']         = P_v['zon.capZon.heaPor.T']*1.1 # This one is calculated as a 10 percent more compared to the empirically obtained process variance of the operational zone temperature
+    P_v['hea.capFlo.heaPor.T']         = P_v['zon.capZon.heaPor.T']*1.1 # This one is calculated as a 10 percent more compared to the empirically obtained process variance of the operational zone temperature
+    
+    P_0['zon.capZon.heaPor.T']         = P_v['zon.capZon.heaPor.T'] + P_n['zon.capZon.heaPor.T']
+    P_0['zon.capWal.heaPor.T']         = P_v['zon.capWal.heaPor.T']
+    P_0['zon.capInt.heaPor.T']         = P_v['zon.capInt.heaPor.T']
+    P_0['zon.capEmb.heaPor.T']         = P_v['zon.capEmb.heaPor.T']
+    P_0['hea.capFlo.heaPor.T']         = P_v['hea.capFlo.heaPor.T']
+    
+    # Update the options of the ukf 
+    env.observer.ukf.update_options(P_v=P_v, P_n=P_n, P_0=P_0)
+    
+    # Update confidence intervals of state observer accordingly
+    for stat in env.observer.stat_names:
+        env.observer.conf.loc[time_sim_0, stat] = np.sqrt(env.observer.ukf.options['P_0'][stat])
+    
+    #=================================================================
+    # SIMULATION LOOP
+    #=================================================================
     done = False
     observations = [obs]
     actions = []
@@ -68,6 +176,45 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         actions_observs = OrderedDict()
         actions_returns = OrderedDict()
         
+        measurements = env.last_measurement
+        curr_time    = measurements['time']
+        prev_time    = measurements['time'] - env.step_period
+        regr_index   = np.array([prev_time, curr_time]) 
+        
+        cInp_stp = {'time':regr_index}
+        for k,v in env.observer.cInp_map.items():
+            res_var = requests.put('{0}/results'.format(env.url), 
+                                   data={'point_name':v,
+                                         'start_time':prev_time, 
+                                         'final_time':curr_time}).json()                             
+            f = interpolate.interp1d(res_var['time'],
+                res_var[v], kind='zero', fill_value='extrapolate') 
+            cInp_stp[k] = f(regr_index)
+            
+        dist_stp = {'time':regr_index}
+        for k,v in env.observer.dist_map.items():
+            res_var = requests.put('{0}/results'.format(env.url), 
+                                   data={'point_name':v,
+                                         'start_time':prev_time, 
+                                         'final_time':curr_time}).json()                             
+            f = interpolate.interp1d(res_var['time'],
+                res_var[v], kind='linear', fill_value='extrapolate') 
+            dist_stp[k] = f(regr_index)
+                    
+        # cInp and dist_stp are the inputs and disturbances during the previous time-step
+        initial_states = env.observer.observe(measurements, cInp_stp, dist_stp)
+        
+        
+        stat_map = {}
+        stat_map['hea.capFlo.heaPor.T'] = 'mod.bui.hea.capFlo.TSta'
+        stat_map['zon.capInt.heaPor.T'] = 'mod.bui.zon.capInt.TSta'
+        stat_map['zon.capEmb.heaPor.T'] = 'mod.bui.zon.capEmb.TSta'
+        stat_map['zon.capWal.heaPor.T'] = 'mod.bui.zon.capWal.TSta'
+        stat_map['zon.capZon.heaPor.T'] = 'mod.bui.zon.capZon.TSta'
+        
+        for k,v in stat_map.items():
+            initial_states[v] = initial_states.pop(k)
+                
         for a in range(11):
             actions_observs[a], actions_rewards[a] = env_RC.imagine(initial_states, np.array(a)) 
             _, q_values = model.predict(actions_observs[a], deterministic=True)

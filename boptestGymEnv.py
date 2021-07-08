@@ -18,12 +18,14 @@ import os
 from collections import OrderedDict
 from scipy import interpolate
 from pprint import pformat
+from pyfmi import load_fmu
 from gym import spaces
 from stable_baselines.common.env_checker import check_env
 from stable_baselines.results_plotter import load_results, ts2xy
 from stable_baselines.common.callbacks import BaseCallback
 
 from examples.test_and_plot import plot_results, test_agent
+from state_estimator.observer_UKF import Observer_UKF
 
 class BoptestGymEnv(gym.Env):
     '''
@@ -50,7 +52,8 @@ class BoptestGymEnv(gym.Env):
                  scenario           = {'electricity_price':'constant'},
                  step_period        = 900,
                  render_episodes    = False,
-                 log_dir            = os.getcwd()):
+                 log_dir            = os.getcwd(),
+                 fmu_path           = None):
         '''
         Parameters
         ----------
@@ -128,6 +131,8 @@ class BoptestGymEnv(gym.Env):
             True to render every episode
         log_dir: string    
             Directory to store results like plots or KPIs
+        fmu_path: string
+            Path to fmu model to be used for state estimation
             
         '''
         
@@ -148,6 +153,7 @@ class BoptestGymEnv(gym.Env):
         self.scenario           = scenario
         self.render_episodes    = render_episodes
         self.log_dir            = log_dir
+        self.fmu_path           = fmu_path
         
         # Avoid requesting data before the beginning of the year
         if self.regressive_period is not None:
@@ -310,6 +316,12 @@ class BoptestGymEnv(gym.Env):
         self.action_space = spaces.Box(low  = np.array(self.lower_act_bounds), 
                                        high = np.array(self.upper_act_bounds), 
                                        dtype= np.float32)
+        
+        if self.fmu_path is not None:
+            self.model_ukf = load_fmu(self.fmu_path, 
+                                      enable_logging=True, 
+                                      log_file_name='logUkfLoad.txt', log_level=7)
+            self.observer  = Observer_UKF(cov_meas_noise=0.)
         
         if self.render_episodes:
             plt.ion()
@@ -590,6 +602,44 @@ class BoptestGymEnv(gym.Env):
                 
         requests.put('{0}/advance_time_only'.format(self.url)).json()
         
+    def estimate_state(self):
+        '''
+        Estimates current state based on past results and current measurements.  
+        
+        '''
+    
+        measurements = self.last_measurement
+        curr_time    = measurements['time']
+        prev_time    = measurements['time'] - self.step_period
+        regr_index   = np.array([prev_time, curr_time]) 
+        
+        cInp_stp = {}
+        for var in self.unwrapped.observer.cInp_names:
+            res_var = requests.put('{0}/results'.format(self.url), 
+                                   data={'point_name':var,
+                                         'start_time':prev_time, 
+                                         'final_time':curr_time}).json()                             
+            f = interpolate.interp1d(res_var['time'],
+                res_var[var], kind='linear', fill_value='extrapolate') 
+            cInp_stp = f(regr_index)
+            
+        dist_stp = {}
+        for var in self.observer.dist_names:
+            res_var = requests.put('{0}/results'.format(self.url), 
+                                   data={'point_name':var,
+                                         'start_time':prev_time, 
+                                         'final_time':curr_time}).json()                             
+            f = interpolate.interp1d(res_var['time'],
+                res_var[var], kind='linear', fill_value='extrapolate') 
+            dist_stp = f(regr_index)
+                    
+        # cInp and dist_stp are the inputs and disturbances during the previous time-step
+        stai_stp = self.observer.observe(measurements, 
+                                         cInp_stp, 
+                                         dist_stp)
+        
+        return stai_stp
+    
     def render(self, mode='episodes'):
         '''
         Renders the process evolution 
@@ -702,6 +752,9 @@ class BoptestGymEnv(gym.Env):
         # Initialize observations
         observations = []
         
+        # Store last measurement
+        self.last_measurement = res
+        
         # First check for time
         if 'time' in self.observations:
             # Time is always the first feature in observations
@@ -719,9 +772,11 @@ class BoptestGymEnv(gym.Env):
                                        data={'point_name':var,
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()
-                df=pd.DataFrame(res_var)
-                plt.plot(df['time'],df['reaTZon_y'])
-                plt.show()
+                #=====================================================
+                # df=pd.DataFrame(res_var)
+                # plt.plot(df['time'],df['reaTZon_y'])
+                # plt.show()
+                #=====================================================
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -732,7 +787,9 @@ class BoptestGymEnv(gym.Env):
                 res_var_reindexed = f(regr_index)
                 observations.extend(list(res_var_reindexed))
                 
-                plt.plot(regr_index, res_var_reindexed)
+                #=====================================================
+                # plt.plot(regr_index, res_var_reindexed)
+                #=====================================================
 
         # Get predictions if this is a predictive agent
         if self.is_predictive:

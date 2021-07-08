@@ -24,7 +24,7 @@ import os
 url     = 'http://127.0.0.1:5000'
 url_RC  = 'http://127.0.0.1:8080'
 seed = 123456
-
+# from pyfmi import load_fmu
 # Seed for random starting times of episodes
 random.seed(seed)
 
@@ -356,6 +356,24 @@ if __name__ == "__main__":
     render = False
     plot = not render # Plot does not work together with render
     
+    
+    #=================================================================
+    # 
+    #=================================================================
+    #=================================================================
+    # from pyfmi import load_fmu
+    # fmu_path='TestCaseOptimization.fmu'
+    # model_ukf = load_fmu(fmu_path, enable_logging=True, 
+    #                      log_file_name='logUkfLoad.txt', log_level=7)
+    # # model_ukf.reset()
+    # model_ukf.instantiate()
+    # res = model_ukf.simulate()
+    #=================================================================
+    #=================================================================
+    # 
+    #=================================================================
+    
+    
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='B', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
@@ -363,10 +381,10 @@ if __name__ == "__main__":
     
     env, model, start_time_tests, log_dir, env_RC = \
         train_RL(algorithm='DQN_RC', mode='load', case='D', training_timesteps=1e6, 
-                 render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
+                 render=render, #expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
                  return_RC=True, from_model='last_model')
     
-    warmup_period_test  = 7*24*3600
+    warmup_period_test  = 1*24*3600
     episode_length_test = 1*24*3600
     kpis_to_file = True
 
