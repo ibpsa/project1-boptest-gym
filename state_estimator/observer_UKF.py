@@ -146,12 +146,12 @@ class Observer_UKF(object):
             self.y_pos[measurement.get_name()] = i
 
         # Initialize simulation variables
-        self.outp_sim = pd.DataFrame() # Predicted outputs 
-        self.stap_sim = pd.DataFrame() # Predicted states 
-        self.stai_sim = pd.DataFrame() # Initial states after update
-        self.meas_sim = pd.DataFrame() # Measurements
-        self.conf_sim = pd.DataFrame() # Confidence interval
-        # self.time_zoh_stp = pd.date_range(start=self.time_sim[0], end=self.time_sim_0+1, freq='min')
+        self.time = []
+        self.outp_sim = {v: [] for v in self.meas_names} # Predicted outputs 
+        self.meas_sim = {v: [] for v in self.meas_names} # Measurements
+        self.stap_sim = {v: [] for v in self.stat_names} # Predicted states 
+        self.stai_sim = {v: [] for v in self.stat_names} # Initial states after update
+        self.conf_sim = {v: [] for v in self.stat_names} # Confidence interval
                                 
     def observe(self, meas_stp):
         '''
@@ -195,10 +195,9 @@ class Observer_UKF(object):
             f = interpolate.interp1d(res_var['time'],
                 res_var[v], kind='linear', fill_value='extrapolate') 
             dist_stp[k] = f(regr_index)
-
         
         # Retrieve actual and previous times 
-        time_now = meas_stp['time']
+        self.time.append(meas_stp['time'])
         
         # Prediction of the ACTUAL time step
         u=self.create_input_object(cInp_stp, dist_stp)
@@ -211,32 +210,20 @@ class Observer_UKF(object):
         # Update of the ACTUAL time step
         stai_stp_dict, conf_stp_dict = self.ukf.update(m)  
         
-        if False:
-            # Initialize the predicted outputs, predicted states, initial states and confidence intervals
-            outp_stp = pd.DataFrame(index=time_now, columns=self.meas_names)
-            stap_stp = pd.DataFrame(index=time_now, columns=self.stat_names)
-            stai_stp = pd.DataFrame(index=time_now, columns=self.stat_names)
-            conf_stp = pd.DataFrame(index=time_now, columns=self.stat_names)
-            
-            # Convert to pandas format
-            for stat in self.stat_names:
-                stap_stp.loc[time_now, stat] = self.ukf.xp[self.x_pos[stat]]*\
-                                               self.ukf.x[self.x_pos[stat]].get_nominal_value()
-                stai_stp.loc[time_now, stat] = stai_stp_dict[stat]
-                conf_stp.loc[time_now, stat] = conf_stp_dict[stat]
-    
-            for meas in self.meas_names:    
-                outp_stp.loc[time_now, meas] = self.ukf.yp[self.y_pos[meas]]*\
-                                               self.ukf.mes[self.y_pos[meas]].get_nominal_value()
-    
-            # Store results
-            self.outp_sim = pd.concat([self.outp_sim, outp_stp])
-            self.stap_sim = pd.concat([self.stap_sim, stap_stp])
-            self.meas_sim = pd.concat([self.meas_sim, meas_stp])
-            self.stai_sim = pd.concat([self.stai_sim, stai_stp])
-            self.conf_sim = pd.concat([self.conf_sim, conf_stp])
-                
+        for stat in self.stat_names:
+            self.stap_sim[stat].append(float(self.ukf.xp[self.x_pos[stat]]*\
+                                             self.ukf.x[self.x_pos[stat]].get_nominal_value()))
+            self.stai_sim[stat].append(float(stai_stp_dict[stat]))
+            self.conf_sim[stat].append(float(conf_stp_dict[stat]))
+
+        for meas in self.meas_names:    
+            self.meas_sim[meas].append(m[meas])
+            self.outp_sim[meas].append(float(self.ukf.yp[self.y_pos[meas]]*\
+                                             self.ukf.mes[self.y_pos[meas]].get_nominal_value()))
+        
+        # self.plot_observations()
         return stai_stp_dict
+    
     
     def create_input_object(self, cInp_dict, dist_dict):
         """
@@ -279,7 +266,7 @@ class Observer_UKF(object):
         #     return [inputs_dict.keys(), u]
         #=============================================================
     
-    def plot_observations(self, true_values, show_hidden=False):
+    def plot_observations(self, true_values=None, show_hidden=False):
         '''
         Plot the initial states estimated, the measurements gotten, 
         and the true values. Notice that the true_values is something
@@ -299,36 +286,23 @@ class Observer_UKF(object):
         c = converter.DatetimeConverter()
         
         plt.figure('Observations')
-        plt.subplot(2, 1, 1)
+        plt.subplot(1, 1, 1)
         for meas in self.meas_names:
-            plt.plot(self.meas_sim.index, self.meas_sim.loc[:,meas], 'rx', label='measured_' +meas)
-            plt.plot(self.outp_sim.index, self.outp_sim.loc[:,meas], label='predicted_'+meas, marker='s')
+            plt.plot(self.time, self.outp_sim[meas], label='predicted_'+meas, marker='s')
+            plt.plot(self.time, self.meas_sim[meas], 'rx', label='measured_' +meas)
+            plt.plot(self.time, self.stai_sim[meas], label='updated_'+meas, marker='s')
         if show_hidden:
             for stat in self.stat_names:
-                plt.plot(self.stap_sim.index, self.stap_sim.loc[:,stat], label='predicted_'+stat, marker='o')
-                plt.plot(self.stai_sim.index, self.stai_sim.loc[:,stat], label='updated_'+stat)
+                plt.plot(self.time, self.stap_sim[stat], label='predicted_'+stat, marker='o')
+                plt.plot(self.time, self.stai_sim[stat], label='updated_'+stat)
                 try:
-                    plt.fill_between(c.convert(self.stai_sim.index,None,None), 
-                                     c.convert(self.stai_sim.loc[:,stat] - self.conf_sim.loc[:,stat],None,None),  
-                                     c.convert(self.stai_sim.loc[:,stat] + self.conf_sim.loc[:,stat],None,None),
+                    plt.fill_between(c.convert(self.time,None,None), 
+                                     c.convert(self.stai_sim[stat] - self.conf_sim[stat],None,None),  
+                                     c.convert(self.stai_sim[stat] + self.conf_sim[stat],None,None),
                                      color='b', alpha=.1)
                 except:
                     pass
-            
-        for var in true_values.columns:
-            plt.plot(true_values.index, true_values.loc[:,var], label='truevalue_'+var) 
-            
-        plt.legend()
         
-        plt.subplot(2, 1, 2)
-        for var in true_values.columns:
-            if var in self.stat_names:
-                err = self.stai_sim[var] - true_values[var]
-                plt.plot(true_values.index, err, label='error_'+var+' a posteriori')
-            if var in self.meas_names:
-                err = self.outp_sim[var] - true_values[var]
-                plt.plot(true_values.index, err, label='error_'+var+' a priori')
-             
         plt.legend()
         
         plt.show()
