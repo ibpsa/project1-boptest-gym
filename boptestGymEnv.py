@@ -252,6 +252,10 @@ class BoptestGymEnv(gym.Env):
                 self.observations.extend(obs_list)
                 self.lower_obs_bounds.extend(obs_lbou)
                 self.upper_obs_bounds.extend(obs_ubou)
+                
+            # Allow to set a different environment to retrieve regressive states
+            # this is useful for some model-based RL algorithms
+            self.url_regr = self.url
         
         # Check if agent uses predictions in state and parse predictive variables
         self.is_predictive = False
@@ -588,6 +592,7 @@ class BoptestGymEnv(gym.Env):
                             data=states_and_inputs).json()
                             
         # Compute reward of this (state-action-state') tuple
+        self.objective_integrand = 0.
         reward = self.compute_reward()
         
         # Get observations at the end of this time step
@@ -602,43 +607,45 @@ class BoptestGymEnv(gym.Env):
                 
         requests.put('{0}/advance_time_only'.format(self.url)).json()
         
-    def estimate_state(self):
-        '''
-        Estimates current state based on past results and current measurements.  
-        
-        '''
-    
-        measurements = self.last_measurement
-        curr_time    = measurements['time']
-        prev_time    = measurements['time'] - self.step_period
-        regr_index   = np.array([prev_time, curr_time]) 
-        
-        cInp_stp = {}
-        for var in self.unwrapped.observer.cInp_names:
-            res_var = requests.put('{0}/results'.format(self.url), 
-                                   data={'point_name':var,
-                                         'start_time':prev_time, 
-                                         'final_time':curr_time}).json()                             
-            f = interpolate.interp1d(res_var['time'],
-                res_var[var], kind='linear', fill_value='extrapolate') 
-            cInp_stp = f(regr_index)
-            
-        dist_stp = {}
-        for var in self.observer.dist_names:
-            res_var = requests.put('{0}/results'.format(self.url), 
-                                   data={'point_name':var,
-                                         'start_time':prev_time, 
-                                         'final_time':curr_time}).json()                             
-            f = interpolate.interp1d(res_var['time'],
-                res_var[var], kind='linear', fill_value='extrapolate') 
-            dist_stp = f(regr_index)
-                    
-        # cInp and dist_stp are the inputs and disturbances during the previous time-step
-        stai_stp = self.observer.observe(measurements, 
-                                         cInp_stp, 
-                                         dist_stp)
-        
-        return stai_stp
+    #=================================================================
+    # def estimate_state(self):
+    #     '''
+    #     Estimates current state based on past results and current measurements.  
+    #     
+    #     '''
+    # 
+    #     measurements = self.last_measurement
+    #     curr_time    = measurements['time']
+    #     prev_time    = measurements['time'] - self.step_period
+    #     regr_index   = np.array([prev_time, curr_time]) 
+    #     
+    #     cInp_stp = {}
+    #     for var in self.unwrapped.observer.cInp_names:
+    #         res_var = requests.put('{0}/results'.format(self.url), 
+    #                                data={'point_name':var,
+    #                                      'start_time':prev_time, 
+    #                                      'final_time':curr_time}).json()                             
+    #         f = interpolate.interp1d(res_var['time'],
+    #             res_var[var], kind='linear', fill_value='extrapolate') 
+    #         cInp_stp = f(regr_index)
+    #         
+    #     dist_stp = {}
+    #     for var in self.observer.dist_names:
+    #         res_var = requests.put('{0}/results'.format(self.url), 
+    #                                data={'point_name':var,
+    #                                      'start_time':prev_time, 
+    #                                      'final_time':curr_time}).json()                             
+    #         f = interpolate.interp1d(res_var['time'],
+    #             res_var[var], kind='linear', fill_value='extrapolate') 
+    #         dist_stp = f(regr_index)
+    #                 
+    #     # cInp and dist_stp are the inputs and disturbances during the previous time-step
+    #     stai_stp = self.observer.observe(measurements, 
+    #                                      cInp_stp, 
+    #                                      dist_stp)
+    #     
+    #     return stai_stp
+    #=================================================================
     
     def render(self, mode='episodes'):
         '''
@@ -768,7 +775,7 @@ class BoptestGymEnv(gym.Env):
         if self.is_regressive:
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
-                res_var = requests.put('{0}/results'.format(self.url), 
+                res_var = requests.put('{0}/results'.format(self.url_regr), 
                                        data={'point_name':var,
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()
@@ -782,6 +789,12 @@ class BoptestGymEnv(gym.Env):
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
                 # we extrapolate linearly to reach the desired value at the extreme
                 # of the regression period.                              
+                # If a different environment is used to retrieve regressions
+                # (that is: self.url_regr != self.url) and we are imagining
+                # steps notice that the actual agent would have not advanced,
+                # but it will still give us the results for regr_1 of the 
+                # modelled agent because regressions do not take current steps
+                # while API results does return the results until the end. 
                 f = interpolate.interp1d(res_var['time'],
                     res_var[var], kind='linear', fill_value='extrapolate') 
                 res_var_reindexed = f(regr_index)
@@ -1137,6 +1150,14 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
             (self.observation_space.high-self.observation_space.low)-1
         
         return observation_wrapper
+    
+    
+    def observation_inverse(self, observation_wrapper):
+        
+        observation = self.observation_space.low + \
+            (observation_wrapper+1)*(self.observation_space.high-self.observation_space.low)/2.
+        
+        return observation
     
     def imagine(self, initial_states, action):
         observation, reward = self.env.imagine(initial_states, action)

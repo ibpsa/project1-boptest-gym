@@ -356,6 +356,18 @@ if __name__ == "__main__":
     render = False
     plot = not render # Plot does not work together with render
     
+    #=================================================================
+    # TODO:
+    # 1. Print actions taken and absolute temperature
+    # 2. Move functionality of retrieving measurements, cInp_stp, and dist_stp into observer
+    # 3. Store results from both, the observer and the actual environment
+    # 4. Clean up imagine API so that it does not print averything. Check first that what is printed corresponds to the states of the observer. 
+    # 5. Analyze rewards and returns. Why positive rewards? why nan returns?
+    # 6. Include internal gains into dist_step. Is it worth it?
+    # 7. Run for the two weeks and in different scenarios.  
+    # 8. Create a separate script for test_and_plot to recover past functionality when testing classical RL
+    #=================================================================
+    
     
     #=================================================================
     # 

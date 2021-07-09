@@ -3,7 +3,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import requests
 import json
+from scipy import interpolate
 from state_estimator.ukf import UKF, UKFOptions
 
 class Observer_UKF(object):
@@ -151,7 +153,7 @@ class Observer_UKF(object):
         self.conf_sim = pd.DataFrame() # Confidence interval
         # self.time_zoh_stp = pd.date_range(start=self.time_sim[0], end=self.time_sim_0+1, freq='min')
                                 
-    def observe(self, meas_stp, cInp_stp=None, dist_stp=None):
+    def observe(self, meas_stp):
         '''
         Perform prediction and update steps to estimate the actual 
         initial states of the controller model.
@@ -159,20 +161,41 @@ class Observer_UKF(object):
         Parameters
         ----------
         meas_stp: pandas data frame
-            Measurements at current time step of the form:
-            `meas_stp = pd.DataFrame(index=[time_now], columns=self.meas_names)`
-        cInp_stp: pandas data frame
-            Controllable inputs applied since the last time step. 
-        dist_stp: pandas data frame
-            Disturbances during last step.
+            Measurements at current time step.
         
         Returns
         -------
-        stai_stp: pandas data frame
+        stai_stp: dictionary
             Estimation of the initial states at the current time. Format:
             `stai_stp = pd.DataFrame(index=[time_now], columns=self.stat_names)`
         
         '''
+        
+        
+        curr_time    = meas_stp['time']
+        prev_time    = meas_stp['time'] - self.Ts
+        regr_index   = np.array([prev_time, curr_time]) 
+        
+        cInp_stp = {'time':regr_index}
+        for k,v in self.cInp_map.items():
+            res_var = requests.put('{0}/results'.format(self.url), 
+                                   data={'point_name':v,
+                                         'start_time':prev_time, 
+                                         'final_time':curr_time}).json()                             
+            f = interpolate.interp1d(res_var['time'],
+                res_var[v], kind='zero', fill_value='extrapolate') 
+            cInp_stp[k] = f(regr_index)
+            
+        dist_stp = {'time':regr_index}
+        for k,v in self.dist_map.items():
+            res_var = requests.put('{0}/results'.format(self.url), 
+                                   data={'point_name':v,
+                                         'start_time':prev_time, 
+                                         'final_time':curr_time}).json()                             
+            f = interpolate.interp1d(res_var['time'],
+                res_var[v], kind='linear', fill_value='extrapolate') 
+            dist_stp[k] = f(regr_index)
+
         
         # Retrieve actual and previous times 
         time_now = meas_stp['time']

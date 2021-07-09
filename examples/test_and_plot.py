@@ -20,7 +20,6 @@ from state_estimator.observer_UKF import Observer_UKF
 # Set simulation inputs and measurements
 meas_map={'zon.capZon.heaPor.T':    'reaTZon_y'}
 cInp_map={'yHeaPum':                'oveHeaPumY_u'}
-
 dist_map={'TAmb':'weaSta_reaWeaTDryBul_y', 
           'irr[1]':'weaSta_reaWeaHDirNor_y', 
           #'intGai[1]':'InternalGainsRad[1]', 
@@ -30,7 +29,12 @@ dist_map={'TAmb':'weaSta_reaWeaTDryBul_y',
           #'TSetUpp[1]':'UpperSetp[1]',
           #'pri':scenario_pars[scenario['electricity_price']]
           } 
-
+stat_map = {}
+stat_map['hea.capFlo.heaPor.T'] = 'mod.bui.hea.capFlo.TSta'
+stat_map['zon.capInt.heaPor.T'] = 'mod.bui.zon.capInt.TSta'
+stat_map['zon.capEmb.heaPor.T'] = 'mod.bui.zon.capEmb.TSta'
+stat_map['zon.capWal.heaPor.T'] = 'mod.bui.zon.capWal.TSta'
+stat_map['zon.capZon.heaPor.T'] = 'mod.bui.zon.capZon.TSta'
     
 # Define covariance measurement noise
 cov_meas_noise = 0.
@@ -99,7 +103,10 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             env_RC.start_time          = start_time
             env_RC.max_episode_length  = episode_length
             env_RC.warmup_period       = warmup_period
-            
+        
+        # env_RC.url_regr             = 'http://127.0.0.1:5000'
+        env_RC.unwrapped.url_regr   = 'http://127.0.0.1:5000'
+        
         # Reset environment
         _ = env_RC.reset()
     
@@ -118,18 +125,18 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     initial_state.index = [time_sim_0]
     
     # Instantiate observer
-    env.meas_map   = meas_map
-    env.cInp_map   = cInp_map
-    env.dist_map   = cInp_map
-    env.meas_names = meas_map.keys()
-    env.cInp_names = cInp_map.keys()
-    env.dist_names = dist_map.keys()
-    env.stat_names = initial_state.columns
-    env.time_sim   = [time_sim_0]
-    env.Ts         = env.step_period
-    env.pars_fixed = None
+    env.unwrapped.meas_map   = meas_map
+    env.unwrapped.cInp_map   = cInp_map
+    env.unwrapped.dist_map   = cInp_map
+    env.unwrapped.meas_names = meas_map.keys()
+    env.unwrapped.cInp_names = cInp_map.keys()
+    env.unwrapped.dist_names = dist_map.keys()
+    env.unwrapped.stat_names = initial_state.columns
+    env.unwrapped.time_sim   = [time_sim_0]
+    env.unwrapped.Ts         = env.step_period
+    env.unwrapped.pars_fixed = None
     
-    env.observer  = Observer_UKF(parent=env, model_ukf = model_ukf, 
+    env.observer  = Observer_UKF(parent=env.unwrapped, model_ukf = model_ukf, 
                                  cov_meas_noise = cov_meas_noise,
                                  stai = initial_state, pars_json_file='ZonWalIntEmb_B_TConTEva_C1.json')      
     
@@ -176,64 +183,23 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         actions_observs = OrderedDict()
         actions_returns = OrderedDict()
         
-        measurements = env.last_measurement
-        curr_time    = measurements['time']
-        prev_time    = measurements['time'] - env.step_period
-        regr_index   = np.array([prev_time, curr_time]) 
-        
-        cInp_stp = {'time':regr_index}
-        for k,v in env.observer.cInp_map.items():
-            res_var = requests.put('{0}/results'.format(env.url), 
-                                   data={'point_name':v,
-                                         'start_time':prev_time, 
-                                         'final_time':curr_time}).json()                             
-            f = interpolate.interp1d(res_var['time'],
-                res_var[v], kind='zero', fill_value='extrapolate') 
-            cInp_stp[k] = f(regr_index)
-            
-        dist_stp = {'time':regr_index}
-        for k,v in env.observer.dist_map.items():
-            res_var = requests.put('{0}/results'.format(env.url), 
-                                   data={'point_name':v,
-                                         'start_time':prev_time, 
-                                         'final_time':curr_time}).json()                             
-            f = interpolate.interp1d(res_var['time'],
-                res_var[v], kind='linear', fill_value='extrapolate') 
-            dist_stp[k] = f(regr_index)
-                    
-        # cInp and dist_stp are the inputs and disturbances during the previous time-step
-        initial_states = env.observer.observe(measurements, cInp_stp, dist_stp)
-        
-        
-        stat_map = {}
-        stat_map['hea.capFlo.heaPor.T'] = 'mod.bui.hea.capFlo.TSta'
-        stat_map['zon.capInt.heaPor.T'] = 'mod.bui.zon.capInt.TSta'
-        stat_map['zon.capEmb.heaPor.T'] = 'mod.bui.zon.capEmb.TSta'
-        stat_map['zon.capWal.heaPor.T'] = 'mod.bui.zon.capWal.TSta'
-        stat_map['zon.capZon.heaPor.T'] = 'mod.bui.zon.capZon.TSta'
+        initial_states = env.observer.observe(env.last_measurement)
         
         for k,v in stat_map.items():
             initial_states[v] = initial_states.pop(k)
                 
-        for a in range(11):
+        for a in range(0,11,5):
             actions_observs[a], actions_rewards[a] = env_RC.imagine(initial_states, np.array(a)) 
             _, q_values = model.predict(actions_observs[a], deterministic=True)
             actions_returns[a] = actions_rewards[a] + model.gamma*np.max(q_values) 
             print('Action: {0}. Tzon: {1}. Reward: {2}. Return: {3}'.format(a, 
-                                                                            actions_observs[a][1], 
+                                                                            env.observation_inverse(actions_observs[a])[1]-273.15, 
                                                                             actions_rewards[a],
                                                                             actions_returns[a]  ))
-            
-        res = requests.put('{0}/results'.format(env_RC.url), 
-                           data={'point_name':'reaTZon_y',
-                                 'start_time':-np.inf, 
-                                 'final_time':np.inf}).json()
-        df=pd.DataFrame(res)
-        plt.plot(df['time'],df['reaTZon_y'])
-        plt.show()         
-                
+        
         # Find the action leading to the maximum return
         action = max(actions_returns, key=actions_rewards.get)
+        print('ACTION TAKEN IS: {}-----------------------'.format(action))
         # Advance the actual environment and store actual obs and rewards
         obs, reward, done, _ = env.step(np.asarray(action))    
         observations.append(obs)
@@ -248,7 +214,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             json.dump(kpis, f)
     
     if True:
-        plot_results(env, rewards)
+        plot_results(env, rewards, plot_to_file=True, res_to_csv=True)
     
     # Back to random start time, just in case we're testing in the loop
     if isinstance(env,Wrapper): 
@@ -259,7 +225,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     return observations, actions, rewards, kpis
 
 def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
-                 log_dir=os.getcwd(), plot_to_file=False):
+                 log_dir=os.getcwd(), plot_to_file=False, res_to_csv=False):
     
     df_res = pd.DataFrame()
     if points is None:
@@ -368,6 +334,10 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
+    if res_to_csv:
+        df.to_csv(os.path.join(log_dir, 
+                  'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
+        
     if plot_to_file:
         plt.savefig(os.path.join(log_dir, 
                     'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
