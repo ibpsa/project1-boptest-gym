@@ -330,6 +330,9 @@ class BoptestGymEnv(gym.Env):
         if self.render_episodes:
             plt.ion()
             self.fig = plt.gcf()
+            
+        # Set debug to True to pring logs
+        self.debug = False
 
     def __str__(self):
         '''
@@ -607,46 +610,6 @@ class BoptestGymEnv(gym.Env):
                 
         requests.put('{0}/advance_time_only'.format(self.url)).json()
         
-    #=================================================================
-    # def estimate_state(self):
-    #     '''
-    #     Estimates current state based on past results and current measurements.  
-    #     
-    #     '''
-    # 
-    #     measurements = self.last_measurement
-    #     curr_time    = measurements['time']
-    #     prev_time    = measurements['time'] - self.step_period
-    #     regr_index   = np.array([prev_time, curr_time]) 
-    #     
-    #     cInp_stp = {}
-    #     for var in self.unwrapped.observer.cInp_names:
-    #         res_var = requests.put('{0}/results'.format(self.url), 
-    #                                data={'point_name':var,
-    #                                      'start_time':prev_time, 
-    #                                      'final_time':curr_time}).json()                             
-    #         f = interpolate.interp1d(res_var['time'],
-    #             res_var[var], kind='linear', fill_value='extrapolate') 
-    #         cInp_stp = f(regr_index)
-    #         
-    #     dist_stp = {}
-    #     for var in self.observer.dist_names:
-    #         res_var = requests.put('{0}/results'.format(self.url), 
-    #                                data={'point_name':var,
-    #                                      'start_time':prev_time, 
-    #                                      'final_time':curr_time}).json()                             
-    #         f = interpolate.interp1d(res_var['time'],
-    #             res_var[var], kind='linear', fill_value='extrapolate') 
-    #         dist_stp = f(regr_index)
-    #                 
-    #     # cInp and dist_stp are the inputs and disturbances during the previous time-step
-    #     stai_stp = self.observer.observe(measurements, 
-    #                                      cInp_stp, 
-    #                                      dist_stp)
-    #     
-    #     return stai_stp
-    #=================================================================
-    
     def render(self, mode='episodes'):
         '''
         Renders the process evolution 
@@ -779,11 +742,26 @@ class BoptestGymEnv(gym.Env):
                                        data={'point_name':var,
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()
-                #=====================================================
-                # df=pd.DataFrame(res_var)
-                # plt.plot(df['time'],df['reaTZon_y'])
-                # plt.show()
-                #=====================================================
+                
+                if self.debug:                             
+                    if self.url != self.url_regr:
+                        res_simple = requests.put('{0}/results'.format(self.url), 
+                                               data={'point_name':var,
+                                                     'start_time':regr_index[0], 
+                                                     'final_time':regr_index[0]+self.step_period}).json()
+                        df=pd.DataFrame(res_var)
+                        plt.plot(df['time'],df['reaTZon_y'])
+                        df=pd.DataFrame(res_simple)
+                        plt.plot(df['time'],df['reaTZon_y'])
+                        res_simple['reaTZon_y'][0]-273.15
+                        plt.show()
+                        forecast  = requests.get('{0}/forecast'.format(self.url)).json()
+                        fore_regr = requests.get('{0}/forecast'.format(self.url_regr)).json()
+                        dff = pd.DataFrame(fore_regr)
+                        dff['LowerSetp[1]'].plot()
+                        forecast['LowerSetp[1]']
+                        forecast.keys()
+                
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -800,10 +778,6 @@ class BoptestGymEnv(gym.Env):
                 res_var_reindexed = f(regr_index)
                 observations.extend(list(res_var_reindexed))
                 
-                #=====================================================
-                # plt.plot(regr_index, res_var_reindexed)
-                #=====================================================
-
         # Get predictions if this is a predictive agent
         if self.is_predictive:
             predictions = requests.get('{0}/forecast'.format(self.url)).json()

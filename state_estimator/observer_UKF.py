@@ -260,12 +260,6 @@ class Observer_UKF(object):
         
         return [udf.columns, u]
         
-        #=============================================================
-        # for u in inputs_dict.keys():
-        #     u = np.column_stack((time, inputs_dict))
-        #     return [inputs_dict.keys(), u]
-        #=============================================================
-    
     def plot_observations(self, true_values=None, show_hidden=False):
         '''
         Plot the initial states estimated, the measurements gotten, 

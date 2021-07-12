@@ -358,33 +358,16 @@ if __name__ == "__main__":
     
     #=================================================================
     # TODO:
-    # 1. Print actions taken and absolute temperature
-    # 2. Move functionality of retrieving measurements, cInp_stp, and dist_stp into observer
-    # 3. Store results from both, the observer and the actual environment
-    # 4. Clean up imagine API so that it does not print averything. Check first that what is printed corresponds to the states of the observer. 
-    # 5. Analyze rewards and returns. Why positive rewards? why nan returns?
+    # -. Print actions taken and absolute temperature
+    # -. Move functionality of retrieving measurements, cInp_stp, and dist_stp into observer
+    # -. Store results from both, the observer and the actual environment
+    # 4. Clean up imagine API so that it does not print everything. Check first that what is printed corresponds to the states of the observer. 
+    # -. Analyze rewards and returns. Why positive rewards? why nan returns?
     # 6. Include internal gains into dist_step. Is it worth it?
     # 7. Run for the two weeks and in different scenarios.  
     # 8. Create a separate script for test_and_plot to recover past functionality when testing classical RL
+    # -. Check that I get the same result even when I "spoil" the create_input_object method of the state observer
     #=================================================================
-    
-    
-    #=================================================================
-    # 
-    #=================================================================
-    #=================================================================
-    # from pyfmi import load_fmu
-    # fmu_path='TestCaseOptimization.fmu'
-    # model_ukf = load_fmu(fmu_path, enable_logging=True, 
-    #                      log_file_name='logUkfLoad.txt', log_level=7)
-    # # model_ukf.reset()
-    # model_ukf.instantiate()
-    # res = model_ukf.simulate()
-    #=================================================================
-    #=================================================================
-    # 
-    #=================================================================
-    
     
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='A', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='B', training_timesteps=3e5, render=render)
@@ -392,12 +375,12 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
     env, model, start_time_tests, log_dir, env_RC = \
-        train_RL(algorithm='DQN_RC', mode='load', case='D', training_timesteps=1e6, 
+        train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, 
                  render=render, #expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
                  return_RC=True, from_model='last_model')
     
     warmup_period_test  = 1*24*3600
-    episode_length_test = 1*24*3600
+    episode_length_test = 3*24*3600
     kpis_to_file = True
 
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot, env_RC)

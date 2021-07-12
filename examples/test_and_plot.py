@@ -115,8 +115,9 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     #=================================================================
 
     # Load model for state observer
+    # I obtained this model with OpenModelica
     fmu_path='TestCaseOptimization.fmu'
-    model_ukf = load_fmu(fmu_path, enable_logging=True, 
+    model_ukf = load_fmu(fmu_path, enable_logging=False, 
                          log_file_name='logUkfLoad.txt', log_level=7)
     
     # Load the initial states as calculated with the initialization data 
@@ -127,7 +128,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     # Instantiate observer
     env.unwrapped.meas_map   = meas_map
     env.unwrapped.cInp_map   = cInp_map
-    env.unwrapped.dist_map   = cInp_map
+    env.unwrapped.dist_map   = dist_map
     env.unwrapped.meas_names = meas_map.keys()
     env.unwrapped.cInp_names = cInp_map.keys()
     env.unwrapped.dist_names = dist_map.keys()
@@ -183,23 +184,35 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         actions_observs = OrderedDict()
         actions_returns = OrderedDict()
         
-        initial_states = env.observer.observe(env.last_measurement)
+        measurement = env.unwrapped.last_measurement
+        initial_states = env.observer.observe(measurement)
         
         for k,v in stat_map.items():
             initial_states[v] = initial_states.pop(k)
                 
+        print('From Tzon: {}'.format(initial_states['mod.bui.zon.capZon.TSta']-273.15))
         for a in range(0,11,5):
             actions_observs[a], actions_rewards[a] = env_RC.imagine(initial_states, np.array(a)) 
             _, q_values = model.predict(actions_observs[a], deterministic=True)
-            actions_returns[a] = actions_rewards[a] + model.gamma*np.max(q_values) 
-            print('Action: {0}. Tzon: {1}. Reward: {2}. Return: {3}'.format(a, 
-                                                                            env.observation_inverse(actions_observs[a])[1]-273.15, 
-                                                                            actions_rewards[a],
-                                                                            actions_returns[a]  ))
+            cost_to_go = model.gamma*np.max(q_values) 
+            actions_returns[a] = actions_rewards[a] + cost_to_go
+            print('Action: {0}. Tzon: {1}. Reward: {2}. Cost-to-go: {3} Return: {4}'.format(a, 
+                                                                                            env.observation_inverse(actions_observs[a])[1]-273.15, 
+                                                                                            actions_rewards[a],
+                                                                                            cost_to_go,
+                                                                                            actions_returns[a]  ))
         
-        # Find the action leading to the maximum return
-        action = max(actions_returns, key=actions_rewards.get)
+        # Find the action leading to the maximum return max(actions_returns.values())
+        action = max(actions_returns, key=actions_returns.get)
+        actrew = max(actions_rewards, key=actions_rewards.get)
+        
         print('ACTION TAKEN IS: {}-----------------------'.format(action))
+        
+        if action != actrew:
+            print('ACTION THAT HAD BEST REWARD WAS: {}-----------------------'.format(actrew))
+            print('Successsss!!!!')
+            
+            
         # Advance the actual environment and store actual obs and rewards
         obs, reward, done, _ = env.step(np.asarray(action))    
         observations.append(obs)
@@ -276,6 +289,10 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     df.dropna(axis=0, inplace=True)
     
+    if res_to_csv:
+        df.to_csv(os.path.join(log_dir, 
+                  'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
+    
     rewards_time_days = np.arange(df_res['time'].iloc[0], 
                                   env.start_time+env.max_episode_length,
                                   env.step_period)/3600./24.
@@ -334,10 +351,6 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
-    if res_to_csv:
-        df.to_csv(os.path.join(log_dir, 
-                  'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
-        
     if plot_to_file:
         plt.savefig(os.path.join(log_dir, 
                     'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
