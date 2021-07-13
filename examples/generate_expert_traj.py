@@ -86,11 +86,11 @@ class ExpertModelDisc(DQN):
 
 if __name__ == "__main__":
     n_days = 28
-    cont_disc = 'cont'
-    env, _, start_time_tests, log_dir = train_RL.train_RL(max_episode_length = n_days*24*3600, 
-                                                          mode='empty', 
-                                                          case='D', 
-                                                          render=True)
+    cont_disc = 'disc'
+    env, _, start_time_tests, log_dir, _ = train_RL.train_RL(max_episode_length = n_days*24*3600, 
+                                                             mode='empty', 
+                                                             case='D', 
+                                                             render=True)
     
     # Set expert trajectory to start the first day of February    
     start_year      = '2021-01-01 00:00:00'
