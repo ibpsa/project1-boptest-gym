@@ -112,7 +112,7 @@ def train_RL(algorithm           = 'SAC',
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot']*12.*16. + 10*kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']*12.*16. + 100*kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)
@@ -267,7 +267,7 @@ def train_RL(algorithm           = 'SAC',
             model.pretrain(dataset, n_epochs=1000)
         
         # Create the callback test and save the agent while training
-        callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
+        callback = SaveAndTestCallback(env, check_freq=2e6, save_freq=10000,
                                        log_dir=log_dir, test=True)
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
