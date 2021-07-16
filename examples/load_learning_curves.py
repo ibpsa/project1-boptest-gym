@@ -27,28 +27,51 @@ agents_map['DQN_D_1e06_logdir'] = ['DQN_36',
                                    'DQN_48', 
                                    'DQN_49', 
                                    'DQN_50']
+
+agents_map['SAC_D_1e06_logdir'] = ['SAC_3']
+
 log_dir_parent = os.path.join(utilities.get_root_path(), 'examples', 'agents')
-load_from_tb = False
+load_from_tb = True
 plot = True
+linewidth = 0.8
+colors    = ['purple', 'darkcyan', 'saddlebrown', 'darkslateblue']
+markers   = []
 
 # Print tags of contained entities, use these names to retrieve entities as below
 # print(acc.Tags())
-first_step = 0 
+# 'scalars':      ['loss/loss', 'input_info/rewards', 'input_info/importance_weights', 'episode_reward', 'loss/td_error']
+# 'run_metadata': ['step739999', 'step46099', 'step309699' ...
+# In the case of DQN the rewards are the average of the rewards sampled from a batch of the buffer obtained every 100 steps
+
+# https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+# https://stackoverflow.com/questions/42281844/what-is-the-mathematics-behind-the-smoothing-parameter-in-tensorboards-scalar
+def smooth(scalars, weight):  # Weight between 0 and 1
+    last = scalars[0]  # First value in the plot (first timestep)
+    smoothed = list()
+    for point in scalars:
+        smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
+        smoothed.append(smoothed_val)                        # Save it
+        last = smoothed_val                                  # Anchor the last smoothed value
+    return smoothed
+
 metric_tags = [#'loss/loss', 
-               'input_info/rewards', 
+               #'input_info/rewards', 
                #'input_info/importance_weights', 
-               #'episode_reward', 
+               'episode_reward', 
                #'loss/td_error'
                ]
 metrics = {}
 
 for metric in metric_tags:
-    columns_metric = ['steps',metric]
-    df_metric = pd.DataFrame(columns=columns_metric)
-    for agent,agent_logs in agents_map.items():
+    if plot:
+        _, ax = plt.subplots()
+    for i,agent in enumerate(agents_map.keys()):
+        first_step = 0 
         csv_file = os.path.join(log_dir_parent,'metrics',agent+'__'+metric.replace('/','_')+'.csv')
+        columns_metric = ['steps',metric]
+        df_metric = pd.DataFrame(columns=columns_metric)
         if load_from_tb:
-            for log in agent_logs:
+            for log in agents_map[agent]:
                 print('Loading {}'.format(log))
                 log_dir = os.path.join(log_dir_parent, agent, log)
                 acc = EventAccumulator(log_dir)
@@ -64,42 +87,21 @@ for metric in metric_tags:
         else:
             df_metric = pd.read_csv(csv_file)
             
+        if plot:            
+            smoothing = 0.9
+            smoothed = smooth(list(df_metric[metric]), smoothing)
+            label=agent.replace('_logdir','').replace('_',' ')
+            plt.plot(df_metric['steps']/1e6, smoothed, color=colors[i],  linestyle='-', linewidth=linewidth, label=label)
+            ax.set_xlabel('Million steps')
+            ax.set_ylabel(metric.split('/')[-1].replace('_',' ').title())
+            ax.set_title('Learning curve')
+            ax.legend()
+        
     if plot:
-        smoothing = 0.
-        
-        # https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-        # https://stackoverflow.com/questions/42281844/what-is-the-mathematics-behind-the-smoothing-parameter-in-tensorboards-scalar
-        def smooth(scalars, weight):  # Weight between 0 and 1
-            last = scalars[0]  # First value in the plot (first timestep)
-            smoothed = list()
-            for point in scalars:
-                smoothed_val = last * weight + (1 - weight) * point  # Calculate smoothed value
-                smoothed.append(smoothed_val)                        # Save it
-                last = smoothed_val                                  # Anchor the last smoothed value
-            return smoothed
-        
-        _, ax = plt.subplots()
-        smoothed = smooth(list(df_metric[metric]), smoothing)
-        plt.plot(df_metric['steps']/1e6,smoothed)
-        ax.set_xlabel('Million steps')
-        ax.set_ylabel(metric)
+        plt.tight_layout()         
+        pdf_file = os.path.join(log_dir_parent,'metrics',metric.replace('/','_')+'.pdf')       
+        plt.savefig(pdf_file, bbox_inches='tight')
         plt.show()
-        
 
-
-
-# 'scalars':      ['loss/loss', 'input_info/rewards', 'input_info/importance_weights', 'episode_reward', 'loss/td_error']
-# 'run_metadata': ['step739999', 'step46099', 'step309699' ...
-# the rewards are the average of the rewards sampled from a batch of the buffer obtained every 100 steps
-#===============================================================================
-# # Retrieve training reward
-# x, y = ts2xy(load_results(log_dir), 'timesteps')
-# if len(x) > 0:
-#     # Mean training reward over the last self.check_freq episodes
-#     mean_reward = np.mean(y[-self.check_freq:])
-#     if self.verbose > 0:
-#         print("Num timesteps: {}".format(self.num_timesteps))
-#         print("Best mean reward: {:.2f} - Last mean reward per episode: {:.2f}".format(self.best_mean_reward, mean_reward))
-#===============================================================================
 
 
