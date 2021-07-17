@@ -268,7 +268,7 @@ def train_RL(algorithm           = 'SAC',
         
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=2e6, save_freq=10000,
-                                       log_dir=log_dir, test=True)
+                                       log_dir=log_dir, test=False)
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
@@ -294,13 +294,33 @@ def train_RL(algorithm           = 'SAC',
             initial_step = int(from_model.split('_')[1])
             
             # Deduct the steps that we've already learned
-            training_timesteps = training_timesteps - initial_step
+            training_timesteps_reduced = training_timesteps - initial_step
+            
+            # Set initial exploration rate
+            model.exploration_initial_eps = model.exploration_final_eps + \
+                (exploration_initial_eps - model.exploration_final_eps)*\
+                (training_timesteps_reduced)/training_timesteps
+            
+            # Set other training settings:
+            model.verbose                       = 1
+            model.gamma                         = 0.99
+            model.seed                          = seed 
+            model.exploration_final_eps         = 0.01
+            model.learning_rate                 = 5e-4
+            model.batch_size                    = 7*96
+            model.target_network_update_freq    = 1
+            model.buffer_size                   = 365*96
+            model.learning_starts               = 96
+            model.train_freq                    = 1
+            model.tensorboard_log               = log_dir
+            model.n_cpu_tf_sess                 = 1
             
             # Create the callback test and save the agent while training
-            callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
-                                           log_dir=log_dir, test=True, initial_step=initial_step)
+            callback = SaveAndTestCallback(env, check_freq=2e6, save_freq=10000,
+                                           log_dir=log_dir, test=False, initial_step=initial_step)
+            
             # Main training loop
-            model.learn(total_timesteps=int(training_timesteps), callback=callback)
+            model.learn(total_timesteps=int(training_timesteps_reduced), callback=callback)
             # Save the agent
             model.save(os.path.join(log_dir,'last_model'))
             
