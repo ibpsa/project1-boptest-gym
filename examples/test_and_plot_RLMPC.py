@@ -179,6 +179,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     actions = []
     rewards = []
     print('Simulating...')
+    env_RC.unwrapped.debug = False
     while done is False:
         actions_rewards = OrderedDict()
         actions_observs = OrderedDict()
@@ -191,7 +192,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             initial_states[v] = initial_states.pop(k)
                 
         print('From Tzon: {}'.format(initial_states['mod.bui.zon.capZon.TSta']-273.15))
-        for a in range(0,11,5):
+        for a in range(0,11,2):
             actions_observs[a], actions_rewards[a] = env_RC.imagine(initial_states, np.array(a)) 
             _, q_values = model.predict(actions_observs[a], deterministic=True)
             cost_to_go = model.gamma*np.max(q_values) 

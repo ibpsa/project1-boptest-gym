@@ -753,15 +753,15 @@ class BoptestGymEnv(gym.Env):
                         plt.plot(df['time'],df['reaTZon_y'])
                         df=pd.DataFrame(res_simple)
                         plt.plot(df['time'],df['reaTZon_y'])
-                        res_simple['reaTZon_y'][0]-273.15
-                        plt.show()
-                        forecast  = requests.get('{0}/forecast'.format(self.url)).json()
-                        fore_regr = requests.get('{0}/forecast'.format(self.url_regr)).json()
-                        dff = pd.DataFrame(fore_regr)
-                        dff['LowerSetp[1]'].plot()
-                        forecast['LowerSetp[1]']
-                        forecast.keys()
-                
+                        
+                        if False:
+                            forecast  = requests.get('{0}/forecast'.format(self.url)).json()
+                            fore_regr = requests.get('{0}/forecast'.format(self.url_regr)).json()
+                            dff = pd.DataFrame(fore_regr)
+                            dff['LowerSetp[1]'].plot()
+                            forecast['LowerSetp[1]']
+                            forecast.keys()
+                    
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
