@@ -22,16 +22,13 @@ import os
 
 # Arguments
 agents_map = {}
-agents_map['DQN_D_1e06_logdir'] = ['DQN_36', 
-                                   'DQN_47', 
-                                   'DQN_48', 
-                                   'DQN_49', 
-                                   'DQN_50']
+agents_map['DQN_Actual_D_1e06_logdir'] = ['DQN_9', 
+                                          'DQN_10']
 
-agents_map['SAC_D_1e06_logdir'] = ['SAC_3']
+# agents_map['SAC_D_1e06_logdir'] = ['SAC_3']
 
 log_dir_parent = os.path.join(utilities.get_root_path(), 'examples', 'agents')
-load_from_tb = True
+load_from_tb = False
 plot = True
 linewidth = 0.8
 colors    = ['purple', 'darkcyan', 'saddlebrown', 'darkslateblue']
@@ -67,7 +64,7 @@ for metric in metric_tags:
         _, ax = plt.subplots()
     for i,agent in enumerate(agents_map.keys()):
         first_step = 0 
-        csv_file = os.path.join(log_dir_parent,'metrics',agent+'__'+metric.replace('/','_')+'.csv')
+        csv_file = os.path.join(log_dir_parent,agent,metric.replace('/','_')+'.csv')
         columns_metric = ['steps',metric]
         df_metric = pd.DataFrame(columns=columns_metric)
         if load_from_tb:
@@ -88,20 +85,20 @@ for metric in metric_tags:
             df_metric = pd.read_csv(csv_file)
             
         if plot:            
-            smoothing = 0.9
+            smoothing = 0.99
+            # Do not smooth first points which are not representative
+            df_metric = df_metric.iloc[2:]
             smoothed = smooth(list(df_metric[metric]), smoothing)
             label=agent.replace('_logdir','').replace('_',' ')
-            plt.plot(df_metric['steps']/1e6, smoothed, color=colors[i],  linestyle='-', linewidth=linewidth, label=label)
+            plt.plot(df_metric['steps']/1e6, np.array(smoothed)/1e3, color=colors[i], linestyle='-', linewidth=linewidth, label=label)
             ax.set_xlabel('Million steps')
-            ax.set_ylabel(metric.split('/')[-1].replace('_',' ').title())
+            ax.set_ylabel('Average '+metric.split('/')[-1].replace('_',' ').title())
             ax.set_title('Learning curve')
-            ax.legend()
-        
-    if plot:
-        plt.tight_layout()         
-        pdf_file = os.path.join(log_dir_parent,'metrics',metric.replace('/','_')+'.pdf')       
-        plt.savefig(pdf_file, bbox_inches='tight')
-        plt.show()
+            ax.legend()        
+            plt.tight_layout()         
+            pdf_file = os.path.join(log_dir_parent, agent, metric.replace('/','_')+'.pdf')       
+            plt.savefig(pdf_file, bbox_inches='tight')
+            plt.show()
 
 
 
