@@ -14,7 +14,7 @@ from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
 from stable_baselines.gail import ExpertDataset
 from stable_baselines import A2C, SAC, DQN
 from stable_baselines.bench import Monitor
-from examples.test_and_plot import test_agent
+from examples.test_and_plot_RLMPC import test_agent
 from collections import OrderedDict
 from testing import utilities
 import requests
@@ -339,7 +339,7 @@ def train_RL(algorithm           = 'SAC',
     return env, model, start_time_tests, log_dir, env_RC
         
 def test_peak(env, model, start_time_tests, episode_length_test, 
-              warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
+              warmup_period_test, log_dir=os.getcwd(), save_to_file=False, 
               plot=False, env_RC=None):
     ''' Perform test in peak heat period (February). 
     
@@ -350,13 +350,13 @@ def test_peak(env, model, start_time_tests, episode_length_test,
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
                                                       log_dir=log_dir,
-                                                      kpis_to_file=kpis_to_file,
+                                                      save_to_file=save_to_file,
                                                       plot=plot,
                                                       env_RC=env_RC)
     return observations, actions, rewards, kpis
 
 def test_typi(env, model, start_time_tests, episode_length_test, 
-              warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
+              warmup_period_test, log_dir=os.getcwd(), save_to_file=False, 
               plot=False, env_RC=None):
     ''' Perform test in typical heat period (November)
     
@@ -367,13 +367,13 @@ def test_typi(env, model, start_time_tests, episode_length_test,
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
                                                       log_dir=log_dir,
-                                                      kpis_to_file=kpis_to_file,
+                                                      save_to_file=save_to_file,
                                                       plot=plot, 
                                                       env_RC=env_RC)
     return observations, actions, rewards, kpis
 
 if __name__ == "__main__":
-    render = True
+    render = False
     plot = not render # Plot does not work together with render
     
     #=================================================================
@@ -395,14 +395,14 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
     env, model, start_time_tests, log_dir, env_RC = \
-        train_RL(algorithm='DQN_RC', mode='train', case='D', training_timesteps=1e6, 
+        train_RL(algorithm='DQN_RC', mode='load', case='D', training_timesteps=1e6, 
                  render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
-                 return_RC=False, from_model='last_model')
+                 return_RC=True, from_model='last_model')
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
-    kpis_to_file = True
+    save_to_file = True
 
-    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot, env_RC)
-    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot, env_RC)
+    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
+    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
     

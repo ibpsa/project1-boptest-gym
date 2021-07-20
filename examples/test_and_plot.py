@@ -15,7 +15,7 @@ import os
 
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               log_dir=os.getcwd(), kpis_to_file=False, plot=False, env_RC=None):
+               log_dir=os.getcwd(), save_to_file=False, plot=False, env_RC=None):
     ''' Test model agent in env.
     
     '''
@@ -50,12 +50,12 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     kpis = env.get_kpis()
     
-    if kpis_to_file:
-        with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
+    if save_to_file:
+        with open(os.path.join(log_dir, 'results_tests', 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
             json.dump(kpis, f)
     
     if plot:
-        plot_results(env, rewards)
+        plot_results(env, rewards, save_to_file=save_to_file, log_dir=log_dir)
     
     # Back to random start time, just in case we're testing in the loop
     if isinstance(env,Wrapper): 
@@ -66,7 +66,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     return observations, actions, rewards, kpis
 
 def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
-                 log_dir=os.getcwd(), plot_to_file=False):
+                 log_dir=os.getcwd(), save_to_file=False):
     
     df_res = pd.DataFrame()
     if points is None:
@@ -116,6 +116,10 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     df = create_datetime(df)
     
     df.dropna(axis=0, inplace=True)
+    
+    if save_to_file:
+        df.to_csv(os.path.join(log_dir, 'results_tests', 
+                  'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
     
     rewards_time_days = np.arange(df_res['time'].iloc[0], 
                                   env.start_time+env.max_episode_length,
@@ -175,8 +179,8 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
-    if plot_to_file:
-        plt.savefig(os.path.join(log_dir, 
+    if save_to_file:
+        plt.savefig(os.path.join(log_dir, 'results_tests',
                     'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
                     bbox_inches='tight')
     

@@ -62,7 +62,7 @@ scenario = {'electricity_price':'PriceElectricPowerHighlyDynamic',
             'time_period':'peak_heat_day'}
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               log_dir=os.getcwd(), kpis_to_file=False, plot=False, env_RC=None):
+               log_dir=os.getcwd(), save_to_file=False, plot=False, env_RC=None):
     ''' Test model agent in env.
     
     '''
@@ -192,7 +192,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             initial_states[v] = initial_states.pop(k)
                 
         print('From Tzon: {}'.format(initial_states['mod.bui.zon.capZon.TSta']-273.15))
-        for a in range(0,11,2):
+        for a in range(0,11,5):
             actions_observs[a], actions_rewards[a] = env_RC.imagine(initial_states, np.array(a)) 
             _, q_values = model.predict(actions_observs[a], deterministic=True)
             cost_to_go = model.gamma*np.max(q_values) 
@@ -223,12 +223,12 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         
     kpis = env.get_kpis()
     
-    if kpis_to_file:
-        with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
+    if save_to_file:
+        with open(os.path.join(log_dir, 'results_tests', 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
             json.dump(kpis, f)
     
-    if True:
-        plot_results(env, rewards, plot_to_file=True, res_to_csv=True)
+    if plot:
+        plot_results(env, rewards, save_to_file=save_to_file, log_dir=log_dir)
     
     # Back to random start time, just in case we're testing in the loop
     if isinstance(env,Wrapper): 
@@ -239,7 +239,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     return observations, actions, rewards, kpis
 
 def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
-                 log_dir=os.getcwd(), plot_to_file=False, res_to_csv=False):
+                 log_dir=os.getcwd(), save_to_file=False):
     
     df_res = pd.DataFrame()
     if points is None:
@@ -290,8 +290,8 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     df.dropna(axis=0, inplace=True)
     
-    if res_to_csv:
-        df.to_csv(os.path.join(log_dir, 
+    if save_to_file:
+        df.to_csv(os.path.join(log_dir, 'results_tests', 
                   'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
     
     rewards_time_days = np.arange(df_res['time'].iloc[0], 
@@ -352,8 +352,8 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
-    if plot_to_file:
-        plt.savefig(os.path.join(log_dir, 
+    if save_to_file:
+        plt.savefig(os.path.join(log_dir, 'results_tests', 
                     'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
                     bbox_inches='tight')
     
