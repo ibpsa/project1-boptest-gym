@@ -14,7 +14,6 @@ learning process.
 
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 import matplotlib.pyplot as plt
-import tensorboard as tb
 from testing import utilities
 import numpy as np
 import pandas as pd
@@ -25,7 +24,13 @@ agents_map = {}
 agents_map['DQN_Actual_D_1e06_logdir'] = ['DQN_9', 
                                           'DQN_10']
 
-# agents_map['SAC_D_1e06_logdir'] = ['SAC_3']
+agents_map['DQN_RC_D_1e06_logdir'] = [
+                                    'DQN_1', 
+                                    'DQN_2', 
+                                    'DQN_3', 
+                                    'DQN_4', 
+                                    'DQN_5', 
+                                     ]
 
 log_dir_parent = os.path.join(utilities.get_root_path(), 'examples', 'agents')
 load_from_tb = False
@@ -89,16 +94,25 @@ for metric in metric_tags:
             # Do not smooth first points which are not representative
             df_metric = df_metric.iloc[2:]
             smoothed = smooth(list(df_metric[metric]), smoothing)
-            label=agent.replace('_logdir','').replace('_',' ')
-            plt.plot(df_metric['steps']/1e6, np.array(smoothed)/1e3, color=colors[i], linestyle='-', linewidth=linewidth, label=label)
-            ax.set_xlabel('Million steps')
-            ax.set_ylabel('Average '+metric.split('/')[-1].replace('_',' ').title())
-            ax.set_title('Learning curve')
-            ax.legend()        
-            plt.tight_layout()         
-            pdf_file = os.path.join(log_dir_parent, agent, metric.replace('/','_')+'.pdf')       
-            plt.savefig(pdf_file, bbox_inches='tight')
-            plt.show()
+            label=agent.split('_')[0]+ ' ' +agent.split('_')[1]
+            if 'RC' in agent:
+                fillstyle = 'full'
+                marker = '^'
+            else:
+                fillstyle = 'full'
+                marker = 'o'
+            plt.plot(df_metric['steps']/1e6, np.array(smoothed)/1e3, color=colors[i], 
+                     linestyle='-', linewidth=linewidth, label=label, marker=marker,
+                     fillstyle=fillstyle, markevery=50, markersize=4)
+    if plot:
+        plt.axhline(y = 0, color = 'k', linestyle = '--', linewidth=0.5)
+        ax.set_xlabel('Million steps')
+        ax.set_ylabel('Average '+metric.split('/')[-1].replace('_',' ')+' ($10^3$)'.title())
+        ax.legend()        
+        plt.tight_layout()         
+        pdf_file = os.path.join(log_dir_parent, 'metrics', metric.replace('/','_')+'.pdf')       
+        plt.savefig(pdf_file, bbox_inches='tight')
+        plt.show()
 
 
 
