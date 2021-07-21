@@ -341,7 +341,7 @@ def train_RL(algorithm           = 'SAC',
 def test_peak(env, model, start_time_tests, episode_length_test, 
               warmup_period_test, log_dir=os.getcwd(), save_to_file=False, 
               plot=False, env_RC=None):
-    ''' Perform test in peak heat period (February). 
+    ''' Perform test in peak heat period (January). 
     
     '''
 
@@ -358,7 +358,7 @@ def test_peak(env, model, start_time_tests, episode_length_test,
 def test_typi(env, model, start_time_tests, episode_length_test, 
               warmup_period_test, log_dir=os.getcwd(), save_to_file=False, 
               plot=False, env_RC=None):
-    ''' Perform test in typical heat period (November)
+    ''' Perform test in typical heat period (October?)
     
     '''
 
@@ -402,7 +402,11 @@ if __name__ == "__main__":
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
     save_to_file = True
-
+    
+    # start learning from first day
+    model.batch_size = 1*96
+    # First time is (1382400 -2097000)/3600/24
+    # First time is (1382400 -2097000)/3600/24
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
     test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
     
