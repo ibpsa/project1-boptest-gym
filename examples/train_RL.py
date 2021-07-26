@@ -345,15 +345,15 @@ def test_peak(env, model, start_time_tests, episode_length_test,
     
     '''
 
-    observations, actions, rewards, kpis = test_agent(env, model, 
-                                                      start_time=start_time_tests[0], 
-                                                      episode_length=episode_length_test,
-                                                      warmup_period=warmup_period_test,
-                                                      log_dir=log_dir,
-                                                      save_to_file=save_to_file,
-                                                      plot=plot,
-                                                      env_RC=env_RC)
-    return observations, actions, rewards, kpis
+    actions, rewards, kpis = test_agent(env, model, 
+                                        start_time=start_time_tests[0], 
+                                        episode_length=episode_length_test,
+                                        warmup_period=warmup_period_test,
+                                        log_dir=log_dir,
+                                        save_to_file=save_to_file,
+                                        plot=plot,
+                                        env_RC=env_RC)
+    return actions, rewards, kpis
 
 def test_typi(env, model, start_time_tests, episode_length_test, 
               warmup_period_test, log_dir=os.getcwd(), save_to_file=False, 
@@ -362,15 +362,15 @@ def test_typi(env, model, start_time_tests, episode_length_test,
     
     '''
 
-    observations, actions, rewards, kpis = test_agent(env, model, 
-                                                      start_time=start_time_tests[1], 
-                                                      episode_length=episode_length_test,
-                                                      warmup_period=warmup_period_test,
-                                                      log_dir=log_dir,
-                                                      save_to_file=save_to_file,
-                                                      plot=plot, 
-                                                      env_RC=env_RC)
-    return observations, actions, rewards, kpis
+    actions, rewards, kpis = test_agent(env, model, 
+                                        start_time=start_time_tests[1], 
+                                        episode_length=episode_length_test,
+                                        warmup_period=warmup_period_test,
+                                        log_dir=log_dir,
+                                        save_to_file=save_to_file,
+                                        plot=plot, 
+                                        env_RC=env_RC)
+    return actions, rewards, kpis
 
 if __name__ == "__main__":
     render = False

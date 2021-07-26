@@ -173,7 +173,6 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     # SIMULATION LOOP
     #=================================================================
     done = False
-    observations = [obs]
     actions = []
     rewards = []
     initial_states_list  = []
@@ -187,7 +186,6 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         imagined_rewinm = OrderedDict()
         imagined_temper = OrderedDict()
         imagined_rewtog = OrderedDict()
-        imagined_observ = OrderedDict()
         imagined_return = OrderedDict()
         
         measurement = env.unwrapped.last_measurement
@@ -196,11 +194,15 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             initial_states[v] = initial_states.pop(k)
         initial_states_list.append(initial_states)
         print('From Tzon: {}'.format(initial_states['mod.bui.zon.capZon.TSta']-273.15))
-        for a in range(0,11,2):
-            imagined_observ[a], imagined_rewinm[a] = env_RC.imagine(initial_states, np.array(a)) 
-            imagined_temper[a] = env.observation_inverse(imagined_observ[a])[1]-273.15
-            _, q_values = model.predict(imagined_observ[a], deterministic=True)
-            imagined_rewtog[a] = model.gamma*np.max(q_values) 
+        for a in range(0,11,1):
+            imagined_observ, imagined_rewinm[a] = env_RC.imagine(initial_states, np.array(a)) 
+            imagined_temper[a] = env.observation_inverse(imagined_observ)[1]-273.15
+            _, q_values = model.predict(imagined_observ, deterministic=True)
+            if scale_with_action_prob:
+                imagined_rewtog[a] = model.gamma*model.action_probability(obs, actions=a)*np.max(q_values) 
+            else:
+                imagined_rewtog[a] = model.gamma*np.max(q_values)
+
             imagined_return[a] = imagined_rewinm[a] + imagined_rewtog[a]
             
             print('Action: {0}. Tzon: {1}. Inmediate Reward: {2}. Reward-to-go: {3} Return: {4}'.format(a, 
@@ -220,7 +222,6 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             
         # Advance the actual environment and store actual obs and rewards
         obs, reward, done, _ = env.step(np.asarray(action))    
-        observations.append(obs)
         rewards.append(reward)
         imagined_rewinm_list.append(imagined_rewinm)
         imagined_temper_list.append(imagined_temper)
@@ -260,6 +261,6 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     else:
         env.random_start_time = True
     
-    return observations, actions, rewards, kpis
+    return actions, rewards, kpis
 
     
