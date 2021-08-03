@@ -66,7 +66,7 @@ metrics = {}
 
 for metric in metric_tags:
     if plot:
-        _, ax = plt.subplots()
+        _, ax = plt.subplots(figsize=(5,4))
     for i,agent in enumerate(agents_map.keys()):
         first_step = 0 
         csv_file = os.path.join(log_dir_parent,agent,metric.replace('/','_')+'.csv')
@@ -101,13 +101,24 @@ for metric in metric_tags:
             else:
                 fillstyle = 'full'
                 marker = 'o'
+            
+            colors[i]='red'
+            if label=='DQN RC':
+                label = 'DQN (trained in $\mathcal{E}_F$)'
+                marker = None
+                linestyle = '-'
+            elif label=='DQN Actual':
+                label = 'DQN (trained in $\mathcal{E}_f$)'
+                marker = None
+                linestyle = '--'
+                            
             plt.plot(df_metric['steps']/1e6, np.array(smoothed)/1e3, color=colors[i], 
-                     linestyle='-', linewidth=linewidth, label=label, marker=marker,
-                     fillstyle=fillstyle, markevery=50, markersize=4)
+                     linestyle=linestyle, linewidth=linewidth, label=label, marker=marker,
+                     fillstyle=fillstyle, markevery=50, markersize=3)
     if plot:
         plt.axhline(y = 0, color = 'k', linestyle = '--', linewidth=0.5)
         ax.set_xlabel('Million steps')
-        ax.set_ylabel('Average '+metric.split('/')[-1].replace('_',' ')+' ($10^3$)'.title())
+        ax.set_ylabel('Average episodic return ($10^3$)'.title())
         ax.legend()        
         plt.tight_layout()         
         pdf_file = os.path.join(log_dir_parent, 'metrics', metric.replace('/','_')+'.pdf')       
