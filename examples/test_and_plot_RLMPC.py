@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import json
 import os
+from stable_baselines.common.buffers import ReplayBuffer
 
 from pyfmi import load_fmu
 from examples.test_and_plot import plot_results
@@ -182,6 +183,16 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     imagined_return_list = []
     print('Simulating...')
     env_RC.unwrapped.debug = False
+    
+    model.learning_rate = 5e-8
+    model.batch_size  = 7*96
+    model.buffer_size = 365*96
+    model.target_network_update_freq = 96
+    model.replay_buffer = ReplayBuffer(model.buffer_size)
+    scale_with_action_prob = False
+    scale_with_custom_fact = False
+    factor = 0.1
+    
     while done is False:
         imagined_rewinm = OrderedDict()
         imagined_temper = OrderedDict()
@@ -194,14 +205,17 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             initial_states[v] = initial_states.pop(k)
         initial_states_list.append(initial_states)
         print('From Tzon: {}'.format(initial_states['mod.bui.zon.capZon.TSta']-273.15))
-        for a in range(0,11,1):
+        for a in range(0,11,5):
             imagined_observ, imagined_rewinm[a] = env_RC.imagine(initial_states, np.array(a)) 
+            # model.learn_from_sample(obs, a, imagined_observ, imagined_rewinm[a], done=False, info={})
             imagined_temper[a] = env.observation_inverse(imagined_observ)[1]-273.15
             _, q_values = model.predict(imagined_observ, deterministic=True)
             if scale_with_action_prob:
-                imagined_rewtog[a] = model.gamma*model.action_probability(obs, actions=a)*np.max(q_values) 
+                imagined_rewtog[a] = model.gamma*model.action_probability(obs, actions=a)[0]*np.max(q_values) 
+            elif scale_with_custom_fact:
+                imagined_rewtog[a] = factor*model.gamma*np.max(q_values)
             else:
-                imagined_rewtog[a] = model.gamma*np.max(q_values)
+                imagined_rewtog[a] = 0# model.gamma*np.max(q_values)
 
             imagined_return[a] = imagined_rewinm[a] + imagined_rewtog[a]
             
@@ -221,7 +235,9 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             print('Successsss!!!!')
             
         # Advance the actual environment and store actual obs and rewards
-        obs, reward, done, _ = env.step(np.asarray(action))    
+        new_obs, reward, done, _ = env.step(np.asarray(action))   
+        model.learn_from_sample(obs, action, new_obs, reward, done=False, info={})
+        obs = new_obs
         rewards.append(reward)
         imagined_rewinm_list.append(imagined_rewinm)
         imagined_temper_list.append(imagined_temper)

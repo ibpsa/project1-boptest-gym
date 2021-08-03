@@ -112,7 +112,7 @@ def train_RL(algorithm           = 'SAC',
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot']*12.*16. + 100*kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']*12.*16. + 1e6*kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)
@@ -395,7 +395,7 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
     env, model, start_time_tests, log_dir, env_RC = \
-        train_RL(algorithm='DQN_RC', mode='load', case='D', training_timesteps=1e6, 
+        train_RL(algorithm='DQN_RC_bc', mode='load', case='D', training_timesteps=0, 
                  render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'), 
                  return_RC=True, from_model='last_model')
     
@@ -408,5 +408,5 @@ if __name__ == "__main__":
     # First time is (1382400 -2097000)/3600/24
     # First time is (1382400 -2097000)/3600/24
     test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
-    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
+    # test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot, env_RC)
     

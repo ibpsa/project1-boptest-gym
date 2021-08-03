@@ -12,6 +12,7 @@ import pandas as pd
 import requests
 import json
 import os
+from stable_baselines.common.buffers import ReplayBuffer
 
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
@@ -41,9 +42,16 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     actions = []
     rewards = []
     print('Simulating...')
+    model.learning_rate = 5e-4
+    model.batch_size  = 1*96
+    model.buffer_size = 365*96
+    model.target_network_update_freq = 96
+    model.replay_buffer = ReplayBuffer(model.buffer_size)
     while done is False:
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, done, _ = env.step(action)
+        new_obs, reward, done, _ = env.step(np.asarray(action))   
+        model.learn_from_sample(obs, action, new_obs, reward, done=False, info={})
+        obs = new_obs
         observations.append(obs)
         actions.append(action)
         rewards.append(reward)
