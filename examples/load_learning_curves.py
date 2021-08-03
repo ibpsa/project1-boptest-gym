@@ -118,7 +118,7 @@ for metric in metric_tags:
     if plot:
         plt.axhline(y = 0, color = 'k', linestyle = '--', linewidth=0.5)
         ax.set_xlabel('Million steps')
-        ax.set_ylabel('Average episodic return ($10^3$)'.title())
+        ax.set_ylabel('Average episodic return ($10^3$)')
         ax.legend()        
         plt.tight_layout()         
         pdf_file = os.path.join(log_dir_parent, 'metrics', metric.replace('/','_')+'.pdf')       
