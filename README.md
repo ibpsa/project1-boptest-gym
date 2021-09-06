@@ -55,8 +55,8 @@ Please use the following reference if you used this repository for your research
 
 ```
 @inproceedings{boptestgym2021,
-    author = {Javier Arroyo and Carlo Manna and Fred Spiessens and Lieve Helsen},
-    title = {{An OpenAI-Gym environment for the Building Optimization Testing (BOPTEST) framework}},
+	author = {Javier Arroyo and Carlo Manna and Fred Spiessens and Lieve Helsen},
+	title = {{An OpenAI-Gym environment for the Building Optimization Testing (BOPTEST) framework}},
 	year = {2021},
 	month = {September},
 	booktitle = {Proceedings of the 17th IBPSA Conference},
