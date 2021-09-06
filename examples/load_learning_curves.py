@@ -104,11 +104,11 @@ for metric in metric_tags:
             
             colors[i]='red'
             if label=='DQN RC':
-                label = 'DQN (trained in $\mathcal{E}_F$)'
+                label = 'DDQN (trained in $\mathcal{E}_F$)'
                 marker = None
                 linestyle = '-'
             elif label=='DQN Actual':
-                label = 'DQN (trained in $\mathcal{E}_f$)'
+                label = 'DDQN (trained in $\mathcal{E}_f$)'
                 marker = None
                 linestyle = '--'
                             

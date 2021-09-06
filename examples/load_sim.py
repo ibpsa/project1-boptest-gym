@@ -154,7 +154,7 @@ def plot_results(res_lists):
     _, axs = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, figsize=(6,3))
     
     for label, res_list in res_lists.items():
-        if 'DQN (trained in $\mathcal{E}_F$)' not in label:
+        if 'DDQN (trained in $\mathcal{E}_F$)' not in label:
             for p,period in enumerate(['peak', 'typi']):
                 df = kpis[label][period]
                 axs[p].plot(df['cost_tot'], df['tdis_tot'], color=res_list[1], linewidth=linewidth, label=label, 
@@ -182,9 +182,9 @@ if __name__=='__main__':
     agents_dir = os.path.join(utilities.get_root_path(), 'examples','agents')
     res_lists['MPC'] = [os.path.join(os.path.dirname(utilities.get_root_path()), 'BOPTEST-control', 'RSH_HP','experiments'),
                        'darkorange', 'D', '-']
-    res_lists['DQN (trained in $\mathcal{E}_F$)']    = [os.path.join(agents_dir, 'DQN_RC_D_1e06_logdir', 'results_tests', 'DQN_trained_with_RC__and__tested_in_Actual'), 
+    res_lists['DDQN (trained in $\mathcal{E}_F$)']    = [os.path.join(agents_dir, 'DQN_RC_D_1e06_logdir', 'results_tests', 'DQN_trained_with_RC__and__tested_in_Actual'), 
                            'red', '<', '-']
-    res_lists['DQN (trained in $\mathcal{E}_f$)'] = [os.path.join(agents_dir, 'DQN_Actual_D_1e06_logdir', 'results_tests', 'DQN_trained_with_Actual__and__tested_in_Actual'), 
+    res_lists['DDQN (trained in $\mathcal{E}_f$)'] = [os.path.join(agents_dir, 'DQN_Actual_D_1e06_logdir', 'results_tests', 'DQN_trained_with_Actual__and__tested_in_Actual'), 
                            'red', '>', '--']
     res_lists['RLMPC ($\gamma=0.99)$']  = [os.path.join(agents_dir, 'DQN_RC_D_1e06_logdir', 'results_tests', 'RLMPC_trained_with_RC__and__tested_in_Actual_nactions11_w1e6'),
                            'green', '^', '-']

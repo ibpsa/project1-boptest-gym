@@ -215,7 +215,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
             elif scale_with_custom_fact:
                 imagined_rewtog[a] = factor*model.gamma*np.max(q_values)
             else:
-                imagined_rewtog[a] = 0# model.gamma*np.max(q_values)
+                imagined_rewtog[a] = model.gamma*np.max(q_values) # 0
 
             imagined_return[a] = imagined_rewinm[a] + imagined_rewtog[a]
             
