@@ -225,7 +225,7 @@ def train_RL(algorithm           = 'SAC',
         
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
-                                       log_dir=log_dir, test=True)
+                                       log_dir=log_dir, test=False)
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
