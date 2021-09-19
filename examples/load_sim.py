@@ -153,6 +153,18 @@ def plot_results(res_lists):
     # Plot the KPIs
     _, axs = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, figsize=(6,3))
     
+#     FROM T D.1. OF STANDARD EN16798-2:
+#     126[h/year/zone] / 365[days/year] * 14[days/test] = 
+#     4.832876 [h/zone/test]
+#     x2 = 9.665753 [h/zone/test]
+#     x3 = 14.49863 [h/zone/test]
+    axs[0].axhline(4.832876, linestyle='dotted',  label='1 K short time deviations')
+    axs[0].axhline(9.665753, linestyle='dashdot', label='2 K short time deviations')
+    axs[0].axhline(14.49863, linestyle='dashed',  label='3 K short time deviations')
+    axs[1].axhline(4.832876, linestyle='dotted',  label='1 K short time deviations')
+    axs[1].axhline(9.665753, linestyle='dashdot', label='2 K short time deviations')
+    axs[1].axhline(14.49863, linestyle='dashed',  label='3 K short time deviations')
+    
     for label, res_list in res_lists.items():
         if 'DDQN (trained in $\mathcal{E}_F$)' not in label:
             for p,period in enumerate(['peak', 'typi']):
