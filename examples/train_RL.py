@@ -162,7 +162,7 @@ def train_RL(algorithm           = 'SAC',
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
-                            step_period           = 900,
+                            step_period           = 1800,
                             render_episodes       = render,
                             log_dir               = log_dir)
         
