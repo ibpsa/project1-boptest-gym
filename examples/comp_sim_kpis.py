@@ -12,86 +12,57 @@ import pandas as pd
 import json
 import os
 
-cases = [
-         'baseline_feb',
-         'baseline_nov',
-         'A_feb',
-         'A_nov',
-         'B_feb',
-         'B_nov',
-         'C_feb',
-         'C_nov',
-         'C_1e6_feb',
-         'C_1e6_nov'
-         ]
+algorithm = 'DQN'
+case      = 'C'
+training_timesteps  = 1e6 
+
+# Find log directory
+log_dir = os.path.join(utilities.get_root_path(), 'examples', 
+                       'agents', '{}_{}_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
+log_dir = log_dir.replace('+', '')
+
+model_names = [
+    #'model_10000',
+    #'model_50000',
+    'model_100000',
+    'model_200000',
+    'model_300000',
+    'model_400000',
+    'model_500000',
+    'model_600000',
+    'model_700000',
+    'model_800000',
+    'model_900000',
+    'model_1000000',
+    ]
 
 kpis_dic = OrderedDict()
+kpis_dic['peak'] = OrderedDict()
+kpis_dic['typi'] = OrderedDict()
 
-for ckey in cases:
-    kpis_dic[ckey] = json.load(open(os.path.join(utilities.get_root_path(), 
-                    'examples','kpis','kpis_'+ckey+'.json'),'r'))
+for model_name in model_names:
+    kpis_dic['peak'][model_name] = json.load(open(os.path.join(log_dir, 
+                                    'results_tests_'+model_name, 'kpis_16.json'),'r'))
+    kpis_dic['typi'][model_name] = json.load(open(os.path.join(log_dir, 
+                                    'results_tests_'+model_name, 'kpis_108.json'),'r'))
     
-kpis = pd.DataFrame(kpis_dic).T
-cost_feb = []
-cost_nov = []
-tdis_feb = []
-tdis_nov = []
+_, axs = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, figsize=(10,4))
 
-fig, ax = plt.subplots()
+for s,scenario in enumerate(kpis_dic.keys()):
+    for m,model in enumerate(kpis_dic[scenario].keys()):
+        axs[s].plot(kpis_dic[scenario][model]['cost_tot'], kpis_dic[scenario][model]['tdis_tot'],
+                    marker='o', markersize=4, label=model, linewidth=0.1)
+    axs[s].grid()
 
-# Plot points
-for i, r in kpis.iterrows():
-    if 'A' in i:
-        color = 'r' 
-        label='A'
-    elif 'B' in i:
-        color = 'b'
-        label = 'B'
-    elif 'C_1e6' in i:
-        color = 'c'
-        label = 'C 1e6'
-    elif 'C' in i:
-        color = 'c'
-        label = 'C'
-    elif 'baseline' in i:
-        color = 'g'
-        label = 'Baseline'
-    
-    if '1e6' in i:
-        marker='^'
-    else:
-        marker='o'
-    
-    if '_nov' in i:
-        ax.plot(r['cost_tot'], r['tdis_tot'], marker, markersize=5, linewidth=0.1, label='_nolegend_', color=color)
-        cost_nov.append(r['cost_tot'])
-        tdis_nov.append(r['tdis_tot'])
-    else:
-        ax.plot(r['cost_tot'], r['tdis_tot'], marker, markersize=5, linewidth=0.1, label=label, color=color)
-        cost_feb.append(r['cost_tot'])
-        tdis_feb.append(r['tdis_tot'])
+axs[s].legend(loc='upper right', bbox_to_anchor=(1.5, 1), fancybox=True)
 
-# Plot lines indicating test case month
-points = pd.DataFrame([cost_feb, tdis_feb, cost_nov, tdis_nov], index=['cost_feb', 'tdis_feb', 'cost_nov', 'tdis_nov']).T
-points.sort_values(by='cost_feb', axis=0, ascending=False, inplace=True)
-ax.plot(list(points['cost_feb']), list(points['tdis_feb']), '--', linewidth=0.8, label='Febuary', color='grey', zorder=1)
-ax.plot(list(points['cost_nov']), list(points['tdis_nov']), '-.', linewidth=0.8, label='November', color='grey', zorder=1)
+plt.subplots_adjust(right=0.9, top=0.94)
 
-ax.set_xlabel('Total operational cost (EUR)')
-ax.set_ylabel('Total discomfort (Kh)')
-plt.grid()
-plt.legend(loc='best')
+plt.tight_layout()
 
-# Make comparisons against baseline in percentages
-#=====================================================================
-# kpis['cost_cmp'] = None
-# kpis['tdis_cmp'] = None
-# for ckey in cases:
-#     if ckey is not 'baseline':
-#         kpis['cost_cmp'][ckey] = \
-#         (kpis['cost_tot'][ckey]-kpis['cost_tot']['baseline_nov'])/kpis['cost_tot']['baseline_nov']*100
-#         kpis['tdis_cmp'][ckey] = \
-#         (kpis['tdis_tot'][ckey]-kpis['tdis_tot']['baseline_nov'])/kpis['tdis_tot']['baseline_nov']*100
-#=====================================================================
+plt.savefig('results_kpi_DDQN_models.pdf', bbox_inches='tight')
 
 plt.show()
+
+
+
