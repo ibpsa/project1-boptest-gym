@@ -36,7 +36,8 @@ def train_RL(algorithm           = 'SAC',
              case                = 'simple',
              training_timesteps  = 3e5,
              render              = False,
-             expert_traj         = None):
+             expert_traj         = None, 
+             model_name          = 'last_model'):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -61,7 +62,9 @@ def train_RL(algorithm           = 'SAC',
     expert_traj : string
         Path to expert trajectory in .npz format. If not None, the agent 
         will be pretrained using behavior cloning with these data. 
-        
+    model_name : string
+        Name of the model to be saved or loaded. 
+            
     '''
     
     excluding_periods = []
@@ -229,17 +232,17 @@ def train_RL(algorithm           = 'SAC',
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
-        model.save(os.path.join(log_dir,'last_model'))
+        model.save(os.path.join(log_dir,model_name))
         
     elif mode == 'load':
         # Load the trained agent
         if 'SAC' in algorithm:
-            model = SAC.load(os.path.join(log_dir,'last_model'))
+            model = SAC.load(os.path.join(log_dir,model_name))
         elif 'A2C' in algorithm:
-            model = A2C.load(os.path.join(log_dir,'last_model'))
+            model = A2C.load(os.path.join(log_dir,model_name))
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
-            model = DQN.load(os.path.join(log_dir,'last_model'))
+            model = DQN.load(os.path.join(log_dir,model_name))
             
     elif mode == 'empty':
         model = None
