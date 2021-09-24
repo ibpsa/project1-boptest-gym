@@ -253,8 +253,8 @@ def train_RL(algorithm           = 'SAC',
     return env, model, start_time_tests, log_dir
         
 def test_peak(env, model, start_time_tests, episode_length_test, 
-              warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
-              plot=False):
+              warmup_period_test, log_dir=os.getcwd(), model_name='last_model', 
+              save_to_file=False, plot=False):
     ''' Perform test in peak heat period (February). 
     
     '''
@@ -263,14 +263,14 @@ def test_peak(env, model, start_time_tests, episode_length_test,
                                                       start_time=start_time_tests[0], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
-                                                      log_dir=log_dir,
-                                                      kpis_to_file=kpis_to_file,
+                                                      log_dir=log_dir, model_name=model_name,
+                                                      save_to_file=save_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
 def test_typi(env, model, start_time_tests, episode_length_test, 
-              warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
-              plot=False):
+              warmup_period_test, log_dir=os.getcwd(), model_name='last_model', 
+              save_to_file=False, plot=False):
     ''' Perform test in typical heat period (November)
     
     '''
@@ -279,8 +279,8 @@ def test_typi(env, model, start_time_tests, episode_length_test,
                                                       start_time=start_time_tests[1], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
-                                                      log_dir=log_dir,
-                                                      kpis_to_file=kpis_to_file,
+                                                      log_dir=log_dir, model_name=model_name,
+                                                      save_to_file=save_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
@@ -297,8 +297,8 @@ if __name__ == "__main__":
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
-    kpis_to_file = True
+    save_to_file = True
 
-    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
-    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
+    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot)
+    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot)
     

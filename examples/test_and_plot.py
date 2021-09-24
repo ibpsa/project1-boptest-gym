@@ -15,7 +15,8 @@ import os
 
 
 def test_agent(env, model, start_time, episode_length, warmup_period,
-               log_dir=os.getcwd(), kpis_to_file=False, plot=False):
+               log_dir=os.getcwd(), model_name='last_model', 
+               save_to_file=False, plot=False):
     ''' Test model agent in env.
     
     '''
@@ -50,12 +51,13 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     kpis = env.get_kpis()
     
-    if kpis_to_file:
-        with open(os.path.join(log_dir, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
+    if save_to_file:
+        os.makedirs(os.path.join(log_dir, 'results_tests_'+model_name), exist_ok=True)
+        with open(os.path.join(log_dir, 'results_tests_'+model_name, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
             json.dump(kpis, f)
     
     if plot:
-        plot_results(env, rewards)
+        plot_results(env, rewards, save_to_file=save_to_file, log_dir=log_dir, model_name=model_name)
     
     # Back to random start time, just in case we're testing in the loop
     if isinstance(env,Wrapper): 
@@ -66,7 +68,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     return observations, actions, rewards, kpis
 
 def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
-                 log_dir=os.getcwd(), plot_to_file=False):
+                 log_dir=os.getcwd(), model_name='last_model', save_to_file=False):
     
     df_res = pd.DataFrame()
     if points is None:
@@ -117,6 +119,10 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     df.dropna(axis=0, inplace=True)
     
+    if save_to_file:
+        df.to_csv(os.path.join(log_dir, 'results_tests_'+model_name, 
+                  'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
+        
     rewards_time_days = np.arange(df_res['time'].iloc[0], 
                                   env.start_time+env.max_episode_length,
                                   env.step_period)/3600./24.
@@ -175,13 +181,15 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     plt.tight_layout()
     
-    if plot_to_file:
-        plt.savefig(os.path.join(log_dir, 
+    if save_to_file:
+        plt.savefig(os.path.join(log_dir, 'results_tests_'+model_name,
                     'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
                     bbox_inches='tight')
     
-    plt.pause(0.001)
-    plt.show()  
+    if not save_to_file:
+        # showing and saving to file are incompatible
+        plt.pause(0.001)
+        plt.show()  
 
     
 def reindex(df, interval=60, start=None, stop=None):
