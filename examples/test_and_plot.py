@@ -94,9 +94,11 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     
     # Retrieve boundary condition data. 
     # Only way we have is through the forecast request. 
+    scenario = env.scenario
     requests.put('{0}/initialize'.format(env.url), 
                  data={'start_time':df_res['time'].iloc[0],
                        'warmup_period':0}).json()
+    
     # Store original forecast parameters
     forecast_parameters_original = requests.get('{0}/forecast_parameters'.format(env.url)).json()
     # Set forecast parameters for test. Take 10 points per step. 
