@@ -52,8 +52,8 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     kpis = env.get_kpis()
     
     if save_to_file:
-        os.makedirs(os.path.join(log_dir, 'results_tests_'+model_name), exist_ok=True)
-        with open(os.path.join(log_dir, 'results_tests_'+model_name, 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
+        os.makedirs(os.path.join(log_dir, 'results_tests_'+model_name+'_'+env.scenario['electricity_price']), exist_ok=True)
+        with open(os.path.join(log_dir, 'results_tests_'+model_name+'_'+env.scenario['electricity_price'], 'kpis_{}.json'.format(str(int(start_time/3600/24)))), 'w') as f:
             json.dump(kpis, f)
     
     if plot:
@@ -120,7 +120,7 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     df.dropna(axis=0, inplace=True)
     
     if save_to_file:
-        df.to_csv(os.path.join(log_dir, 'results_tests_'+model_name, 
+        df.to_csv(os.path.join(log_dir, 'results_tests_'+model_name+'_'+scenario['electricity_price'], 
                   'results_sim_{}.csv'.format(str(int(res['time'][0]/3600/24)))))
         
     rewards_time_days = np.arange(df_res['time'].iloc[0], 
@@ -182,7 +182,7 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     plt.tight_layout()
     
     if save_to_file:
-        plt.savefig(os.path.join(log_dir, 'results_tests_'+model_name,
+        plt.savefig(os.path.join(log_dir, 'results_tests_'+model_name+'_'+scenario['electricity_price'],
                     'results_sim_{}.pdf'.format(str(int(res['time'][0]/3600/24)))), 
                     bbox_inches='tight')
     
