@@ -21,14 +21,27 @@ import os
 
 # Arguments
 agents_map = {}
-agents_map['DQN_Actual_Ts30_Th24_C_1e06_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_B_Ts15_Th00_1e06_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_C_Ts15_Th03_1e06_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th03_3e05_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th06_3e05_logdir'] = ['DQN_1']
+# agents_map['DQN_Actual_D_Ts15_Th12_3e05_logdir'] = ['DQN_1']
+# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir'] = ['DQN_1']
+# agents_map['DQN_Actual_D_Ts30_Th24_3e05_logdir'] = ['DQN_1']
+# agents_map['DQN_Actual_D_Ts60_Th24_1e06_logdir'] = ['DQN_1']
+# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_u2'] = ['DQN_1']
+# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_Tset'] = ['DQN_1']
+# agents_map['SAC_Actual_D_Ts15_Th24_3e05_logdir'] = ['SAC_1']
+# agents_map['PPO_Actual_D_Ts15_Th24_3e05_logdir'] = ['PPO2_1']
 
-log_dir_parent = os.path.join(utilities.get_root_path(), 'examples', 'agents')
-load_from_tb = True
+# log_dir_parent = os.path.join(utilities.get_root_path(), 'examples', 'agents')
+log_dir_parent = os.path.join('D:\\','agents')
+
+load_from_tb = False
 plot = True
-linewidth = 0.8
-colors    = ['purple', 'darkcyan', 'saddlebrown', 'darkslateblue']
-markers   = []
+linewidth = 0.8            
+max_steps = 0.3e6
+
 
 # Print tags of contained entities, use these names to retrieve entities as below
 # print(acc.Tags())
@@ -85,27 +98,75 @@ for metric in metric_tags:
             # Do not smooth first points which are not representative
             df_metric = df_metric.iloc[2:]
             smoothed = smooth(list(df_metric[metric]), smoothing)
-            label=agent.split('_')[0]+ ' ' +agent.split('_')[1]
-            if 'RC' in agent:
-                fillstyle = 'full'
-                marker = '^'
-            else:
-                fillstyle = 'full'
-                marker = 'o'
+
+            label = ''
             
-            colors[i]='red'
-            if label=='DQN RC':
-                label = 'DDQN (trained in $\mathcal{E}_F$)'
-                marker = None
-                linestyle = '-'
-            elif label=='DQN Actual':
-                label = 'DDQN (trained in $\mathcal{E}_f$)'
-                marker = None
-                linestyle = '--'
-                            
-            plt.plot(df_metric['steps']/1e6, np.array(smoothed)/1e3, color=colors[i], 
-                     linestyle=linestyle, linewidth=linewidth, label=label, marker=marker,
-                     fillstyle=fillstyle, markevery=50, markersize=3)
+            if 'DQN' in agent:
+                label += 'DDQN'
+            elif 'SAC' in agent:
+                label += 'SAC'
+            elif 'PPO' in agent:
+                label += 'PPO'
+            elif 'A2C' in agent:
+                label += 'A2C'
+            else:
+                label = 'nan Agent'
+            
+            
+            if '_Th03_' in agent:
+                color='green'
+                label += ' $\Delta t_h=03h$'
+            elif '_Th06_' in agent:
+                color='aquamarine'
+                label += ' $\Delta t_h=06h$'
+            elif '_Th12_' in agent:
+                color='deepskyblue'
+                label += ' $\Delta t_h=12h$'
+            elif '_Th24_' in agent:
+                color='darkorange'
+                label += ' $\Delta t_h=24h$'
+            elif '_Th48_' in agent:
+                color='red'
+                label += ' $\Delta t_h=48h$'
+            
+            markevery=50
+            if '_\Delta t_s60_' in agent:
+                marker = 'p'
+                markersize = 6
+                label += ' $T_s=60min$'
+                markevery=markevery*4
+            elif '_\Delta t_s30_' in agent:
+                marker='s'
+                markersize = 4
+                label += ' $T_s=30min$'
+                markevery=markevery*2
+            elif '_\Delta t_s15_' in agent:
+                marker = '^'
+                markersize = 4
+                label += ' $T_s=15min$'
+                markevery=markevery*1
+
+            if '_A_' in agent:
+                label += ' A'
+                color = 'red'
+            elif '_B_' in agent:
+                label += ' B'
+                color = 'violet'
+            elif '_C_' in agent:
+                label += ' C'
+                color = 'purple'
+            elif '_D_' in agent:
+                label += ' D'
+                color = 'red'
+            else:
+                label += 'nan env'
+            
+            marker = 'o'
+            markersize = 4
+            steps = df_metric.loc[df_metric['steps']<max_steps]['steps']
+            plt.plot(steps/1e6, np.array(smoothed[:len(steps)])/1e3, color=color, 
+                     marker=marker, linewidth=linewidth, label=label, 
+                     markersize=markersize, markevery=markevery)
     if plot:
         plt.axhline(y = 0, color = 'k', linestyle = '--', linewidth=0.5)
         ax.set_xlabel('Million steps')
