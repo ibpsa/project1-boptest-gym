@@ -46,7 +46,7 @@ training_timesteps  = 1e6
 
 # Find log directory
 log_dir = os.path.join(utilities.get_root_path(), 'examples', 
-                       'agents', '{}_{}_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
+                       'agents', '{}_Actual_{}_Ts30_Th03_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
 log_dir = log_dir.replace('+', '')
 
 model_names = [
@@ -71,9 +71,9 @@ kpis_dic['typi'] = OrderedDict()
 
 for model_name in model_names:
     kpis_dic['peak'][model_name] = json.load(open(os.path.join(log_dir, 
-                                    'results_tests_'+model_name, 'kpis_16.json'),'r'))
+                                    'results_tests_'+model_name+'_highly_dynamic', 'kpis_16.json'),'r'))
     kpis_dic['typi'][model_name] = json.load(open(os.path.join(log_dir, 
-                                    'results_tests_'+model_name, 'kpis_108.json'),'r'))
+                                    'results_tests_'+model_name+'_highly_dynamic', 'kpis_108.json'),'r'))
     
 _, axs = plt.subplots(nrows=1, ncols=2, sharex=True, sharey=True, figsize=(6,3))
 
