@@ -23,30 +23,36 @@ from collections import OrderedDict
 # Arguments
 agents_map = OrderedDict()
 
-# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir'] = ['DQN_1']
 
-# agents_map['DQN_Actual_D_Ts15_Th03_3e05_logdir'] = ['DQN_1']
-# agents_map['DQN_Actual_D_Ts15_Th06_3e05_logdir'] = ['DQN_1']
-# agents_map['DQN_Actual_D_Ts15_Th12_3e05_logdir'] = ['DQN_1']
-# agents_map['DQN_Actual_D_Ts30_Th24_3e05_logdir'] = ['DQN_1']
-# agents_map['DQN_Actual_D_Ts60_Th24_1e06_logdir'] = ['DQN_1']
 
-# agents_map['DQN_Actual_A_Ts15_Th00_3e05_logdir'] = ['DQN_2']
-# agents_map['DQN_Actual_B_Ts15_Th00_1e06_logdir'] = ['DQN_1']
-# agents_map['DQN_Actual_C_Ts15_Th03_1e06_logdir'] = ['DQN_1']
-# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_u2'] = ['DQN_1']
-# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_Tset'] = ['DQN_1']
+agents_map['DQN_Actual_A_Ts15_Th00_3e05_logdir'] = ['DQN_2']
+agents_map['DQN_Actual_B_Ts15_Th00_1e06_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_C_Ts15_Th03_1e06_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th03_3e05_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th06_3e05_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th12_3e05_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts30_Th24_3e05_logdir'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts60_Th24_1e06_logdir'] = ['DQN_1']
 
-# agents_map['SAC_Actual_D_Ts15_Th24_3e05_logdir'] = ['SAC_1']
-# agents_map['PPO_Actual_D_Ts15_Th24_3e05_logdir'] = ['PPO2_1']
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_u2'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_Tset'] = ['DQN_1']
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_TsetBkupCon'] = ['DQN_11']
 
-# agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_mlp64'] = ['DQN_4']
-agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_mlp32'] = ['DQN_1']
+agents_map['SAC_Actual_D_Ts15_Th24_3e05_logdir'] = ['SAC_1']
+agents_map['PPO_Actual_D_Ts15_Th24_3e05_logdir'] = ['PPO2_1']
+agents_map['A2C_Actual_D_Ts15_Th24_3e05_logdir'] = ['A2C_3']
+
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_mlp64'] = ['DQN_4']
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_mlp32'] = ['DQN_4']
+agents_map['DQN_Actual_D_Ts15_Th24_3e05_logdir_LnMlp'] = ['DQN_1']
+
+
 
 log_dir_parent = os.path.join(utilities.get_root_path(), 'examples', 'agents')
 # log_dir_parent = os.path.join('D:\\','agents')
 
-load_from_tb = True
+load_from_tb = False
 plot = True
 linewidth = 0.8            
 max_steps = 0.3e6
