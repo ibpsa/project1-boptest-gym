@@ -12,7 +12,7 @@ https://stackoverflow.com/questions/54943168/problem-with-tensorflow-tf-sessionr
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
     NormalizedObservationWrapper, SaveAndTestCallback, DiscretizedActionWrapper
 from stable_baselines.gail import ExpertDataset
-from stable_baselines import A2C, SAC, DQN
+from stable_baselines import A2C, SAC, DQN, PPO2
 from stable_baselines.bench import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
@@ -20,6 +20,8 @@ from testing import utilities
 import requests
 import random
 import os
+from gym import spaces
+import numpy as np
 
 url = 'http://127.0.0.1:5000'
 seed = 123456
@@ -37,7 +39,8 @@ def train_RL(algorithm           = 'SAC',
              training_timesteps  = 3e5,
              render              = False,
              expert_traj         = None, 
-             model_name          = 'last_model'):
+             model_name          = 'last_model',
+             log_dir_master      = None):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -75,11 +78,14 @@ def train_RL(algorithm           = 'SAC',
     # Excluded since no heating during this period (nothing to learn).
     excluding_periods.append((173*24*3600, 266*24*3600))  
     
-    # Create a log directory
-    log_dir = os.path.join(utilities.get_root_path(), 'examples', 
-        'agents', '{}_{}_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
-    log_dir = log_dir.replace('+', '')
-    os.makedirs(log_dir, exist_ok=True)
+    if log_dir_master is None:
+        # Create a log directory
+        log_dir = os.path.join(utilities.get_root_path(), 'examples', 
+            'agents', '{}_{}_{:.0e}_logdir'.format(algorithm,case,training_timesteps))
+        log_dir = log_dir.replace('+', '')
+        os.makedirs(log_dir, exist_ok=True)
+    else:
+        log_dir = log_dir_master
     
     # Redefine reward function
     class BoptestGymEnvCustomReward(BoptestGymEnv):
@@ -165,7 +171,7 @@ def train_RL(algorithm           = 'SAC',
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
-                            step_period           = 1800,
+                            step_period           = 900,
                             render_episodes       = render,
                             log_dir               = log_dir)
         
@@ -192,6 +198,14 @@ def train_RL(algorithm           = 'SAC',
                             render_episodes       = render,
                             log_dir               = log_dir)
     
+        # Hard coded lower and upper bounds for oveTSet_u bounds
+#         env.lower_act_bounds = [18+273.15]
+#         env.upper_act_bounds = [28+273.15]
+#          
+#         env.action_space = spaces.Box(low  = np.array(env.lower_act_bounds), 
+#                                       high = np.array(env.upper_act_bounds), 
+#                                       dtype= np.float32)
+    
     env = NormalizedObservationWrapper(env)
     env = NormalizedActionWrapper(env)  
     
@@ -209,12 +223,19 @@ def train_RL(algorithm           = 'SAC',
     
         elif 'A2C' in algorithm:
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+                        policy_kwargs={'net_arch':[64]},
                         learning_rate=7e-4, n_steps=4, ent_coef=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
-            
+        
+        elif 'PPO' in algorithm:
+            model = PPO2('MlpLstmPolicy', env, verbose=0, gamma=0.99, seed=seed, 
+                         # policy_kwargs={'net_arch':[32, 'lstm', dict(vf=[32], pi=[32])]}, nminibatches=1,
+                         n_steps=96, ent_coef=0.01, learning_rate=2.5e-4, 
+                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
+    
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
-            model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
+            model = DQN('LnMlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         exploration_initial_eps=0.1, exploration_final_eps=0.01,
                         learning_rate=5e-4, batch_size=7*96, target_network_update_freq=1,
                         buffer_size=365*96, learning_starts=96, train_freq=1,
@@ -240,6 +261,8 @@ def train_RL(algorithm           = 'SAC',
             model = SAC.load(os.path.join(log_dir,model_name))
         elif 'A2C' in algorithm:
             model = A2C.load(os.path.join(log_dir,model_name))
+        elif 'PPO' in algorithm:
+            model = PPO2.load(os.path.join(log_dir,model_name))
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN.load(os.path.join(log_dir,model_name))
@@ -293,7 +316,7 @@ if __name__ == "__main__":
     #env, model, start_time_tests, log_dir = train_RL(algorithm='SAC', mode='load', case='C', training_timesteps=3e5, render=render)
     #env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='load', case='D', training_timesteps=1e6, render=render)
     
-    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='train', case='D', training_timesteps=1e6, render=render, expert_traj=os.path.join('trajectories','expert_traj_disc_28.npz'))
+    env, model, start_time_tests, log_dir = train_RL(algorithm='DQN', mode='train', case='D', training_timesteps=0.3e6, render=render)
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
