@@ -196,7 +196,7 @@ if __name__=='__main__':
                        'darkorange', 'D', '-']
     res_lists['DDQN (trained in $\mathcal{E}_F$)']    = [os.path.join(agents_dir, 'DQN_RC_D_1e06_logdir', 'results_tests', 'DQN_trained_with_RC__and__tested_in_Actual'), 
                            'red', '<', '-']
-    res_lists['DDQN (trained in $\mathcal{E}_f$)'] = [os.path.join(agents_dir, 'DQN_Actual_D_1e06_logdir', 'results_tests', 'DQN_trained_with_Actual__and__tested_in_Actual'), 
+    res_lists['DDQN (trained in $\mathcal{E}_f$)'] = [os.path.join(agents_dir, 'DQN_Actual_D_1e06_logdir', 'results_tests', 'DQN_trained_with_Actual__and__tested_with_Actual'), 
                            'red', '>', '--']
     res_lists['RLMPC ($\gamma=0.99)$']  = [os.path.join(agents_dir, 'DQN_RC_D_1e06_logdir', 'results_tests', 'RLMPC_trained_with_RC__and__tested_in_Actual_nactions11_w1e6'),
                            'green', '^', '-']
