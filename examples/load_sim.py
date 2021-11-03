@@ -138,6 +138,10 @@ def plot_results(res_lists):
     
     plt.tight_layout()
 
+    for i in [0,1]:
+        for tick in axs[1,i].get_xticklabels():
+            tick.set_rotation(45)
+
     for label, res_list in res_lists.items():
         axs[1,1].plot([], [], color=res_list[1], linestyle=res_list[3], linewidth=linewidth, label=label, 
               marker=res_list[2], markersize=markersize)    
