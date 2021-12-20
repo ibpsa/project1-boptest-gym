@@ -127,7 +127,7 @@ def plot_results(res_lists):
     axs[0,0].set_ylabel('Operative temperature ($^\circ$C)')
     axs[1,0].set_ylabel('Ambient temperature ($^\circ$C)')
     axt0.set_ylabel('Price (EUR/kWh)')        
-    axt1.set_ylabel('Solar irradiation ($W/m^2$)')
+    axt1.set_ylabel('Direct normal solar irradiation ($W/m^2$)')
     axt0.set_yticks(np.arange(0, 0.31, 0.1))
     axt1.set_yticks(np.arange(0, 801, 100))
     
@@ -149,7 +149,7 @@ def plot_results(res_lists):
     axs[1,1].plot([],[], color='dimgray',     linestyle='dotted',   linewidth=linewidth, label='Price')
     axs[1,1].plot([],[], color='royalblue',   linestyle='-',        linewidth=linewidth, label='$T_a$') 
     axs[1,1].plot([],[], color='gold',        linestyle='-',        linewidth=linewidth, label='$\dot{Q}_{rad}$')
-    axs[1,1].legend(fancybox=True, ncol=4, bbox_to_anchor=(0.9, -0.2)) 
+    axs[1,1].legend(loc='upper right', fancybox=True, ncol=1, bbox_to_anchor=(1.75, 2.1)) 
 
     plt.savefig('sim_all.pdf', bbox_inches='tight')     
     plt.show()  
