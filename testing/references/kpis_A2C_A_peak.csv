@@ -1,6 +1,9 @@
 keys,value
-cost_tot,0.07457238867190989
-emis_tot,0.04879911767908349
-ener_tot,0.29221028550349404
-idis_tot,0.0
 tdis_tot,0.0
+idis_tot,0.0
+ener_tot,0.2922066610211115
+cost_tot,0.07457148988999417
+emis_tot,0.0487985123905256
+pele_tot,0.019606573377785277
+pgas_tot,
+pdih_tot,
