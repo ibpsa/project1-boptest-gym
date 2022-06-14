@@ -210,14 +210,14 @@ def train_RL(algorithm           = 'SAC',
         elif 'A2C' in algorithm:
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=7e-4, n_steps=4, ent_coef=1,
-                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+                        tensorboard_log=log_dir)
             
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=5e-4, batch_size=24, 
                         buffer_size=365*24, learning_starts=24, train_freq=1,
-                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+                        tensorboard_log=log_dir)
         
         if expert_traj is not None:
             # Do not shuffle (randomize) to obtain deterministic result
