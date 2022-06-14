@@ -13,8 +13,8 @@ import numpy as np
 import os
 
 from boptestGymEnv import DiscretizedActionWrapper
-from stable_baselines.gail.dataset.record_expert import generate_expert_traj
-from stable_baselines import A2C, DQN
+from stable_baselines3.gail.dataset.record_expert import generate_expert_traj
+from stable_baselines3 import A2C, DQN
 from gym.core import Wrapper
 from examples import train_RL
 

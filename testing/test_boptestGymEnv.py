@@ -16,8 +16,8 @@ from examples import run_baseline, run_sample, run_save_callback,\
     run_variable_episode, train_RL
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
-from stable_baselines.common.env_checker import check_env
-from stable_baselines import A2C
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3 import A2C
 
 url = 'http://127.0.0.1:5000'
 
