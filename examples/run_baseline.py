@@ -80,7 +80,7 @@ def run_reward_custom(plot=False):
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']*12.*16. + w*kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)
@@ -128,7 +128,7 @@ def run_reward_clipping(plot=False):
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot'] + kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']*12.*16. + kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)

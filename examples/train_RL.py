@@ -36,7 +36,8 @@ def train_RL(algorithm           = 'SAC',
              case                = 'simple',
              training_timesteps  = 3e5,
              render              = False,
-             expert_traj         = None):
+             expert_traj         = None, 
+             model_name          = 'last_model'):
     '''Method to train (or load a pre-trained) A2C agent. Testing periods 
     have to be introduced already here to not use these during training. 
     
@@ -61,7 +62,9 @@ def train_RL(algorithm           = 'SAC',
     expert_traj : string
         Path to expert trajectory in .npz format. If not None, the agent 
         will be pretrained using behavior cloning with these data. 
-        
+    model_name : string
+        Name of the model to be saved or loaded. 
+            
     '''
     
     excluding_periods = []
@@ -92,7 +95,7 @@ def train_RL(algorithm           = 'SAC',
             kpis = requests.get('{0}/kpi'.format(self.url)).json()
             
             # Calculate objective integrand function at this point
-            objective_integrand = kpis['cost_tot'] + 10*kpis['tdis_tot']
+            objective_integrand = kpis['cost_tot']*12.*16. + 100*kpis['tdis_tot']
             
             # Compute reward
             reward = -(objective_integrand - self.objective_integrand)
@@ -162,7 +165,7 @@ def train_RL(algorithm           = 'SAC',
                             excluding_periods     = excluding_periods,
                             max_episode_length    = max_episode_length,
                             warmup_period         = warmup_period,
-                            step_period           = 900,
+                            step_period           = 1800,
                             render_episodes       = render,
                             log_dir               = log_dir)
         
@@ -198,18 +201,18 @@ def train_RL(algorithm           = 'SAC',
     if mode == 'train': 
         
         # Define RL agent
-        if algorithm == 'SAC':
+        if 'SAC' in algorithm:
             model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=3e-4, batch_size=96, ent_coef='auto',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
     
-        elif algorithm == 'A2C':
+        elif 'A2C' in algorithm:
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=7e-4, n_steps=4, ent_coef=1,
                         tensorboard_log=log_dir, n_cpu_tf_sess=1)
             
-        elif algorithm == 'DQN':
+        elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=5e-4, batch_size=24, 
@@ -224,21 +227,21 @@ def train_RL(algorithm           = 'SAC',
         
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
-                                       log_dir=log_dir, test=True)
+                                       log_dir=log_dir, test=False)
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
-        model.save(os.path.join(log_dir,'last_model'))
+        model.save(os.path.join(log_dir,model_name))
         
     elif mode == 'load':
         # Load the trained agent
-        if algorithm == 'SAC':
-            model = SAC.load(os.path.join(log_dir,'last_model'))
-        elif algorithm == 'A2C':
-            model = A2C.load(os.path.join(log_dir,'last_model'))
-        elif algorithm == 'DQN':
+        if 'SAC' in algorithm:
+            model = SAC.load(os.path.join(log_dir,model_name))
+        elif 'A2C' in algorithm:
+            model = A2C.load(os.path.join(log_dir,model_name))
+        elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
-            model = DQN.load(os.path.join(log_dir,'last_model'))
+            model = DQN.load(os.path.join(log_dir,model_name))
             
     elif mode == 'empty':
         model = None
@@ -249,8 +252,8 @@ def train_RL(algorithm           = 'SAC',
     return env, model, start_time_tests, log_dir
         
 def test_peak(env, model, start_time_tests, episode_length_test, 
-              warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
-              plot=False):
+              warmup_period_test, log_dir=os.getcwd(), model_name='last_model', 
+              save_to_file=False, plot=False):
     ''' Perform test in peak heat period (February). 
     
     '''
@@ -259,14 +262,14 @@ def test_peak(env, model, start_time_tests, episode_length_test,
                                                       start_time=start_time_tests[0], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
-                                                      log_dir=log_dir,
-                                                      kpis_to_file=kpis_to_file,
+                                                      log_dir=log_dir, model_name=model_name,
+                                                      save_to_file=save_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
 def test_typi(env, model, start_time_tests, episode_length_test, 
-              warmup_period_test, log_dir=os.getcwd(), kpis_to_file=False, 
-              plot=False):
+              warmup_period_test, log_dir=os.getcwd(), model_name='last_model', 
+              save_to_file=False, plot=False):
     ''' Perform test in typical heat period (November)
     
     '''
@@ -275,8 +278,8 @@ def test_typi(env, model, start_time_tests, episode_length_test,
                                                       start_time=start_time_tests[1], 
                                                       episode_length=episode_length_test,
                                                       warmup_period=warmup_period_test,
-                                                      log_dir=log_dir,
-                                                      kpis_to_file=kpis_to_file,
+                                                      log_dir=log_dir, model_name=model_name,
+                                                      save_to_file=save_to_file,
                                                       plot=plot)
     return observations, actions, rewards, kpis
 
@@ -293,8 +296,8 @@ if __name__ == "__main__":
     
     warmup_period_test  = 7*24*3600
     episode_length_test = 14*24*3600
-    kpis_to_file = True
+    save_to_file = True
 
-    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
-    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, kpis_to_file, plot)
+    test_peak(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot)
+    test_typi(env, model, start_time_tests, episode_length_test, warmup_period_test, log_dir, save_to_file, plot)
     
