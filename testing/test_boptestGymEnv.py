@@ -66,7 +66,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''Use the environment checker from stable baselines to test 
         the environment. This checks that the environment follows the 
         Gym API. It also optionally checks that the environment is 
-        compatible with Stable-Baselines repository.
+        compatible with Stable-Baselines3 repository.
         
         '''
         
@@ -302,7 +302,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         Test that the model performance can be monitored and results can be 
         checked and saved as the model improves. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
-        Therefore, this test also checks that a RL from stable-baselines 
+        Therefore, this test also checks that a RL from stable-baselines3
         can be trained.
         
         '''
@@ -334,7 +334,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         The method that is used to determine whether the episode is 
         terminated or not is defined by the user. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
-        Therefore, this test also checks that a RL from stable-baselines 
+        Therefore, this test also checks that a RL from stable-baselines3
         can be trained. This test also uses the save callback to check that
         the variable episode length is being effectively used. 
         Notice that this test also checks that child classes can be nested
