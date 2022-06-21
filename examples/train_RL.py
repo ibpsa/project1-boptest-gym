@@ -205,11 +205,11 @@ def train_RL(algorithm           = 'SAC',
             model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=3e-4, batch_size=96, ent_coef='auto',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
-                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+                        tensorboard_log=log_dir)
     
         elif 'A2C' in algorithm:
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        learning_rate=7e-4, n_steps=4, ent_coef=1,
+                        learning_rate=1e-6, n_steps=4, ent_coef=0,
                         tensorboard_log=log_dir)
             
         elif 'DQN' in algorithm:
@@ -226,7 +226,7 @@ def train_RL(algorithm           = 'SAC',
             model.pretrain(dataset, n_epochs=1000)
         
         # Create the callback test and save the agent while training
-        callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
+        callback = SaveAndTestCallback(env, check_freq=1e10, save_freq=1e4,
                                        log_dir=log_dir, test=False)
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
