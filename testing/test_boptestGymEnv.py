@@ -31,14 +31,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
          
         '''
         self.env = BoptestGymEnv(url                 = url,
-                                 testcase='bestest_hydronic_heat_pump',
+                                 testcase            ='bestest_hydronic_heat_pump',
                                  actions             = ['oveHeaPumY_u'],
-                                observations        = {'reaTZon_y':(280.,310.)}, 
-                                reward              = ['reward'],
-                                max_episode_length  = 24*3600,
-                                random_start_time   = True,
-                                warmup_period       = 3600,
-                                step_period         = 900)
+                                 observations        = {'reaTZon_y':(280.,310.)},
+                                 reward              = ['reward'],
+                                 max_episode_length  = 24*3600,
+                                 random_start_time   = True,
+                                 warmup_period       = 3600,
+                                 step_period         = 900)
     
     def test_summary(self):
         '''
