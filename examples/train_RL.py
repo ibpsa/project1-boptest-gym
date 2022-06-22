@@ -2,7 +2,7 @@
 Module to train and test a RL agent for the bestest_hydronic_heatpump 
 case. This case needs to be deployed to run this script.  
 To load the ExpertDataset it's needed to comment the first line in stable_baselines\gail\_init_.py
-from stable_baselines.gail.model import GAIL
+from stable_baselines3.gail.model import GAIL
 If further issues are encountered related to the np.ndarrais for pretraining, it may happen that
 numpy is installed twice. Check:
 https://stackoverflow.com/questions/54943168/problem-with-tensorflow-tf-sessionrun-wrapper-expected-all-values-in-input-dic
@@ -11,9 +11,9 @@ https://stackoverflow.com/questions/54943168/problem-with-tensorflow-tf-sessionr
 
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
     NormalizedObservationWrapper, SaveAndTestCallback, DiscretizedActionWrapper
-from stable_baselines.gail import ExpertDataset
-from stable_baselines import A2C, SAC, DQN
-from stable_baselines.bench import Monitor
+# from stable_baselines3.gail import ExpertDataset
+from stable_baselines3 import A2C, SAC, DQN
+from stable_baselines3.common.monitor import Monitor
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
 from testing import utilities
@@ -205,19 +205,19 @@ def train_RL(algorithm           = 'SAC',
             model = SAC('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=3e-4, batch_size=96, ent_coef='auto',
                         buffer_size=365*96, learning_starts=96, train_freq=1,
-                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+                        tensorboard_log=log_dir)
     
         elif 'A2C' in algorithm:
             model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
-                        learning_rate=7e-4, n_steps=4, ent_coef=1,
-                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+                        learning_rate=1e-6, n_steps=4, ent_coef=0,
+                        tensorboard_log=log_dir)
             
         elif 'DQN' in algorithm:
             env = DiscretizedActionWrapper(env,n_bins_act=10)
             model = DQN('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed, 
                         learning_rate=5e-4, batch_size=24, 
                         buffer_size=365*24, learning_starts=24, train_freq=1,
-                        tensorboard_log=log_dir, n_cpu_tf_sess=1)
+                        tensorboard_log=log_dir)
         
         if expert_traj is not None:
             # Do not shuffle (randomize) to obtain deterministic result
@@ -226,7 +226,7 @@ def train_RL(algorithm           = 'SAC',
             model.pretrain(dataset, n_epochs=1000)
         
         # Create the callback test and save the agent while training
-        callback = SaveAndTestCallback(env, check_freq=10000, save_freq=10000,
+        callback = SaveAndTestCallback(env, check_freq=1e10, save_freq=1e4,
                                        log_dir=log_dir, test=False)
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)

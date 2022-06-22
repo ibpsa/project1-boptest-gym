@@ -67,7 +67,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     return observations, actions, rewards, kpis
 
-def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
+def plot_results(env, rewards, points=['reaTZon_y','oveHeaPumY_u'],
                  log_dir=os.getcwd(), model_name='last_model', save_to_file=False):
     
     df_res = pd.DataFrame()
@@ -159,7 +159,7 @@ def plot_results(env, rewards, points=['reaTZon_y','reaHeaPumY_y'],
     axt.set_ylabel('(EUR/kWh)')   
     axt.set_ylabel('Price\n(EUR/kWh)')
     
-    axs[1].plot(x_time, df['reaHeaPumY_y'],   color='darkorange',     linestyle='-', linewidth=1, label='_nolegend_')
+    axs[1].plot(x_time, df['oveHeaPumY_u'],   color='darkorange',     linestyle='-', linewidth=1, label='_nolegend_')
     axs[1].set_ylabel('Heat pump\nmodulation\nsignal\n( - )')
     
     axs[2].plot(x_time, rewards_reindexed, 'b', linewidth=1, label='rewards')

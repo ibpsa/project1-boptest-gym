@@ -7,8 +7,8 @@ training an agent.
 '''
 
 from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper, SaveAndTestCallback
-from stable_baselines import A2C
-from stable_baselines.bench import Monitor
+from stable_baselines3 import A2C
+from stable_baselines3.common.monitor import Monitor
 from testing import utilities
 import random
 import os

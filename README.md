@@ -17,7 +17,7 @@ The environment is described in [this paper](https://www.researchgate.net/public
 
 ```python
 from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, NormalizedObservationWrapper
-from stable_baselines import A2C
+from stable_baselines3 import A2C
 from examples.test_and_plot import test_agent
 
 # BOPTEST case address

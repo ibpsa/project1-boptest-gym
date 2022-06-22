@@ -16,8 +16,8 @@ from examples import run_baseline, run_sample, run_save_callback,\
     run_variable_episode, train_RL
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
-from stable_baselines.common.env_checker import check_env
-from stable_baselines import A2C
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3 import A2C
 
 url = 'http://127.0.0.1:5000'
 
@@ -66,7 +66,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''Use the environment checker from stable baselines to test 
         the environment. This checks that the environment follows the 
         Gym API. It also optionally checks that the environment is 
-        compatible with Stable-Baselines repository.
+        compatible with Stable-Baselines3 repository.
         
         '''
         
@@ -170,9 +170,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
     
     def partial_test_RL(self, algorithm='A2C', mode='load', episode_length_test=1*24*3600,
-                        warmup_period_test=1*24*3600, case='simple', training_timesteps=1e6,
-                        expert_traj=None, plot=False):
-        '''Test for an RL agent from stable baselines. 
+                        warmup_period_test=1*24*3600, case='simple', training_timesteps=1e5,
+                        expert_traj=None, render=False, plot=False):
+        '''Test for an RL agent from stable baselines.
         
         Parameters
         ----------
@@ -184,7 +184,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             agent is trained or not during testing, the results should be 
             exactly the same as far as the seed in `examples.train_RL` 
             is not modified. 
-        episode_length_test : integer, default=2*24*3600
+        episode_length_test : integer, default=1*24*3600
             Length of the testing episode. We keep it short for testing,
             only one day is used by default. 
         warmup_period_test : integer, default=1*24*3600
@@ -192,7 +192,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             short for testing. Only one day is used by default. 
         case : string, default='simple'
             Case to be tested. 
-        training_timesteps : int, default=1e6
+        training_timesteps : int, default=1e5
             Number of timesteps to be used for learning in the test. 
         expert_traj : string, default=None
             Path to expert trajectory if pretraining through behavior 
@@ -205,13 +205,13 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         env, model, start_time_tests, _ = train_RL.train_RL(algorithm=algorithm,
                                                             mode=mode, 
                                                             case=case,
-                                                            render=False,
+                                                            render=render,
                                                             training_timesteps=training_timesteps,
                                                             expert_traj=expert_traj)
         
         obs, act, rew, kpi = \
             train_RL.test_peak(env, model, start_time_tests, 
-                               episode_length_test, warmup_period_test, plot)
+                               episode_length_test, warmup_period_test, plot=plot)
         if expert_traj is None:
             label = '{0}_{1}_peak'.format(algorithm,case)
         else:
@@ -220,7 +220,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         obs, act, rew, kpi = \
             train_RL.test_typi(env, model, start_time_tests, 
-                               episode_length_test, warmup_period_test, plot)
+                               episode_length_test, warmup_period_test, plot=plot)
         if expert_traj is None:
             label = '{0}_{1}_typi'.format(algorithm,case)
         else:
@@ -302,7 +302,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         Test that the model performance can be monitored and results can be 
         checked and saved as the model improves. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
-        Therefore, this test also checks that a RL from stable-baselines 
+        Therefore, this test also checks that a RL from stable-baselines3
         can be trained.
         
         '''
@@ -334,7 +334,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         The method that is used to determine whether the episode is 
         terminated or not is defined by the user. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
-        Therefore, this test also checks that a RL from stable-baselines 
+        Therefore, this test also checks that a RL from stable-baselines3
         can be trained. This test also uses the save callback to check that
         the variable episode length is being effectively used. 
         Notice that this test also checks that child classes can be nested
@@ -394,21 +394,21 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Check observation values
         if obs is not None:
             df = pd.DataFrame(obs)
-            df.index.name = 'time'
+            df.index.name = 'time' # utilities package requires 'time' as name for index
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'observations_{}.csv'.format(label))
             self.compare_ref_timeseries_df(df, ref_filepath) 
         
         # Check actions values
         if act is not None:
             df = pd.DataFrame(act)
-            df.index.name = 'time'
+            df.index.name = 'time' # utilities package requires 'time' as name for index
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'actions_{}.csv'.format(label))
             self.compare_ref_timeseries_df(df, ref_filepath) 
         
         # Check reward values
         if rew is not None:
             df = pd.DataFrame(rew)
-            df.index.name = 'time'
+            df.index.name = 'time' # utilities package requires 'time' as name for index
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'rewards_{}.csv'.format(label))
             self.compare_ref_timeseries_df(df, ref_filepath) 
             
@@ -417,7 +417,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             df.columns = ['value']
             df.index.name = 'keys'
             # Time ratio is not checked since depends on the machine where tests are run
-            df.drop('time_rat', inplace=True) 
+            df.drop('time_rat', inplace=True)
+            # Drop rows with non-calculated KPIs
+            df.dropna(inplace=True)
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'kpis_{}.csv'.format(label))
             self.compare_ref_values_df(df, ref_filepath)
         

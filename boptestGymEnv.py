@@ -19,9 +19,9 @@ from collections import OrderedDict
 from scipy import interpolate
 from pprint import pformat
 from gym import spaces
-from stable_baselines.common.env_checker import check_env
-from stable_baselines.results_plotter import load_results, ts2xy
-from stable_baselines.common.callbacks import BaseCallback
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.results_plotter import load_results, ts2xy
+from stable_baselines3.common.callbacks import BaseCallback
 
 from examples.test_and_plot import plot_results, test_agent
 
@@ -1290,7 +1290,7 @@ class SaveAndTestCallback(BaseCallback):
         
         Returns
         -------
-        ret_bool: booleant
+        ret_bool: boolean
             If the callback returns False, training is aborted early. In 
             this case we always return `True`. 
         
@@ -1301,9 +1301,10 @@ class SaveAndTestCallback(BaseCallback):
             self.model.save(os.path.join(self.log_dir, 'model_{}'.format(self.n_calls)))
         
         if self.n_calls % self.check_freq == 0:
+            print('Checking agent performance...')
             # Retrieve training reward
             x, y = ts2xy(load_results(self.log_dir), 'timesteps')
-            if len(x) > 0:
+            if len(x) > 1:
                 # Mean training reward over the last self.check_freq episodes
                 mean_reward = np.mean(y[-self.check_freq:])
                 if self.verbose > 0:
