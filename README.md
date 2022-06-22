@@ -27,6 +27,7 @@ url = 'http://127.0.0.1'
 
 # Instantite environment
 env = BoptestGymEnv(url                   = url,
+                    testcase              = 'bestest_hydronic_heat_pump',
                     actions               = ['oveHeaPumY_u'],
                     observations          = {'reaTZon_y':(280.,310.)}, 
                     random_start_time     = True,
