@@ -31,7 +31,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
          
         '''
         self.env = BoptestGymEnv(url                 = url,
-                                actions             = ['oveHeaPumY_u'],
+                                 testcase='bestest_hydronic_heat_pump',
+                                 actions             = ['oveHeaPumY_u'],
                                 observations        = {'reaTZon_y':(280.,310.)}, 
                                 reward              = ['reward'],
                                 max_episode_length  = 24*3600,
