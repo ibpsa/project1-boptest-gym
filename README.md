@@ -1,6 +1,6 @@
 # BOPTEST-Gym
 
-BOPTESTS-Gym is the [OpenAI-Gym](https://gym.openai.com/) environment for the [BOPTEST](https://github.com/ibpsa/project1-boptest) framework. This repository accommodates the BOPTEST API to the OpenAI-Gym convention in order to facilitate the implementation, assessment and benchmarking of reinforcement learning (RL) algorithms for their application in building energy management. RL algorithms from the [Stable-Baselines](https://github.com/hill-a/stable-baselines) repository are used to exemplify and test this framework. 
+BOPTESTS-Gym is the [OpenAI-Gym](https://gym.openai.com/) environment for the [BOPTEST](https://github.com/ibpsa/project1-boptest) framework. This repository accommodates the BOPTEST API to the OpenAI-Gym convention in order to facilitate the implementation, assessment and benchmarking of reinforcement learning (RL) algorithms for their application in building energy management. RL algorithms from the [Stable-Baselines 3](https://github.com/DLR-RM/stable-baselines3) repository are used to exemplify and test this framework. 
 
 The environment is described in [this paper](https://www.researchgate.net/publication/354386346_An_OpenAI-Gym_environment_for_the_Building_Optimization_Testing_BOPTEST_framework). 
 
