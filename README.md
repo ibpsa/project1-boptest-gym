@@ -23,7 +23,7 @@ from stable_baselines3 import A2C
 from examples.test_and_plot import test_agent
 
 # BOPTEST case address
-url = 'http://127.0.0.1:5000'
+url = 'http://127.0.0.1'
 
 # Instantite environment
 env = BoptestGymEnv(url                   = url,

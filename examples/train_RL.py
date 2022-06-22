@@ -21,7 +21,7 @@ import requests
 import random
 import os
 
-url = 'http://127.0.0.1:5000'
+url = 'http://127.0.0.1'
 seed = 123456
 
 # Seed for random starting times of episodes

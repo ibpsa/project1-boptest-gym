@@ -19,7 +19,7 @@ from boptestGymEnv import BoptestGymEnv
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3 import A2C
 
-url = 'http://127.0.0.1:5000'
+url = 'http://127.0.0.1'
 
 class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
     '''Tests the OpenAI-Gym interface for BOPTESTS.
