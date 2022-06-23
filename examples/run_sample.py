@@ -68,6 +68,9 @@ def run(envClass, wrapper=None, plot=False):
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
                          plot=plot)
+
+    # stop the test
+    env.stop()
     
     return observations, actions, rewards
         

@@ -249,7 +249,10 @@ def run(envClass, wrapper=None, scenario={'electricity_price':'constant'},
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
                          plot=plot)
-    
+
+    # stop the test
+    env.stop()
+
     return observations, actions, rewards
         
 class BaselineModel(object):

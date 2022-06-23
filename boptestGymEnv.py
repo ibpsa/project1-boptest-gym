@@ -165,6 +165,12 @@ class BoptestGymEnv(gym.Env):
         # Get test information
         #=============================================================
         # Get testid for the particular testcase
+        # Check if already started a test case and stop it if so before starting another
+        try:
+            requests.put('{0}/stop/{1}'.format(url, self.testid))
+        except:
+            pass
+        # Select and start a new test case
         self.testid = requests.post('{0}/testcases/{1}/select'.format(url, testcase)).json()['testid']
         # Test case name
         self.name = requests.get('{0}/name/{1}'.format(url, self.testid)).json()
@@ -173,7 +179,7 @@ class BoptestGymEnv(gym.Env):
         # Predictive variables available
         self.all_predictive_vars = requests.get('{0}/forecast/{1}'.format(url,self.testid)).json()
         # Inputs available
-        self.all_input_vars = requests.get('{0}/inputs{1}'.format(url,self.testid)).json()
+        self.all_input_vars = requests.get('{0}/inputs/{1}'.format(url,self.testid)).json()
         # Default simulation step
         self.step_def = requests.get('{0}/step/{1}'.format(url,self.testid)).json()
         # Default forecast parameters
@@ -491,6 +497,14 @@ class BoptestGymEnv(gym.Env):
         self.episode_rewards = []
 
         return observations
+
+    def stop(self):
+        '''
+        Stop the test case
+
+        '''
+
+        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
 
     def step(self, action):
         '''

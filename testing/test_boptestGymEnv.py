@@ -31,7 +31,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
          
         '''
         self.env = BoptestGymEnv(url                 = url,
-                                 testcase            ='bestest_hydronic_heat_pump',
+                                 testcase            = 'bestest_hydronic_heat_pump',
                                  actions             = ['oveHeaPumY_u'],
                                  observations        = {'reaTZon_y':(280.,310.)},
                                  reward              = ['reward'],
@@ -63,6 +63,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Remove generated file
         os.remove(file_tst+'.json')
 
+        # stop the test
+        self.env.stop()
+
     def test_stable_baselines_check(self):
         '''Use the environment checker from stable baselines to test 
         the environment. This checks that the environment follows the 
@@ -72,6 +75,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         
         check_env(self.env, warn=True)
+
+        # stop the test
+        self.env.stop()
    
     def test_reset_fixed(self):
         '''Test that the environment can reset using a fixed start time
@@ -90,6 +96,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         df.index.name = 'keys'
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_fixed.csv')
         self.compare_ref_values_df(df, ref_filepath)
+
+        # stop the test
+        self.env.stop()
 
     def test_reset_random(self):
         '''Test that the environment can reset using a random start time
@@ -126,7 +135,10 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         df = pd.DataFrame.from_dict(start_times, orient = 'index', columns=['value'])
         df.index.name = 'keys'
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_random.csv')
-        self.compare_ref_values_df(df, ref_filepath) 
+        self.compare_ref_values_df(df, ref_filepath)
+
+        # stop the test
+        self.env.stop()
 
     def test_compute_reward_default(self):
         '''Test default method to compute reward.
@@ -135,12 +147,18 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_reward_default(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='default')
 
+        # stop the test
+        self.env.stop()
+
     def test_compute_reward_custom(self):
         '''Test custom method to compute reward.
         
         '''
         obs, _, rew = run_baseline.run_reward_custom(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
+
+        # stop the test
+        self.env.stop()
         
     def test_compute_reward_clipping(self):
         '''Test reward clipping.
@@ -149,27 +167,39 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_reward_clipping(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='clipping')
 
+        # stop the test
+        self.env.stop()
+
     def test_normalized_observation_wrapper(self):
         '''Test wrapper that normalizes observations.
         
         '''
         obs, _, rew = run_baseline.run_normalized_observation_wrapper(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='normalizedObservationWrapper')
-        
+
+        # stop the test
+        self.env.stop()
+
     def test_normalized_action_wrapper(self):
         '''Test wrapper that normalizes actions.
         
         '''
         obs, act, rew = run_sample.run_normalized_action_wrapper(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=act,rew=rew,kpi=None,label='normalizedActionWrapper')
-    
+
+        # stop the test
+        self.env.stop()
+
     def test_set_scenario(self):
         '''Test that environment can set BOPTEST case scenario.
         
         '''
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
-    
+
+        # stop the test
+        self.env.stop()
+
     def partial_test_RL(self, algorithm='A2C', mode='load', episode_length_test=1*24*3600,
                         warmup_period_test=1*24*3600, case='simple', training_timesteps=1e5,
                         expert_traj=None, render=False, plot=False):
@@ -227,7 +257,13 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         else:
             label = '{0}_{1}_typi_pretrained'.format(algorithm,case)
         self.check_obs_act_rew_kpi(obs,act,rew,kpi,label)
-    
+
+        # stop the test
+        env.stop()
+
+        # stop the test
+        self.env.stop()
+
     def test_A2C_simple(self):
         '''Test simple agent with only one measurement as observation and
         one action. The agent has been trained with 1e5 steps. 
@@ -328,7 +364,13 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         # Remove model to prove further testing
         shutil.rmtree(log_dir, ignore_errors=True)
-        
+
+        # stop the test
+        env.stop()
+
+        # stop the test
+        self.env.stop()
+
     def test_variable_episode(self):
         '''
         Test that a model can be trained using variable episode length. 
