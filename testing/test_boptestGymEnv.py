@@ -26,19 +26,22 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
          
     '''
  
-    def setUp(self):
-        '''Setup for each test.
-         
+    def instantiate_env(self):
+        '''Instantiate environment with standard BoptestGymEnv class.
+         Used for some tests only.
+
         '''
-        self.env = BoptestGymEnv(url                 = url,
-                                 testcase            = 'bestest_hydronic_heat_pump',
-                                 actions             = ['oveHeaPumY_u'],
-                                 observations        = {'reaTZon_y':(280.,310.)},
-                                 reward              = ['reward'],
-                                 max_episode_length  = 24*3600,
-                                 random_start_time   = True,
-                                 warmup_period       = 3600,
-                                 step_period         = 900)
+        env = BoptestGymEnv(url                 = url,
+                            testcase            = 'bestest_hydronic_heat_pump',
+                            actions             = ['oveHeaPumY_u'],
+                            observations        = {'reaTZon_y':(280.,310.)},
+                            reward              = ['reward'],
+                            max_episode_length  = 24*3600,
+                            random_start_time   = True,
+                            warmup_period       = 3600,
+                            step_period         = 900)
+
+        return env
     
     def test_summary(self):
         '''
@@ -46,25 +49,28 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         describing its most important attributes.  
         
         '''
-        
+
+        # Instantiate environment
+        env = self.instantiate_env()
+
         # Check that we can print the environment summary
-        print(self.env)
+        print(env)
         
         # Check that we can save the environment summary
         file_ref = os.path.join('references','summary_ref')
         file_tst = 'summary_tst'
-        self.env.save_summary(file_tst)
+        env.save_summary(file_tst)
         
         # Check that we can load the environment summary. This test only checks sorted keys
-        summary = self.env.load_summary(file_tst)
+        summary = env.load_summary(file_tst)
         for i,k in enumerate(summary.keys()):
             self.compare_ref_json(sorted(dict(summary[k])), file_ref+'_'+str(i)+'.json')
         
         # Remove generated file
         os.remove(file_tst+'.json')
 
-        # stop the test
-        self.env.stop()
+        # stop the environment to not overload the server
+        env.stop()
 
     def test_stable_baselines_check(self):
         '''Use the environment checker from stable baselines to test 
@@ -73,23 +79,29 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         compatible with Stable-Baselines3 repository.
         
         '''
-        
-        check_env(self.env, warn=True)
 
-        # stop the test
-        self.env.stop()
+        # Instantiate environment
+        env = self.instantiate_env()
+
+        check_env(env, warn=True)
+
+        # stop the environment to not overload the server
+        env.stop()
    
     def test_reset_fixed(self):
         '''Test that the environment can reset using a fixed start time
         and a specific warmup period. 
         
         '''
+
+        # Instantiate environment
+        env = self.instantiate_env()
+
+        env.random_start_time  = False
+        env.start_time         = 14*24*3600
+        env.warmup_period      = 3*3600
         
-        self.env.random_start_time  = False
-        self.env.start_time         = 14*24*3600
-        self.env.warmup_period      = 3*3600
-        
-        obs = self.env.reset()
+        obs = env.reset()
         
         # Check values
         df = pd.DataFrame(data=[obs], index=['obs_reset_fixed'], columns=['value'])
@@ -97,8 +109,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_fixed.csv')
         self.compare_ref_values_df(df, ref_filepath)
 
-        # stop the test
-        self.env.stop()
+        # stop the environment to not overload the server
+        env.stop()
 
     def test_reset_random(self):
         '''Test that the environment can reset using a random start time
@@ -106,21 +118,24 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         checks that the seed for random initialization works properly. 
         
         '''
-        
-        self.env.random_start_time  = True
-        self.env.warmup_period      = 1*3600
+
+        # Instantiate environment
+        env = self.instantiate_env()
+
+        env.random_start_time  = True
+        env.warmup_period      = 1*3600
         # Set the excluding periods to be the two first weeks of February
         # and the two first weeks of November
         excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                             (304*24*3600, 304*24*3600+14*24*3600)]
-        self.env.excluding_periods = excluding_periods
+        env.excluding_periods = excluding_periods
         random.seed(123456)
         start_times = OrderedDict()
         # Reset hundred times
         for i in range(100):
-            obs = self.env.reset()
-            start_time = self.env.start_time
-            episode = (start_time, start_time+self.env.max_episode_length)
+            obs = env.reset()
+            start_time = env.start_time
+            episode = (start_time, start_time+env.max_episode_length)
             for period in excluding_periods:
                 # Make sure that the episodes don't overlap with excluding_periods
                 assert not(episode[0] < period[1] and period[0] < episode[1]),\
@@ -128,7 +143,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                         'The episode with starting time {0} and end time {1} '\
                         'overlaps with period {2}. This corresponds to the '\
                         'generated starting time number {3}.'\
-                        ''.format(start_time,start_time+self.env.max_episode_length,period,i)
+                        ''.format(start_time,start_time+env.max_episode_length,period,i)
             start_times[start_time] = obs
             
         # Check values
@@ -137,68 +152,56 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_random.csv')
         self.compare_ref_values_df(df, ref_filepath)
 
-        # stop the test
-        self.env.stop()
+        # stop the environment to not overload the server
+        env.stop()
 
     def test_compute_reward_default(self):
         '''Test default method to compute reward.
         
         '''
+
         obs, _, rew = run_baseline.run_reward_default(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='default')
-
-        # stop the test
-        self.env.stop()
 
     def test_compute_reward_custom(self):
         '''Test custom method to compute reward.
         
         '''
+
         obs, _, rew = run_baseline.run_reward_custom(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
 
-        # stop the test
-        self.env.stop()
-        
     def test_compute_reward_clipping(self):
         '''Test reward clipping.
         
         '''
+
         obs, _, rew = run_baseline.run_reward_clipping(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='clipping')
-
-        # stop the test
-        self.env.stop()
 
     def test_normalized_observation_wrapper(self):
         '''Test wrapper that normalizes observations.
         
         '''
+
         obs, _, rew = run_baseline.run_normalized_observation_wrapper(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='normalizedObservationWrapper')
-
-        # stop the test
-        self.env.stop()
 
     def test_normalized_action_wrapper(self):
         '''Test wrapper that normalizes actions.
         
         '''
+
         obs, act, rew = run_sample.run_normalized_action_wrapper(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=act,rew=rew,kpi=None,label='normalizedActionWrapper')
-
-        # stop the test
-        self.env.stop()
 
     def test_set_scenario(self):
         '''Test that environment can set BOPTEST case scenario.
         
         '''
+
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
-
-        # stop the test
-        self.env.stop()
 
     def partial_test_RL(self, algorithm='A2C', mode='load', episode_length_test=1*24*3600,
                         warmup_period_test=1*24*3600, case='simple', training_timesteps=1e5,
@@ -258,11 +261,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             label = '{0}_{1}_typi_pretrained'.format(algorithm,case)
         self.check_obs_act_rew_kpi(obs,act,rew,kpi,label)
 
-        # stop the test
+        # stop the environment to not overload the server
         env.stop()
-
-        # stop the test
-        self.env.stop()
 
     def test_A2C_simple(self):
         '''Test simple agent with only one measurement as observation and
@@ -306,7 +306,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         self.partial_test_RL(case='D', algorithm='DQN')
         
-    def test_behavior_cloning_cont(self):
+    def ptest_behavior_cloning_cont(self):
         '''Check that an agent using continuous action space (in this case
         we use A2C) can be pretrained using behavior cloning from an 
         expert trajectory that needs to be generated beforehand. The test
@@ -320,7 +320,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                              training_timesteps=0,
                              expert_traj=expert_traj)
         
-    def test_behavior_cloning_disc(self):
+    def ptest_behavior_cloning_disc(self):
         '''Check that an agent using discrete action space (in this case
         we use DQN) can be pretrained using behavior cloning from an 
         expert trajectory that needs to be generated beforehand. The test
@@ -365,11 +365,8 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Remove model to prove further testing
         shutil.rmtree(log_dir, ignore_errors=True)
 
-        # stop the test
+        # stop the environment to not overload the server
         env.stop()
-
-        # stop the test
-        self.env.stop()
 
     def test_variable_episode(self):
         '''
@@ -426,6 +423,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         # Remove model to prove further testing
         shutil.rmtree(log_dir, ignore_errors=True)
+
+        # stop the environment to not overload the server
+        env.stop()
         
     def check_obs_act_rew_kpi(self, obs=None, act=None, rew=None, kpi=None,
                               label='default'):
