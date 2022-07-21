@@ -856,9 +856,12 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         # Calculate dimension of observation space
         n_obs = self.low.flatten().shape[0]
         
+        # Set number of bins within bounds
+        n_within_bounds = n_bins_obs - 1 if outs_are_bins else n_bins_obs + 1
+
         # Obtain values of discretized observation space
-        self.val_bins_obs   = [np.linspace(l, h, n_bins_obs + 1) for l, h in
-                               zip(self.low.flatten(), self.high.flatten())]
+        self.val_bins_obs = [np.linspace(l, h, n_within_bounds) for l, h in
+                             zip(self.low.flatten(), self.high.flatten())]
         
         # Instantiate discretized observation space
         self.observation_space = spaces.Discrete(n_bins_obs ** n_obs)
