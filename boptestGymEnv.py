@@ -844,7 +844,8 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         super().__init__(env)
         
         # Assign attributes (env already assigned)
-        self.n_bins_obs = n_bins_obs
+        self.n_bins_obs     = n_bins_obs
+        self.outs_are_bins  = outs_are_bins
 
         # Assert that original observation space is a Box space
         assert isinstance(env.observation_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
@@ -855,9 +856,9 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         
         # Calculate dimension of observation space
         n_obs = self.low.flatten().shape[0]
-        
+
         # Set number of bins within bounds
-        n_within_bounds = n_bins_obs - 1 if outs_are_bins else n_bins_obs + 1
+        n_within_bounds = n_bins_obs - 1 if self.outs_are_bins else n_bins_obs + 1
 
         # Obtain values of discretized observation space
         self.val_bins_obs = [np.linspace(l, h, n_within_bounds) for l, h in
