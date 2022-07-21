@@ -815,7 +815,7 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
     
     '''
     
-    def __init__(self, env, n_bins_obs=10):
+    def __init__(self, env, n_bins_obs=10, outs_are_bins=True):
         '''
         Constructor
         
@@ -825,8 +825,19 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
             Original gym environment
         n_bins_obs: integer
             Number of bins to be used in the transformed observation 
-            space for each observation. 
-        
+            space for each observation.
+        outs_are_bins: boolean
+            Decides whether to include the outer observation spaces
+            as bins or not. For example, in the case that we observe
+            temperature and it has bounds [21,24] degC and
+            `n_bins_obs = 3`
+            If outs_are_bins=False, then the bins are defined by
+            `val_bins_obs=[21,22,23,24]`, and an error is raised when the
+            observation goes out of bounds.
+            If outs_are_bins=True, then the bins are defined by
+            `val_bins_obs=[-inf,21,24,+inf]`.
+            Notice in both cases the observation space dimension
+            equals n_bins_obs=3.
         '''
         
         # Construct from parent class
