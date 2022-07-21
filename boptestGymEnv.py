@@ -892,7 +892,20 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         # Get the bin indexes for each element of this observation
         indexes = [np.digitize([x], bins)[0]
                   for x, bins in zip(observation.flatten(), self.val_bins_obs)]
-        
+
+        # Check if out of bounds when self.outs_are_bins=False
+        if not self.outs_are_bins:
+            for i, obs in enumerate(observation):
+                if obs < self.low[i] or obs > self.high[i]:
+                    raise ValueError( \
+                        'Observation {0} is out of bounds [{1},{2}] ' \
+                        'The discretized environment has been configured ' \
+                        'not to include the space out of these bounds as ' \
+                        'bins. You may want to set outs_are_bins=True ' \
+                        'in the DiscretizedObservationWrapper.'.format(obs, self.low, self.high))
+            else:
+                indexes = [i - 1 for i in indexes]
+
         # Convert to one number for the wrapped environment
         observation_wrapper = sum([index * ((self.n_bins_obs + 1) ** obs_i) for obs_i, index in enumerate(indexes)])
         
