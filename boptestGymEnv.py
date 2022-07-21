@@ -835,7 +835,7 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
     
     '''
     
-    def __init__(self, env, n_bins_obs=10):
+    def __init__(self, env, n_bins_obs=10, outs_are_bins=True):
         '''
         Constructor
         
@@ -845,29 +845,44 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
             Original gym environment
         n_bins_obs: integer
             Number of bins to be used in the transformed observation 
-            space for each observation. 
-        
+            space for each observation.
+        outs_are_bins: boolean
+            Decides whether to include the outer observation spaces
+            as bins or not. For example, in the case that we observe
+            temperature and it has bounds [21,24] degC and
+            `n_bins_obs = 3`
+            If outs_are_bins=False, then the bins are defined by
+            `val_bins_obs=[21,22,23,24]`, and an error is raised when the
+            observation goes out of bounds.
+            If outs_are_bins=True, then the bins are defined by
+            `val_bins_obs=[-inf,21,24,+inf]`.
+            Notice in both cases the observation space dimension
+            equals n_bins_obs=3.
         '''
         
         # Construct from parent class
         super().__init__(env)
         
         # Assign attributes (env already assigned)
-        self.n_bins_obs = n_bins_obs
+        self.n_bins_obs     = n_bins_obs
+        self.outs_are_bins  = outs_are_bins
 
         # Assert that original observation space is a Box space
         assert isinstance(env.observation_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
         
         # Get observation space bounds
-        low     = self.observation_space.low
-        high    = self.observation_space.high
+        self.low  = self.observation_space.low
+        self.high = self.observation_space.high
         
         # Calculate dimension of observation space
-        n_obs = low.flatten().shape[0]
-        
+        n_obs = self.low.flatten().shape[0]
+
+        # Set number of bins within bounds
+        n_within_bounds = n_bins_obs - 1 if self.outs_are_bins else n_bins_obs + 1
+
         # Obtain values of discretized observation space
-        self.val_bins_obs   = [np.linspace(l, h, n_bins_obs + 1) for l, h in
-                               zip(low.flatten(), high.flatten())]
+        self.val_bins_obs = [np.linspace(l, h, n_within_bounds) for l, h in
+                             zip(self.low.flatten(), self.high.flatten())]
         
         # Instantiate discretized observation space
         self.observation_space = spaces.Discrete(n_bins_obs ** n_obs)
@@ -897,7 +912,20 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         # Get the bin indexes for each element of this observation
         indexes = [np.digitize([x], bins)[0]
                   for x, bins in zip(observation.flatten(), self.val_bins_obs)]
-        
+
+        # Check if out of bounds when self.outs_are_bins=False
+        if not self.outs_are_bins:
+            for i, obs in enumerate(observation):
+                if obs < self.low[i] or obs > self.high[i]:
+                    raise ValueError( \
+                        'Observation {0} is out of bounds [{1},{2}] ' \
+                        'The discretized environment has been configured ' \
+                        'not to include the space out of these bounds as ' \
+                        'bins. You may want to set outs_are_bins=True ' \
+                        'in the DiscretizedObservationWrapper.'.format(obs, self.low, self.high))
+            else:
+                indexes = [i - 1 for i in indexes]
+
         # Convert to one number for the wrapped environment
         observation_wrapper = sum([index * ((self.n_bins_obs + 1) ** obs_i) for obs_i, index in enumerate(indexes)])
         
