@@ -850,15 +850,15 @@ class DiscretizedObservationWrapper(gym.ObservationWrapper):
         assert isinstance(env.observation_space, spaces.Box), 'This wrapper only works with continuous action space (spaces.Box)'
         
         # Get observation space bounds
-        low     = self.observation_space.low
-        high    = self.observation_space.high
+        self.low  = self.observation_space.low
+        self.high = self.observation_space.high
         
         # Calculate dimension of observation space
-        n_obs = low.flatten().shape[0]
+        n_obs = self.low.flatten().shape[0]
         
         # Obtain values of discretized observation space
         self.val_bins_obs   = [np.linspace(l, h, n_bins_obs + 1) for l, h in
-                               zip(low.flatten(), high.flatten())]
+                               zip(self.low.flatten(), self.high.flatten())]
         
         # Instantiate discretized observation space
         self.observation_space = spaces.Discrete(n_bins_obs ** n_obs)
