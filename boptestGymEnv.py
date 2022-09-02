@@ -161,19 +161,19 @@ class BoptestGymEnv(gym.Env):
         # Get test information
         #=============================================================
         # Test case name
-        self.name = requests.get('{0}/name'.format(url)).json()
+        self.name = requests.get('{0}/name'.format(url)).json()['payload']
         # Measurements available
-        self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()
+        self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()['payload']
         # Predictive variables available
-        self.all_predictive_vars = requests.get('{0}/forecast'.format(url)).json()
+        self.all_predictive_vars = requests.get('{0}/forecast'.format(url)).json()['payload']
         # Inputs available
-        self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()
+        self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()['payload']
         # Default simulation step
-        self.step_def = requests.get('{0}/step'.format(url)).json()
+        self.step_def = requests.get('{0}/step'.format(url)).json()['payload']
         # Default forecast parameters
-        self.forecast_def = requests.get('{0}/forecast_parameters'.format(url)).json()
+        self.forecast_def = requests.get('{0}/forecast_parameters'.format(url)).json()['payload']
         # Default scenario
-        self.scenario_def = requests.get('{0}/scenario'.format(url)).json()
+        self.scenario_def = requests.get('{0}/scenario'.format(url)).json()['payload']
         
         #=============================================================
         # Define observation space
@@ -462,7 +462,7 @@ class BoptestGymEnv(gym.Env):
         # Initialize the building simulation
         res = requests.put('{0}/initialize'.format(self.url), 
                            data={'start_time':self.start_time,
-                                 'warmup_period':self.warmup_period}).json()
+                                 'warmup_period':self.warmup_period}).json()['payload']
         
         # Set simulation step
         requests.put('{0}/step'.format(self.url), data={'step':self.step_period})
@@ -521,7 +521,7 @@ class BoptestGymEnv(gym.Env):
             u[act.replace('_u','_activate')] = 1.
                 
         # Advance a BOPTEST simulation
-        res = requests.post('{0}/advance'.format(self.url), data=u).json()
+        res = requests.post('{0}/advance'.format(self.url), data=u).json()['payload']
         
         # Compute reward of this (state-action-state') tuple
         reward = self.compute_reward()
@@ -593,7 +593,7 @@ class BoptestGymEnv(gym.Env):
         w = 1
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
@@ -670,7 +670,7 @@ class BoptestGymEnv(gym.Env):
                 res_var = requests.put('{0}/results'.format(self.url), 
                                        data={'point_name':var,
                                              'start_time':regr_index[-1], 
-                                             'final_time':regr_index[0]}).json()
+                                             'final_time':regr_index[0]}).json()['payload']
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -683,7 +683,7 @@ class BoptestGymEnv(gym.Env):
 
         # Get predictions if this is a predictive agent
         if self.is_predictive:
-            predictions = requests.get('{0}/forecast'.format(self.url)).json()
+            predictions = requests.get('{0}/forecast'.format(self.url)).json()['payload']
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])
@@ -701,7 +701,7 @@ class BoptestGymEnv(gym.Env):
         '''
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
         
         return kpis
     
@@ -1141,7 +1141,7 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
         '''
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + kpis['tdis_tot']
@@ -1178,7 +1178,7 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         w = 0.1
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
@@ -1212,7 +1212,7 @@ class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
         w = 10
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi'.format(self.url)).json()
+        kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']

@@ -92,7 +92,7 @@ def train_RL(algorithm           = 'SAC',
             '''
             
             # Compute BOPTEST core kpis
-            kpis = requests.get('{0}/kpi'.format(self.url)).json()
+            kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
             
             # Calculate objective integrand function at this point
             objective_integrand = kpis['cost_tot']*12.*16. + 100*kpis['tdis_tot']
