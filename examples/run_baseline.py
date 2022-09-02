@@ -77,7 +77,7 @@ def run_reward_custom(plot=False):
             w = 0.1
             
             # Compute BOPTEST core kpis
-            kpis = requests.get('{0}/kpi'.format(self.url)).json()
+            kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
             
             # Calculate objective integrand function at this point
             objective_integrand = kpis['cost_tot']*12.*16. + w*kpis['tdis_tot']
@@ -125,7 +125,7 @@ def run_reward_clipping(plot=False):
             '''
             
             # Compute BOPTEST core kpis
-            kpis = requests.get('{0}/kpi'.format(self.url)).json()
+            kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
             
             # Calculate objective integrand function at this point
             objective_integrand = kpis['cost_tot']*12.*16. + kpis['tdis_tot']
