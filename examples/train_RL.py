@@ -92,7 +92,7 @@ def train_RL(algorithm           = 'SAC',
             '''
             
             # Compute BOPTEST core kpis
-            kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()
+            kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
             
             # Calculate objective integrand function at this point
             objective_integrand = kpis['cost_tot']*12.*16. + 100*kpis['tdis_tot']
@@ -120,7 +120,7 @@ def train_RL(algorithm           = 'SAC',
     elif case == 'A':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
-                            testcase='bestest_hydronic_heat_pump',
+                            testcase              ='bestest_hydronic_heat_pump',
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
                                                      ('reaTZon_y',(280.,310.)),
@@ -137,7 +137,7 @@ def train_RL(algorithm           = 'SAC',
     if case == 'B':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
-                            testcase='bestest_hydronic_heat_pump',
+                            testcase              ='bestest_hydronic_heat_pump',
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
                                                      ('reaTZon_y',(280.,310.)),
@@ -156,7 +156,7 @@ def train_RL(algorithm           = 'SAC',
     if case == 'C':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
-                            testcase='bestest_hydronic_heat_pump',
+                            testcase              ='bestest_hydronic_heat_pump',
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
                                                      ('reaTZon_y',(280.,310.)),
@@ -176,7 +176,7 @@ def train_RL(algorithm           = 'SAC',
     if case == 'D':
         env = BoptestGymEnvCustomReward(
                             url                   = url,
-                            testcase='bestest_hydronic_heat_pump',
+                            testcase              ='bestest_hydronic_heat_pump',
                             actions               = ['oveHeaPumY_u'],
                             observations          = OrderedDict([('time',(0,604800)),
                                                      ('reaTZon_y',(280.,310.)),

@@ -83,7 +83,7 @@ def plot_results(env, rewards, points=['reaTZon_y','oveHeaPumY_u'],
         res = requests.put('{0}/results/{1}'.format(env.url, env.testid),
                            data={'point_name':point,
                                  'start_time':env.start_time+1, 
-                                 'final_time':3.1536e7}).json()
+                                 'final_time':3.1536e7}).json()['payload']
         df_res = pd.concat((df_res,pd.DataFrame(data=res[point], 
                                                 index=res['time'],
                                                 columns=[point])), axis=1)
@@ -97,16 +97,16 @@ def plot_results(env, rewards, points=['reaTZon_y','oveHeaPumY_u'],
     scenario = env.scenario
     requests.put('{0}/initialize/{1}'.format(env.url, env.testid),
                  data={'start_time':df_res['time'].iloc[0],
-                       'warmup_period':0}).json()
+                       'warmup_period':0}).json()['payload']
     
     # Store original forecast parameters
-    forecast_parameters_original = requests.get('{0}/forecast_parameters/{1}'.format(env.url, env.testid)).json()
+    forecast_parameters_original = requests.get('{0}/forecast_parameters/{1}'.format(env.url, env.testid)).json()['payload']
     # Set forecast parameters for test. Take 10 points per step. 
     forecast_parameters = {'horizon':env.max_episode_length, 
                            'interval':env.step_period/10}
     requests.put('{0}/forecast_parameters/{1}'.format(env.url, env.testid),
                  data=forecast_parameters)
-    forecast = requests.get('{0}/forecast/{1}'.format(env.url, env.testid)).json()
+    forecast = requests.get('{0}/forecast/{1}'.format(env.url, env.testid)).json()['payload']
     # Back to original parameters, just in case we're testing during training
     requests.put('{0}/forecast_parameters/{1}'.format(env.url, env.testid),
                  data=forecast_parameters_original)
