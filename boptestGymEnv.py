@@ -171,7 +171,7 @@ class BoptestGymEnv(gym.Env):
         except:
             pass
         # Select and start a new test case
-        self.testid = requests.post('{0}/testcases/{1}/select'.format(url, testcase)).json()['payload']['testid']
+        self.testid = requests.post('{0}/testcases/{1}/select'.format(url, testcase)).json()['testid']
         # Test case name
         self.name = requests.get('{0}/name/{1}'.format(url, self.testid)).json()['payload']
         # Measurements available
