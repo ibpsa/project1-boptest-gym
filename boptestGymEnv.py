@@ -703,7 +703,7 @@ class BoptestGymEnv(gym.Env):
 
         # Get predictions if this is a predictive agent
         if self.is_predictive:
-            predictions = requests.get('{0}/forecast{1}'.format(self.url, self.testid)).json()['payload']
+            predictions = requests.get('{0}/forecast/{1}'.format(self.url, self.testid)).json()['payload']
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])
