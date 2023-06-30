@@ -181,7 +181,7 @@ class BoptestGymEnv(gym.Env):
         # Inputs available
         self.all_input_vars = requests.get('{0}/inputs/{1}'.format(url, self.testid)).json()['payload']
         # Default simulation step
-        self.step_def = requests.get('{0}/step'.format(url)).json()['payload']
+        self.step_def = requests.get('{0}/step/{1}'.format(url, self.testid)).json()['payload']
         # Default scenario
         self.scenario_def = requests.get('{0}/scenario/{1}'.format(url, self.testid)).json()['payload']
         
