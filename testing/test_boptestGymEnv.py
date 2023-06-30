@@ -49,7 +49,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         print(self.env)
         
         # Check that we can save the environment summary
-        file_ref = os.path.join('references','summary_ref')
+        file_ref = os.path.join('testing', 'references','summary_ref')
         file_tst = 'summary_tst'
         self.env.save_summary(file_tst)
         
@@ -168,7 +168,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
     
-    def partial_test_RL(self, algorithm='A2C', mode='load', episode_length_test=1*24*3600,
+    def partial_test_RL(self, algorithm='A2C', mode='train', episode_length_test=1*24*3600,
                         warmup_period_test=1*24*3600, case='simple', training_timesteps=1e5,
                         expert_traj=None, render=False, plot=False):
         '''Test for an RL agent from stable baselines.
