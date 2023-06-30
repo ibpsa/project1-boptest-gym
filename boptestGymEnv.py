@@ -684,8 +684,8 @@ class BoptestGymEnv(gym.Env):
         if self.is_regressive:
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
-                res_var = requests.put('{0}/results/{1}'.format(self.url,self.testid),
-                                       data={'point_name':var,
+                res_var = requests.put('{0}/results/{1}'.format(self.url, self.testid), 
+                                       data={'point_names':[var],
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()['payload']
                 # fill_value='extrapolate' is needed for the very few cases when
