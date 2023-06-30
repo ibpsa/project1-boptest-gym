@@ -165,7 +165,7 @@ class BoptestGymEnv(gym.Env):
         # Measurements available
         self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()['payload']
         # Predictive variables available
-        self.all_predictive_vars = requests.get('{0}/forecast'.format(url)).json()['payload']
+        self.all_predictive_vars = requests.get('{0}/forecast_points'.format(url)).json()['payload']
         # Inputs available
         self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()['payload']
         # Default simulation step
