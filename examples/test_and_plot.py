@@ -70,28 +70,22 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
 def plot_results(env, rewards, points=['reaTZon_y','oveHeaPumY_u'],
                  log_dir=os.getcwd(), model_name='last_model', save_to_file=False):
     
-    df_res = pd.DataFrame()
+
     if points is None:
         points = list(env.all_measurement_vars.keys()) + \
                  list(env.all_input_vars.keys())
         
-    for point in points:
-        # Retrieve all simulation data
-        # We use env.start_time+1 to ensure that we don't return the last 
-        # point from the initialization period to don't confuse it with 
-        # actions taken by the agent
-        res = requests.put('{0}/results'.format(env.url), 
-                           data={'point_name':point,
-                                 'start_time':env.start_time+1, 
-                                 'final_time':3.1536e7}).json()['payload']
-        df_res = pd.concat((df_res,pd.DataFrame(data=res[point], 
-                                                index=res['time'],
-                                                columns=[point])), axis=1)
-        
-    df_res.index.name = 'time'
-    df_res.reset_index(inplace=True)
-    df_res = reindex(df_res)
-    
+    # Retrieve all simulation data
+    # We use env.start_time+1 to ensure that we don't return the last 
+    # point from the initialization period to don't confuse it with 
+    # actions taken by the agent
+    res = requests.put('{0}/results'.format(env.url), 
+                        data={'point_names':points,
+                                'start_time':env.start_time+1, 
+                                'final_time':3.1536e7}).json()['payload']
+
+    df_res = pd.DataFrame(res).set_index('time')
+
     # Retrieve boundary condition data. 
     # Only way we have is through the forecast request. 
     scenario = env.scenario
