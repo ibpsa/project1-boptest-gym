@@ -1,12 +1,7 @@
 '''
 Module to test features of the OpenAI-Gym interface for BOPTEST-Service.
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
-<<<<<<< HEAD
-the tests. Latest tests were passing with BOPTEST-Service commit:
-ba6cfb7dbc081c7acf789dde40c1ca3a6f916aa6
-=======
 the tests. Latest tests were passing with BOPTEST v0.3.0
->>>>>>> 75e3d5bfb4712e607e5832b147bd74c0fb32e5e7
 
 '''
 
@@ -61,7 +56,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         print(env)
         
         # Check that we can save the environment summary
-        file_ref = os.path.join('references','summary_ref')
+        file_ref = os.path.join('testing', 'references','summary_ref')
         file_tst = 'summary_tst'
         env.save_summary(file_tst)
         
@@ -206,7 +201,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
 
         obs, _, rew = run_baseline.run_highly_dynamic_price(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='setScenario')
-
+    
     def partial_test_RL(self, algorithm='A2C', mode='load', episode_length_test=1*24*3600,
                         warmup_period_test=1*24*3600, case='simple', training_timesteps=1e5,
                         expert_traj=None, render=False, plot=False):

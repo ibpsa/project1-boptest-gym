@@ -177,13 +177,11 @@ class BoptestGymEnv(gym.Env):
         # Measurements available
         self.all_measurement_vars = requests.get('{0}/measurements/{1}'.format(url, self.testid)).json()['payload']
         # Predictive variables available
-        self.all_predictive_vars = requests.get('{0}/forecast/{1}'.format(url, self.testid)).json()['payload']
+        self.all_predictive_vars = requests.get('{0}/forecast_points/{1}'.format(url, self.testid)).json()['payload']
         # Inputs available
         self.all_input_vars = requests.get('{0}/inputs/{1}'.format(url, self.testid)).json()['payload']
         # Default simulation step
-        self.step_def = requests.get('{0}/step/{1}'.format(url, self.testid)).json()['payload']
-        # Default forecast parameters
-        self.forecast_def = requests.get('{0}/forecast_parameters/{1}'.format(url, self.testid)).json()['payload']
+        self.step_def = requests.get('{0}/step'.format(url)).json()['payload']
         # Default scenario
         self.scenario_def = requests.get('{0}/scenario/{1}'.format(url, self.testid)).json()['payload']
         
@@ -371,7 +369,6 @@ class BoptestGymEnv(gym.Env):
         summary['BOPTEST CASE INFORMATION']['All forecasting variables'] = pformat(list(self.all_predictive_vars.keys()))
         summary['BOPTEST CASE INFORMATION']['All input variables'] = pformat(self.all_input_vars)
         summary['BOPTEST CASE INFORMATION']['Default simulation step (seconds)'] = pformat(self.step_def)
-        summary['BOPTEST CASE INFORMATION']['Default forecasting parameters (seconds)'] = pformat(self.forecast_def)
         summary['BOPTEST CASE INFORMATION']['Default scenario'] = pformat(self.scenario_def)
         summary['BOPTEST CASE INFORMATION']['Test case scenario'] = pformat(self.scenario)
         
