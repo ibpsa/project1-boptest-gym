@@ -793,7 +793,7 @@ class BoptestGymEnv(gym.Env):
             'rewards': rewards,
             'episode_returns': episode_returns,
             'episode_starts': episode_starts
-        }  # type: Dict[str, np.ndarray]
+        } 
     
         for key, val in numpy_dict.items():
             print(key, val.shape)
