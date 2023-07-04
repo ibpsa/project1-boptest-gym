@@ -34,7 +34,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         env.warmup_period       = warmup_period
     
     # Reset environment
-    obs = env.reset()
+    obs, _ = env.reset()
     
     # Simulation loop
     done = False

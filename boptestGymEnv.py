@@ -429,7 +429,9 @@ class BoptestGymEnv(gym.Env):
         -------
         observations: numpy array
             Reformatted observations that include measurements and 
-            predictions (if any) at the end of the initialization. 
+            predictions (if any) at the end of the initialization.
+        info: dictionary
+            Additional information for this observation.
          
         '''        
         
@@ -479,9 +481,12 @@ class BoptestGymEnv(gym.Env):
         # Get observations at the end of the initialization period
         observations = self.get_observations(res)
         
+        # Optionally we can pass additional info, we are not using that for now
+        info = {}
+        
         self.episode_rewards = []
 
-        return observations
+        return observations, info
 
     def step(self, action):
         '''
@@ -1031,7 +1036,8 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
         ----------
         observation: 
             Observation in the original environment observation space format 
-            to be modified.
+            to be modified. This comes with two elements: the actual observation
+            and its info. We are only interested in the first element, observation[0]
         
         Returns
         -------
@@ -1045,7 +1051,7 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
         '''
         
         # Convert to one number for the wrapped environment
-        observation_wrapper = 2*(observation - self.observation_space.low)/\
+        observation_wrapper = 2*(observation[0] - self.observation_space.low)/\
             (self.observation_space.high-self.observation_space.low)-1
         
         return observation_wrapper

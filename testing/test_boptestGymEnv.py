@@ -81,7 +81,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         self.env.start_time         = 14*24*3600
         self.env.warmup_period      = 3*3600
         
-        obs = self.env.reset()
+        obs, _ = self.env.reset()
         
         # Check values
         df = pd.DataFrame(data=[obs], index=['obs_reset_fixed'], columns=['value'])
@@ -107,7 +107,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         start_times = OrderedDict()
         # Reset hundred times
         for i in range(100):
-            obs = self.env.reset()
+            obs, _ = self.env.reset()
             start_time = self.env.start_time
             episode = (start_time, start_time+self.env.max_episode_length)
             for period in excluding_periods:
