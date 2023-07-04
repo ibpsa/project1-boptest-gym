@@ -48,7 +48,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         observations.append(obs)
         actions.append(action)
         rewards.append(reward)
-        done = terminated or truncated
+        done = (terminated or truncated)
 
     kpis = env.get_kpis()
     
