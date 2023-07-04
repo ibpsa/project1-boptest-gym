@@ -504,11 +504,26 @@ class BoptestGymEnv(gym.Env):
             Observations at the end of this time step
         reward: float
             Reward for the state-action pair implemented
-        done: boolean
-            True if episode is finished after this step
+        terminated: boolean
+            Whether a `terminal state` (as defined under the MDP of the task) is reached
+        truncated: boolean
+            Whether a truncation condition outside the scope of the MDP is satisfied
         info: dictionary
             Additional information for this step
         
+        Notes
+        -----
+        From release 0.25 Gym has performed a major update on its API that solves the ambiguity
+        of `done` to distinguish between `terminated` and `truncated`. See:
+        https://gymnasium.farama.org/gym_release_notes/index.html#release-0-25-0
+        terminated=True if environment terminates (eg. due to task completion, failure etc.)
+            In this case further step() calls could return undefined results.
+        truncated=True if episode truncates due to a time limit or a reason that is not defined as part of the task MDP.
+            Typically a timelimit, but could also be used to indicate agent physically going out of bounds.
+            Can be used to end the episode prematurely before a `terminal state` is reached.
+        For the application of building energy management we will typically have a truncation 
+        since the MDP is normally indefinite by definition. 
+
         '''
         
         # Initialize inputs to send through BOPTEST Rest API
@@ -529,9 +544,12 @@ class BoptestGymEnv(gym.Env):
         reward = self.compute_reward()
         self.episode_rewards.append(reward)
         
-        # Define whether we've finished the episode
-        done = self.compute_done(res, reward)
+        # Define whether a terminal state (as defined under the MDP of the task) is reached
+        terminated = self.compute_terminated(res, reward)
         
+        # Optionally we can pass the truncated boolean but not used that for now
+        truncated = self.compute_truncated(res, reward)
+
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
@@ -539,10 +557,10 @@ class BoptestGymEnv(gym.Env):
         observations = self.get_observations(res)
         
         # Render episode if finished and requested
-        if done and self.render_episodes:
+        if (terminated or truncated) and self.render_episodes:
             self.render()
         
-        return observations, reward, done, info
+        return observations, reward, terminated, truncated, info
     
     def render(self, mode='episodes'):
         '''
@@ -607,31 +625,55 @@ class BoptestGymEnv(gym.Env):
         
         return reward
 
-    def compute_done(self, res, reward=None):
+    def compute_terminated(self, res, reward=None):
         '''
-        Compute whether the episode is finished or not. By default, a 
+        Compute whether the episode is terminated as defined by the MDP. 
+        `terminated = False` is returned by default as the applications 
+        for building energy management are typically indefinite. 
+        
+        Returns
+        -------
+        terminated: boolean
+            Boolean indicating whether the episode is terminated or not.  
+        
+        Notes
+        -----
+        This method can be overridden by defining a child from 
+        this class with this same method name, i.e. `compute_terminated`.
+        The reward is passed as an argument in case it's necessary to 
+        define custom conditions for termination.  
+        
+        '''
+        
+        terminated = False
+
+        return terminated
+
+    def compute_truncated(self, res, reward=None):
+        '''
+        Compute whether the episode is truncated. By default, a 
         maximum episode length is defined and the episode will be finished
         only when the time exceeds this maximum episode length. 
         
         Returns
         -------
-        done: boolean
-            Boolean indicating whether the episode is done or not.  
+        truncated: boolean
+            Boolean indicating whether the episode is truncated or not.  
         
         Notes
         -----
         This method is just a default method to determine if an episode is
-        finished or not. It can be overridden by defining a child from 
-        this class with this same method name, i.e. `compute_done`. Notice
+        truncated or not. It can be overridden by defining a child from 
+        this class with this same method name, i.e. `compute_truncated`. Notice
         that the reward for each step is passed here to enable the user to
         access this reward as it may be handy when defining a custom 
-        method for `compute_done`. 
+        method for `compute_truncated`. 
         
         '''
         
-        done = res['time'] >= self.start_time + self.max_episode_length
+        truncated = res['time'] >= self.start_time + self.max_episode_length
         
-        return done
+        return truncated
 
     def get_observations(self, res):
         '''
@@ -1234,27 +1276,27 @@ class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
     
     '''
     
-    def compute_done(self, res, reward=None, 
-                     objective_integrand_threshold=0.1):
-        '''Custom method to determine that the episode is done not only 
+    def compute_truncated(self, res, reward=None, 
+                          objective_integrand_threshold=0.1):
+        '''Custom method to determine that the episode is truncated not only 
         when the maximum episode length is exceeded but also when the 
         objective integrand overpasses a certain threshold. The latter is
-        useful to early terminate agent strategies that do not work, hence
+        useful to early stop agent strategies that do not work, hence
         avoiding unnecessary steps and leading to improved sampling 
         efficiency. 
         
         Returns
         -------
-        done: boolean
+        truncated: boolean
             Boolean indicating whether the episode is done or not.  
         
         '''
         
-        done =  (res['time'] >= self.start_time + self.max_episode_length)\
-                or \
-                (self.objective_integrand >= objective_integrand_threshold)
+        truncated =  (res['time'] >= self.start_time + self.max_episode_length)\
+                     or \
+                     (self.objective_integrand >= objective_integrand_threshold)
         
-        return done
+        return truncated
 
 class SaveAndTestCallback(BaseCallback):
     '''

@@ -42,13 +42,14 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     actions = []
     rewards = []
     print('Simulating...')
-    while done is False:
+    while not done:
         action, _ = model.predict(obs, deterministic=True)
-        obs, reward, done, _ = env.step(action)
+        obs, reward, terminated, truncated, _ = env.step(action)
         observations.append(obs)
         actions.append(action)
         rewards.append(reward)
-    
+        done = terminated or truncated
+
     kpis = env.get_kpis()
     
     if save_to_file:

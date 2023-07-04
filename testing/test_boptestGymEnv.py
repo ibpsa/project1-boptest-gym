@@ -331,14 +331,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         Test that a model can be trained using variable episode length. 
         The method that is used to determine whether the episode is 
-        terminated or not is defined by the user. This test trains an agent
+        truncated or not is defined by the user. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
         Therefore, this test also checks that a RL from stable-baselines3
         can be trained. This test also uses the save callback to check that
         the variable episode length is being effectively used. 
         Notice that this test also checks that child classes can be nested
         since the example redefines the `compute_reward` and the 
-        `compute_done` methods. 
+        `compute_truncated` methods. 
         
         '''
         # Define logging directory. Monitoring data and agent model will be stored here
