@@ -1078,8 +1078,7 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
         ----------
         observation: 
             Observation in the original environment observation space format 
-            to be modified. This comes with two elements: the actual observation
-            and its info. We are only interested in the first element, observation[0]
+            to be modified. 
         
         Returns
         -------
@@ -1093,7 +1092,7 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
         '''
         
         # Convert to one number for the wrapped environment
-        observation_wrapper = 2*(observation[0] - self.observation_space.low)/\
+        observation_wrapper = 2*(observation - self.observation_space.low)/\
             (self.observation_space.high-self.observation_space.low)-1
         
         return observation_wrapper
