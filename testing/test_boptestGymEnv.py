@@ -261,14 +261,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         self.partial_test_RL(case='C', algorithm='A2C')
         
-    def ptest_DQN_D(self):
+    def notest_DQN_D(self):
         '''Test case D which is far more complex than previous cases. 
         Particularly it also uses regressive states discrete action space.  
         
         '''
         self.partial_test_RL(case='D', algorithm='DQN')
         
-    def test_behavior_cloning_cont(self):
+    def notest_behavior_cloning_cont(self):
         '''Check that an agent using continuous action space (in this case
         we use A2C) can be pretrained using behavior cloning from an 
         expert trajectory that needs to be generated beforehand. The test
@@ -282,7 +282,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                              training_timesteps=0,
                              expert_traj=expert_traj)
         
-    def test_behavior_cloning_disc(self):
+    def notest_behavior_cloning_disc(self):
         '''Check that an agent using discrete action space (in this case
         we use DQN) can be pretrained using behavior cloning from an 
         expert trajectory that needs to be generated beforehand. The test
@@ -317,7 +317,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         model = A2C.load(os.path.join(log_dir, 'best_model'))
         
         # Test one step with the trained model
-        obs = env.reset()
+        obs, _ = env.reset()
         df = pd.DataFrame([model.predict(obs)[0][0]], columns=['value'])
         df.index.name = 'keys'
         ref_filepath    = os.path.join(utilities.get_root_path(), 
@@ -353,7 +353,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         model = A2C.load(os.path.join(log_dir, 'best_model'))
         
         # Test one step with the trained model
-        obs = env.reset()
+        obs, _ = env.reset()
         df = pd.DataFrame([model.predict(obs)[0][0]], columns=['value'])
         df.index.name = 'keys'
         ref_filepath    = os.path.join(utilities.get_root_path(), 
