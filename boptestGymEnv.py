@@ -415,7 +415,7 @@ class BoptestGymEnv(gym.Env):
         
         return summary
 
-    def reset(self):
+    def reset(self, seed=None):
         '''
         Method to reset the environment. The associated building model is 
         initialized by running the baseline controller for a  
@@ -425,6 +425,11 @@ class BoptestGymEnv(gym.Env):
         with the indicated `self.excluding_periods`. This is useful to 
         define testing periods that should not use data from training.   
         
+        Parameters
+        ----------
+        seed: integer
+            Seed number to fix randomness in the agent. 
+
         Returns
         -------
         observations: numpy array
