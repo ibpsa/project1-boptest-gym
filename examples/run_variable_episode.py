@@ -9,6 +9,7 @@ training an agent.
 from boptestGymEnv import BoptestGymEnvRewardWeightCost, NormalizedActionWrapper, NormalizedObservationWrapper, SaveAndTestCallback
 from stable_baselines3 import A2C
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.logger import configure
 from testing import utilities
 import random
 import os
@@ -106,6 +107,10 @@ def train_A2C_with_variable_episode(start_time_tests    = [31*24*3600, 304*24*36
     model = A2C('MlpPolicy', env, verbose=1, gamma=0.99, seed=seed,
                 tensorboard_log=tensorboard_log)
     
+    # set up logger
+    new_logger = configure(log_dir, ['csv'])
+    model.set_logger(new_logger)
+
     # Train the agent with callback for saving
     model.learn(total_timesteps=int(100), callback=callback)
     
