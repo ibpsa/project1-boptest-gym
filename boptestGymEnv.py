@@ -18,7 +18,7 @@ import os
 from collections import OrderedDict
 from scipy import interpolate
 from pprint import pformat
-from gym import spaces
+from gymnasium import spaces
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
