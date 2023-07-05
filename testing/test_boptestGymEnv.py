@@ -331,7 +331,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         Test that a model can be trained using variable episode length. 
         The method that is used to determine whether the episode is 
-        truncated or not is defined by the user. This test trains an agent
+        truncated or not. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
         Therefore, this test also checks that a RL from stable-baselines3
         can be trained. This test also uses the save callback to check that
