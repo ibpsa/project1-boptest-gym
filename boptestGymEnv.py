@@ -469,12 +469,6 @@ class BoptestGymEnv(gym.Env):
         # Set BOPTEST scenario
         requests.put('{0}/scenario'.format(self.url), data=self.scenario)
         
-        # Set forecasting parameters if predictive
-        if self.is_predictive:
-            forecast_parameters = {'horizon':self.predictive_period, 'interval':self.step_period}
-            requests.put('{0}/forecast_parameters'.format(self.url),
-                         data=forecast_parameters)
-        
         # Initialize objective integrand
         self.objective_integrand = 0.
         
