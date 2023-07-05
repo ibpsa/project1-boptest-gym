@@ -5,7 +5,6 @@ Common functionality to test and plot an agent
 
 import matplotlib.pyplot as plt
 from scipy import interpolate
-from gym.core import Wrapper
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
@@ -22,7 +21,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     '''
         
     # Set a fixed start time
-    if isinstance(env,Wrapper): 
+    if hasattr(env,'unwrapped'): 
         env.unwrapped.random_start_time   = False
         env.unwrapped.start_time          = start_time
         env.unwrapped.max_episode_length  = episode_length
@@ -61,7 +60,7 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         plot_results(env, rewards, save_to_file=save_to_file, log_dir=log_dir, model_name=model_name)
     
     # Back to random start time, just in case we're testing in the loop
-    if isinstance(env,Wrapper): 
+    if hasattr(env,'unwrapped'): 
         env.unwrapped.random_start_time = True
     else:
         env.random_start_time = True
