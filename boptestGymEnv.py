@@ -1412,7 +1412,7 @@ if __name__ == "__main__":
 
     # Check the environment
     check_env(env, warn=True)
-    obs = env.reset()
+    obs, _ = env.reset()
     env.render()
     print('Observation space: {}'.format(env.observation_space))
     print('Action space: {}'.format(env.action_space))
