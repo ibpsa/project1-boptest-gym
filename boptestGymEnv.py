@@ -7,7 +7,7 @@ Created on Jun 4, 2020
 
 import matplotlib.pyplot as plt
 import random
-import gym
+import gymnasium as gym
 import requests
 import numpy as np
 import pandas as pd
@@ -415,7 +415,7 @@ class BoptestGymEnv(gym.Env):
         
         return summary
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         '''
         Method to reset the environment. The associated building model is 
         initialized by running the baseline controller for a  
@@ -427,16 +427,22 @@ class BoptestGymEnv(gym.Env):
         
         Parameters
         ----------
-        seed: integer
-            Seed number to fix randomness in the agent. 
+        seed: optional int 
+            The seed that is used to initialize the environment.
+            Currently not being used since the seed is fixed externally. 
+
+        options: optional dict 
+            Additional information to specify how the environment is reset.
 
         Returns
         -------
         observations: numpy array
-            Reformatted observations that include measurements and 
-            predictions (if any) at the end of the initialization.
+            Reformatted observations of the initial state which includes measurements and 
+            predictions (if any) at the end of the initialization (beginning of the episode).
+            It is analogous to the observation returned by the `step` method. 
         info: dictionary
             Additional information for this observation.
+            It should be analogous to the info returned by the `step` method. 
          
         '''        
         
