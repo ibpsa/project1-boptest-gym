@@ -14,6 +14,7 @@ from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, \
 # from stable_baselines3.gail import ExpertDataset
 from stable_baselines3 import A2C, SAC, DQN
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.logger import configure
 from examples.test_and_plot import test_agent
 from collections import OrderedDict
 from testing import utilities
@@ -228,6 +229,11 @@ def train_RL(algorithm           = 'SAC',
         # Create the callback test and save the agent while training
         callback = SaveAndTestCallback(env, check_freq=1e10, save_freq=1e4,
                                        log_dir=log_dir, test=False)
+        
+        # set up logger
+        new_logger = configure(log_dir, ['csv'])
+        model.set_logger(new_logger)
+
         # Main training loop
         model.learn(total_timesteps=int(training_timesteps), callback=callback)
         # Save the agent
