@@ -7,7 +7,7 @@ Created on Jun 4, 2020
 
 import matplotlib.pyplot as plt
 import random
-import gym
+import gymnasium as gym
 import requests
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ import os
 from collections import OrderedDict
 from scipy import interpolate
 from pprint import pformat
-from gym import spaces
+from gymnasium import spaces
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
@@ -165,13 +165,11 @@ class BoptestGymEnv(gym.Env):
         # Measurements available
         self.all_measurement_vars = requests.get('{0}/measurements'.format(url)).json()['payload']
         # Predictive variables available
-        self.all_predictive_vars = requests.get('{0}/forecast'.format(url)).json()['payload']
+        self.all_predictive_vars = requests.get('{0}/forecast_points'.format(url)).json()['payload']
         # Inputs available
         self.all_input_vars = requests.get('{0}/inputs'.format(url)).json()['payload']
         # Default simulation step
         self.step_def = requests.get('{0}/step'.format(url)).json()['payload']
-        # Default forecast parameters
-        self.forecast_def = requests.get('{0}/forecast_parameters'.format(url)).json()['payload']
         # Default scenario
         self.scenario_def = requests.get('{0}/scenario'.format(url)).json()['payload']
         
@@ -359,7 +357,6 @@ class BoptestGymEnv(gym.Env):
         summary['BOPTEST CASE INFORMATION']['All forecasting variables'] = pformat(list(self.all_predictive_vars.keys()))
         summary['BOPTEST CASE INFORMATION']['All input variables'] = pformat(self.all_input_vars)
         summary['BOPTEST CASE INFORMATION']['Default simulation step (seconds)'] = pformat(self.step_def)
-        summary['BOPTEST CASE INFORMATION']['Default forecasting parameters (seconds)'] = pformat(self.forecast_def)
         summary['BOPTEST CASE INFORMATION']['Default scenario'] = pformat(self.scenario_def)
         summary['BOPTEST CASE INFORMATION']['Test case scenario'] = pformat(self.scenario)
         
@@ -377,7 +374,7 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
         summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
         summary['GYM ENVIRONMENT INFORMATION']['Maximum episode length (seconds)'] = pformat(self.max_episode_length)
-        summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.compute_reward))
+        summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.get_reward))
         summary['GYM ENVIRONMENT INFORMATION']['Environment hierarchy'] = pformat(inspect.getmro(self.__class__))
         
         return summary
@@ -418,7 +415,7 @@ class BoptestGymEnv(gym.Env):
         
         return summary
 
-    def reset(self):
+    def reset(self, seed=None, options=None):
         '''
         Method to reset the environment. The associated building model is 
         initialized by running the baseline controller for a  
@@ -428,11 +425,24 @@ class BoptestGymEnv(gym.Env):
         with the indicated `self.excluding_periods`. This is useful to 
         define testing periods that should not use data from training.   
         
+        Parameters
+        ----------
+        seed: optional int 
+            The seed that is used to initialize the environment.
+            Currently not being used since the seed is fixed externally. 
+
+        options: optional dict 
+            Additional information to specify how the environment is reset.
+
         Returns
         -------
         observations: numpy array
-            Reformatted observations that include measurements and 
-            predictions (if any) at the end of the initialization. 
+            Reformatted observations of the initial state which includes measurements and 
+            predictions (if any) at the end of the initialization (beginning of the episode).
+            It is analogous to the observation returned by the `step` method. 
+        info: dictionary
+            Additional information for this observation.
+            It should be analogous to the info returned by the `step` method. 
          
         '''        
         
@@ -470,21 +480,18 @@ class BoptestGymEnv(gym.Env):
         # Set BOPTEST scenario
         requests.put('{0}/scenario'.format(self.url), data=self.scenario)
         
-        # Set forecasting parameters if predictive
-        if self.is_predictive:
-            forecast_parameters = {'horizon':self.predictive_period, 'interval':self.step_period}
-            requests.put('{0}/forecast_parameters'.format(self.url),
-                         data=forecast_parameters)
-        
         # Initialize objective integrand
         self.objective_integrand = 0.
         
         # Get observations at the end of the initialization period
         observations = self.get_observations(res)
         
+        # Optionally we can pass additional info, we are not using that for now
+        info = {}
+        
         self.episode_rewards = []
 
-        return observations
+        return observations, info
 
     def step(self, action):
         '''
@@ -502,11 +509,26 @@ class BoptestGymEnv(gym.Env):
             Observations at the end of this time step
         reward: float
             Reward for the state-action pair implemented
-        done: boolean
-            True if episode is finished after this step
+        terminated: boolean
+            Whether a `terminal state` (as defined under the MDP of the task) is reached
+        truncated: boolean
+            Whether a truncation condition outside the scope of the MDP is satisfied
         info: dictionary
             Additional information for this step
         
+        Notes
+        -----
+        From release 0.25 Gym has performed a major update on its API that solves the ambiguity
+        of `done` to distinguish between `terminated` and `truncated`. See:
+        https://gymnasium.farama.org/gym_release_notes/index.html#release-0-25-0
+        terminated=True if environment terminates (eg. due to task completion, failure etc.)
+            In this case further step() calls could return undefined results.
+        truncated=True if episode truncates due to a time limit or a reason that is not defined as part of the task MDP.
+            Typically a timelimit, but could also be used to indicate agent physically going out of bounds.
+            Can be used to end the episode prematurely before a `terminal state` is reached.
+        For the application of building energy management we will typically have a truncation 
+        since the MDP is normally indefinite by definition. 
+
         '''
         
         # Initialize inputs to send through BOPTEST Rest API
@@ -524,12 +546,15 @@ class BoptestGymEnv(gym.Env):
         res = requests.post('{0}/advance'.format(self.url), data=u).json()['payload']
         
         # Compute reward of this (state-action-state') tuple
-        reward = self.compute_reward()
+        reward = self.get_reward()
         self.episode_rewards.append(reward)
         
-        # Define whether we've finished the episode
-        done = self.compute_done(res, reward)
+        # Define whether a terminal state (as defined under the MDP of the task) is reached
+        terminated = self.compute_terminated(res, reward)
         
+        # Optionally we can pass the truncated boolean but not used that for now
+        truncated = self.compute_truncated(res, reward)
+
         # Optionally we can pass additional info, we are not using that for now
         info = {}
         
@@ -537,10 +562,10 @@ class BoptestGymEnv(gym.Env):
         observations = self.get_observations(res)
         
         # Render episode if finished and requested
-        if done and self.render_episodes:
+        if (terminated or truncated) and self.render_episodes:
             self.render()
         
-        return observations, reward, done, info
+        return observations, reward, terminated, truncated, info
     
     def render(self, mode='episodes'):
         '''
@@ -563,7 +588,7 @@ class BoptestGymEnv(gym.Env):
     def close(self):
         pass
     
-    def compute_reward(self):
+    def get_reward(self):
         '''
         Compute the reward of last state-action-state' tuple. The 
         reward is implemented as the negated increase in the objective
@@ -580,10 +605,10 @@ class BoptestGymEnv(gym.Env):
         -----
         This method is just a default method to compute reward. It can be 
         overridden by defining a child from this class with
-        this same method name, i.e. `compute_reward`. If a custom reward 
+        this same method name, i.e. `get_reward`. If a custom reward 
         is defined, it is strongly recommended to derive it using the KPIs
         as returned from the BOPTEST framework, as it is done in this 
-        default `compute_reward` method. This ensures that all variables 
+        default `get_reward` method. This ensures that all variables 
         that may contribute to any KPI are properly accounted and 
         integrated. 
         
@@ -605,31 +630,55 @@ class BoptestGymEnv(gym.Env):
         
         return reward
 
-    def compute_done(self, res, reward=None):
+    def compute_terminated(self, res, reward=None):
         '''
-        Compute whether the episode is finished or not. By default, a 
+        Compute whether the episode is terminated as defined by the MDP. 
+        `terminated = False` is returned by default as the applications 
+        for building energy management are typically indefinite. 
+        
+        Returns
+        -------
+        terminated: boolean
+            Boolean indicating whether the episode is terminated or not.  
+        
+        Notes
+        -----
+        This method can be overridden by defining a child from 
+        this class with this same method name, i.e. `compute_terminated`.
+        The reward is passed as an argument in case it's necessary to 
+        define custom conditions for termination.  
+        
+        '''
+        
+        terminated = False
+
+        return terminated
+
+    def compute_truncated(self, res, reward=None):
+        '''
+        Compute whether the episode is truncated. By default, a 
         maximum episode length is defined and the episode will be finished
         only when the time exceeds this maximum episode length. 
         
         Returns
         -------
-        done: boolean
-            Boolean indicating whether the episode is done or not.  
+        truncated: boolean
+            Boolean indicating whether the episode is truncated or not.  
         
         Notes
         -----
         This method is just a default method to determine if an episode is
-        finished or not. It can be overridden by defining a child from 
-        this class with this same method name, i.e. `compute_done`. Notice
+        truncated or not. It can be overridden by defining a child from 
+        this class with this same method name, i.e. `compute_truncated`. Notice
         that the reward for each step is passed here to enable the user to
         access this reward as it may be handy when defining a custom 
-        method for `compute_done`. 
+        method for `compute_truncated`. 
         
         '''
         
-        done = res['time'] >= self.start_time + self.max_episode_length
+        truncated = res['time'] >= self.start_time + self.max_episode_length
         
-        return done
+        return truncated
 
     def get_observations(self, res):
         '''
@@ -668,7 +717,7 @@ class BoptestGymEnv(gym.Env):
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
                 res_var = requests.put('{0}/results'.format(self.url), 
-                                       data={'point_name':var,
+                                       data={'point_names':[var],
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()['payload']
                 # fill_value='extrapolate' is needed for the very few cases when
@@ -681,9 +730,14 @@ class BoptestGymEnv(gym.Env):
                 res_var_reindexed = f(regr_index)
                 observations.extend(list(res_var_reindexed))
 
-        # Get predictions if this is a predictive agent
+        # Get predictions if this is a predictive agent. 
+        # 0.1 is added to avoid the following error when self.predictive_period=0
+        # 'Invalid value 0.0 for parameter horizon. Value must be positive.'
         if self.is_predictive:
-            predictions = requests.get('{0}/forecast'.format(self.url)).json()['payload']
+            predictions = requests.put('{0}/forecast'.format(self.url), 
+                                       data={'point_names': self.predictive_vars,
+                                             'horizon':     self.predictive_period+0.1,
+                                             'interval':    self.step_period}).json()['payload']
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])
@@ -791,7 +845,7 @@ class BoptestGymEnv(gym.Env):
             'rewards': rewards,
             'episode_returns': episode_returns,
             'episode_starts': episode_starts
-        }  # type: Dict[str, np.ndarray]
+        } 
     
         for key, val in numpy_dict.items():
             print(key, val.shape)
@@ -1034,7 +1088,7 @@ class NormalizedObservationWrapper(gym.ObservationWrapper):
         ----------
         observation: 
             Observation in the original environment observation space format 
-            to be modified.
+            to be modified. 
         
         Returns
         -------
@@ -1127,7 +1181,7 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
     
     '''
     
-    def compute_reward(self):
+    def get_reward(self):
         '''Clipped reward function that has the value either -1 when
         there is any cost/discomfort, or 0 where there is not cost 
         nor discomfort. This would be the simplest reward to learn for
@@ -1163,7 +1217,7 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
     
     '''
     
-    def compute_reward(self):
+    def get_reward(self):
         '''Custom reward function that penalizes less the discomfort
         and thus more the operational cost.
         
@@ -1197,7 +1251,7 @@ class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
     
     '''
     
-    def compute_reward(self):
+    def get_reward(self):
         '''Custom reward function that penalizes more the discomfort
         and thus more the operational cost.
         
@@ -1231,27 +1285,27 @@ class BoptestGymEnvVariableEpisodeLength(BoptestGymEnv):
     
     '''
     
-    def compute_done(self, res, reward=None, 
-                     objective_integrand_threshold=0.1):
-        '''Custom method to determine that the episode is done not only 
+    def compute_truncated(self, res, reward=None, 
+                          objective_integrand_threshold=0.1):
+        '''Custom method to determine that the episode is truncated not only 
         when the maximum episode length is exceeded but also when the 
         objective integrand overpasses a certain threshold. The latter is
-        useful to early terminate agent strategies that do not work, hence
+        useful to early stop agent strategies that do not work, hence
         avoiding unnecessary steps and leading to improved sampling 
         efficiency. 
         
         Returns
         -------
-        done: boolean
+        truncated: boolean
             Boolean indicating whether the episode is done or not.  
         
         '''
         
-        done =  (res['time'] >= self.start_time + self.max_episode_length)\
-                or \
-                (self.objective_integrand >= objective_integrand_threshold)
+        truncated =  (res['time'] >= self.start_time + self.max_episode_length)\
+                     or \
+                     (self.objective_integrand >= objective_integrand_threshold)
         
-        return done
+        return truncated
 
 class SaveAndTestCallback(BaseCallback):
     '''
@@ -1368,7 +1422,7 @@ if __name__ == "__main__":
 
     # Check the environment
     check_env(env, warn=True)
-    obs = env.reset()
+    obs, _ = env.reset()
     env.render()
     print('Observation space: {}'.format(env.observation_space))
     print('Action space: {}'.format(env.action_space))
