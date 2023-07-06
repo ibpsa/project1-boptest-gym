@@ -87,7 +87,7 @@ def train_RL(algorithm           = 'SAC',
         '''Define a custom reward for this building
         
         '''
-        def compute_reward(self):
+        def get_reward(self):
             '''Custom reward function
             
             '''

@@ -126,21 +126,21 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'reset_random.csv')
         self.compare_ref_values_df(df, ref_filepath) 
 
-    def test_compute_reward_default(self):
+    def test_get_reward_default(self):
         '''Test default method to compute reward.
         
         '''
         obs, _, rew = run_baseline.run_reward_default(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='default')
 
-    def test_compute_reward_custom(self):
+    def test_get_reward_custom(self):
         '''Test custom method to compute reward.
         
         '''
         obs, _, rew = run_baseline.run_reward_custom(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
         
-    def test_compute_reward_clipping(self):
+    def test_get_reward_clipping(self):
         '''Test reward clipping.
         
         '''
@@ -337,7 +337,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         can be trained. This test also uses the save callback to check that
         the variable episode length is being effectively used. 
         Notice that this test also checks that child classes can be nested
-        since the example redefines the `compute_reward` and the 
+        since the example redefines the `get_reward` and the 
         `compute_truncated` methods. 
         
         '''
