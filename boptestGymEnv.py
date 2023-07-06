@@ -374,7 +374,7 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
         summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
         summary['GYM ENVIRONMENT INFORMATION']['Maximum episode length (seconds)'] = pformat(self.max_episode_length)
-        summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.compute_reward))
+        summary['GYM ENVIRONMENT INFORMATION']['Environment reward function (source code)'] = pformat(inspect.getsource(self.get_reward))
         summary['GYM ENVIRONMENT INFORMATION']['Environment hierarchy'] = pformat(inspect.getmro(self.__class__))
         
         return summary
@@ -546,7 +546,7 @@ class BoptestGymEnv(gym.Env):
         res = requests.post('{0}/advance'.format(self.url), data=u).json()['payload']
         
         # Compute reward of this (state-action-state') tuple
-        reward = self.compute_reward()
+        reward = self.get_reward()
         self.episode_rewards.append(reward)
         
         # Define whether a terminal state (as defined under the MDP of the task) is reached
@@ -588,7 +588,7 @@ class BoptestGymEnv(gym.Env):
     def close(self):
         pass
     
-    def compute_reward(self):
+    def get_reward(self):
         '''
         Compute the reward of last state-action-state' tuple. The 
         reward is implemented as the negated increase in the objective
@@ -605,10 +605,10 @@ class BoptestGymEnv(gym.Env):
         -----
         This method is just a default method to compute reward. It can be 
         overridden by defining a child from this class with
-        this same method name, i.e. `compute_reward`. If a custom reward 
+        this same method name, i.e. `get_reward`. If a custom reward 
         is defined, it is strongly recommended to derive it using the KPIs
         as returned from the BOPTEST framework, as it is done in this 
-        default `compute_reward` method. This ensures that all variables 
+        default `get_reward` method. This ensures that all variables 
         that may contribute to any KPI are properly accounted and 
         integrated. 
         
@@ -1181,7 +1181,7 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
     
     '''
     
-    def compute_reward(self):
+    def get_reward(self):
         '''Clipped reward function that has the value either -1 when
         there is any cost/discomfort, or 0 where there is not cost 
         nor discomfort. This would be the simplest reward to learn for
@@ -1217,7 +1217,7 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
     
     '''
     
-    def compute_reward(self):
+    def get_reward(self):
         '''Custom reward function that penalizes less the discomfort
         and thus more the operational cost.
         
@@ -1251,7 +1251,7 @@ class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
     
     '''
     
-    def compute_reward(self):
+    def get_reward(self):
         '''Custom reward function that penalizes more the discomfort
         and thus more the operational cost.
         
