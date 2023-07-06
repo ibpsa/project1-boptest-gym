@@ -423,10 +423,10 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             self.compare_ref_values_df(df, ref_filepath)
 
     def test_tutorial(self):
-        import unittest
         from nbconvert.preprocessors import ExecutePreprocessor
         from nbconvert import NotebookExporter
         import nbformat
+
         # Path to the notebook file
         notebook_path = os.path.join(utilities.get_root_path(), 'docs', 'tutorials', 
                                      'CCAI_Summer_School_2022', 'Tutorial_2_Building_Control_with_RL_using_BOPTEST.ipynb')
