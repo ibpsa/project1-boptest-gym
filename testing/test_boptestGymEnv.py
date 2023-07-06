@@ -1,7 +1,7 @@
 '''
 Module to test features of the OpenAI-Gym interface for BOPTEST-Service.
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
-the tests. Latest tests were passing with BOPTEST v0.3.0
+the tests. Latest tests were passing with BOPTEST v0.4.0-dev
 
 '''
 
@@ -100,7 +100,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         env.start_time         = 14*24*3600
         env.warmup_period      = 3*3600
         
-        obs = env.reset()
+        obs, _ = self.env.reset()
         
         # Check values
         df = pd.DataFrame(data=[obs], index=['obs_reset_fixed'], columns=['value'])
@@ -132,9 +132,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         start_times = OrderedDict()
         # Reset hundred times
         for i in range(100):
-            obs = env.reset()
-            start_time = env.start_time
-            episode = (start_time, start_time+env.max_episode_length)
+            obs, _ = self.env.reset()
+            start_time = self.env.start_time
+            episode = (start_time, start_time+self.env.max_episode_length)
             for period in excluding_periods:
                 # Make sure that the episodes don't overlap with excluding_periods
                 assert not(episode[0] < period[1] and period[0] < episode[1]),\
@@ -154,7 +154,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # stop the environment to not overload the server
         env.stop()
 
-    def test_compute_reward_default(self):
+    def test_get_reward_default(self):
         '''Test default method to compute reward.
         
         '''
@@ -162,15 +162,15 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         obs, _, rew = run_baseline.run_reward_default(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='default')
 
-    def test_compute_reward_custom(self):
+    def test_get_reward_custom(self):
         '''Test custom method to compute reward.
         
         '''
 
         obs, _, rew = run_baseline.run_reward_custom(plot=False)
         self.check_obs_act_rew_kpi(obs=obs,act=None,rew=rew,kpi=None,label='custom')
-
-    def test_compute_reward_clipping(self):
+        
+    def test_get_reward_clipping(self):
         '''Test reward clipping.
         
         '''
@@ -298,14 +298,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         self.partial_test_RL(case='C', algorithm='A2C')
         
-    def ptest_DQN_D(self):
+    def notest_DQN_D(self):
         '''Test case D which is far more complex than previous cases. 
         Particularly it also uses regressive states discrete action space.  
         
         '''
         self.partial_test_RL(case='D', algorithm='DQN')
         
-    def ptest_behavior_cloning_cont(self):
+    def notest_behavior_cloning_cont(self):
         '''Check that an agent using continuous action space (in this case
         we use A2C) can be pretrained using behavior cloning from an 
         expert trajectory that needs to be generated beforehand. The test
@@ -319,7 +319,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                              training_timesteps=0,
                              expert_traj=expert_traj)
         
-    def ptest_behavior_cloning_disc(self):
+    def notest_behavior_cloning_disc(self):
         '''Check that an agent using discrete action space (in this case
         we use DQN) can be pretrained using behavior cloning from an 
         expert trajectory that needs to be generated beforehand. The test
@@ -354,7 +354,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         model = A2C.load(os.path.join(log_dir, 'best_model'))
         
         # Test one step with the trained model
-        obs = env.reset()
+        obs, _ = env.reset()
         df = pd.DataFrame([model.predict(obs)[0][0]], columns=['value'])
         df.index.name = 'keys'
         ref_filepath    = os.path.join(utilities.get_root_path(), 
@@ -371,14 +371,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         Test that a model can be trained using variable episode length. 
         The method that is used to determine whether the episode is 
-        terminated or not is defined by the user. This test trains an agent
+        truncated or not. This test trains an agent
         for a short period of time, without loading a pre-trained model. 
         Therefore, this test also checks that a RL from stable-baselines3
         can be trained. This test also uses the save callback to check that
         the variable episode length is being effectively used. 
         Notice that this test also checks that child classes can be nested
-        since the example redefines the `compute_reward` and the 
-        `compute_done` methods. 
+        since the example redefines the `get_reward` and the 
+        `compute_truncated` methods. 
         
         '''
         # Define logging directory. Monitoring data and agent model will be stored here
@@ -393,7 +393,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         model = A2C.load(os.path.join(log_dir, 'best_model'))
         
         # Test one step with the trained model
-        obs = env.reset()
+        obs, _ = env.reset()
         df = pd.DataFrame([model.predict(obs)[0][0]], columns=['value'])
         df.index.name = 'keys'
         ref_filepath    = os.path.join(utilities.get_root_path(), 

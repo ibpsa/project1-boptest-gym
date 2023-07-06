@@ -67,7 +67,7 @@ def run_reward_custom(plot=False):
     # Define a parent class as a wrapper to override the reward function
     class BoptestGymEnvCustom(BoptestGymEnv):
         
-        def compute_reward(self):
+        def get_reward(self):
             '''Custom reward function that penalizes less the discomfort
             and thus more the operational cost.
             
@@ -116,7 +116,7 @@ def run_reward_clipping(plot=False):
     # Define a parent class as a wrapper to override the reward function
     class BoptestGymEnvClipping(BoptestGymEnv):
         
-        def compute_reward(self):
+        def get_reward(self):
             '''Clipped reward function that has the value either -1 when
             there is any cost/discomfort, or 0 where there is not cost 
             nor discomfort. This would be the simplest reward to learn for
