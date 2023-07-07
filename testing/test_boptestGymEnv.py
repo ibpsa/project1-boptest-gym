@@ -439,6 +439,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         from nbconvert.preprocessors import ExecutePreprocessor
         from nbconvert import NotebookExporter
         import nbformat
+        import json
 
         # Path to the notebook file
         notebook_path = os.path.join(utilities.get_root_path(), 'docs', 'tutorials', 
@@ -456,11 +457,19 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         executor = ExecutePreprocessor(timeout=-1)
         executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4))
 
-        # Perform assertions on the executed notebook cells
-        # Example: Check if the output of a specific cell matches the expected output
-        # expected_output = 42
-        # actual_output = executed_notebook.cells[2].outputs[0]['text']
-        # self.assertEqual(int(actual_output), expected_output)
+        # Get the KPIs obtained when testing our Q-algorithm
+        kpis_string = executed_notebook.cells[119].outputs[0]['data']['text/plain']
+
+        # Conform to the json syntax rules to transform to json
+        kpis_string = kpis_string.replace("\n","").replace("'","\"").replace("None","null")
+
+        # Convert string to json
+        kpis_json = json.loads(kpis_string)
+
+        # Check results
+        file_ref = os.path.join('testing', 'references','tutorial_output.json')
+        self.compare_ref_json(kpis_json, file_ref)
         
+
 if __name__ == '__main__':
     utilities.run_tests(os.path.basename(__file__))
