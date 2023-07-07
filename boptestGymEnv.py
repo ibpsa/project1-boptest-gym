@@ -762,7 +762,7 @@ class BoptestGymEnv(gym.Env):
         # 0.1 is added to avoid the following error when self.predictive_period=0
         # 'Invalid value 0.0 for parameter horizon. Value must be positive.'
         if self.is_predictive:
-            predictions = requests.put('{0}/forecast'.format(self.url, self.testid), 
+            predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
                                        data={'point_names': self.predictive_vars,
                                              'horizon':     self.predictive_period+0.1,
                                              'interval':    self.step_period}).json()['payload']
