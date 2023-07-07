@@ -423,6 +423,19 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             self.compare_ref_values_df(df, ref_filepath)
 
     def test_tutorial(self):
+        '''
+        Test the tutorial in the `docs`. The tutorial is written as 
+        an ipython notebook so the `nbconvert` package is used to convert 
+        the notebook to plain python to execute the test by comparing the
+        outputs of some of the notebook cells with references.
+        Note that the notebook actually uses the `boptest-gym-service` 
+        branch, which should be even with the `master` branch but uses 
+        BOPTEST-Service. Therefore, this is a check for the
+        `boptest-gym-service` branch and, contrarily to other tests,
+        this one could be parallelized. 
+
+        '''
+        
         from nbconvert.preprocessors import ExecutePreprocessor
         from nbconvert import NotebookExporter
         import nbformat
