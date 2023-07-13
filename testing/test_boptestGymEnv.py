@@ -460,9 +460,13 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         out_get_name = executed_notebook.cells[41].outputs[0]['text'] 
         self.check_from_cell_output(out_get_name, 'get_name')
 
-        # Check KPIs when testing the Q-algorithm
+        # Check KPIs when testing our Q-algorithm
         out_kpis_Q_alg = executed_notebook.cells[119].outputs[0]['data']['text/plain'] 
         self.check_from_cell_output(out_kpis_Q_alg, 'kpis_Q_alg')
+
+        # Check KPIs when testing DQN algorithm from stable-baselines3
+        out_kpis_DQN_alg = executed_notebook.cells[125].outputs[2]['data']['text/plain']
+        self.check_from_cell_output(out_kpis_DQN_alg, 'kpis_DQN_alg')
 
     def check_from_cell_output(self, cell_output, str_output):
         '''Compares a cell output to a reference file. 
