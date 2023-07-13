@@ -439,7 +439,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         from nbconvert.preprocessors import ExecutePreprocessor
         from nbconvert import NotebookExporter
         import nbformat
-        import json
 
         # Path to the notebook file
         notebook_path = os.path.join(utilities.get_root_path(), 'docs', 'tutorials', 
@@ -457,19 +456,40 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         executor = ExecutePreprocessor(timeout=-1)
         executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4))
 
-        # Get the KPIs obtained when testing our Q-algorithm
-        kpis_string = executed_notebook.cells[119].outputs[0]['data']['text/plain']
+        # Test output when requesting test case name
+        out_get_name = executed_notebook.cells[41].outputs[0]['text'] 
+        self.check_from_cell_output(out_get_name, 'get_name')
+
+        # Check KPIs when testing the Q-algorithm
+        out_kpis_Q_alg = executed_notebook.cells[119].outputs[0]['data']['text/plain'] 
+        self.check_from_cell_output(out_kpis_Q_alg, 'kpis_Q_alg')
+
+    def check_from_cell_output(self, cell_output, str_output):
+        '''Compares a cell output to a reference file. 
+        Parameters
+        ----------
+        cell_output: str
+            Content of the cell output that is 
+            reformatted in this method to become json
+        str_ouput: str
+            Tag to identify the reference file of the output
+
+        '''
+
+        import json
 
         # Conform to the json syntax rules to transform to json
-        kpis_string = kpis_string.replace("\n","").replace("'","\"").replace("None","null")
-
-        # Convert string to json
-        kpis_json = json.loads(kpis_string)
-
-        # Check results
-        file_ref = os.path.join('testing', 'references','tutorial_output.json')
-        self.compare_ref_json(kpis_json, file_ref)
+        out = cell_output.replace("\n","").replace("'","\"").replace("None","null")
         
+        # Convert string to json
+        out_json = json.loads(out)
+
+        # Assign files
+        file_ref = os.path.join('testing', 'references',
+                                'tutorial_output_{}.json'.format(str_output))
+        
+        # Check results
+        self.compare_ref_json(out_json, file_ref)
 
 if __name__ == '__main__':
     utilities.run_tests(os.path.basename(__file__))
