@@ -442,7 +442,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
 
         # Path to the notebook file
         notebook_path = os.path.join(utilities.get_root_path(), 'docs', 'tutorials', 
-                                     'CCAI_Summer_School_2022', 'Tutorial_2_Building_Control_with_RL_using_BOPTEST.ipynb')
+                                     'CCAI_Summer_School_2022', 'Building_Control_with_RL_using_BOPTEST.ipynb')
 
         # Read the notebook file
         with open(notebook_path, 'r', encoding='utf-8') as f:
