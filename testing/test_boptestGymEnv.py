@@ -432,7 +432,11 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         branch, which should be even with the `master` branch but uses 
         BOPTEST-Service. Therefore, this is a check for the
         `boptest-gym-service` branch and, contrarily to other tests,
-        this one could be parallelized. 
+        this one could be parallelized. The last section of the tutorial
+        (Gearing Up) is using the DQN algorithm from stable-baselines3
+        and is used as such in the Quick Start example in the README.md
+        of this repository. Therefore, this is also testing the 
+        Quick Start example. 
 
         '''
         
