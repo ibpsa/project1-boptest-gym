@@ -475,7 +475,11 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         branch, which should be even with the `master` branch but uses 
         BOPTEST-Service. Therefore, this is a check for the
         `boptest-gym-service` branch and, contrarily to other tests,
-        this one could be parallelized. 
+        this one could be parallelized. The last section of the tutorial
+        (Gearing Up) is using the DQN algorithm from stable-baselines3
+        and is used as such in the Quick Start example in the README.md
+        of this repository. Therefore, this is also testing the 
+        Quick Start example. 
 
         '''
         
@@ -485,7 +489,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
 
         # Path to the notebook file
         notebook_path = os.path.join(utilities.get_root_path(), 'docs', 'tutorials', 
-                                     'CCAI_Summer_School_2022', 'Tutorial_2_Building_Control_with_RL_using_BOPTEST.ipynb')
+                                     'CCAI_Summer_School_2022', 'Building_Control_with_RL_using_BOPTEST.ipynb')
 
         # Read the notebook file
         with open(notebook_path, 'r', encoding='utf-8') as f:
@@ -499,11 +503,48 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         executor = ExecutePreprocessor(timeout=-1)
         executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4))
 
-        # Perform assertions on the executed notebook cells
-        # Example: Check if the output of a specific cell matches the expected output
-        # expected_output = 42
-        # actual_output = executed_notebook.cells[2].outputs[0]['text']
-        # self.assertEqual(int(actual_output), expected_output)
+        # Test output when requesting test case name
+        out_get_name = executed_notebook.cells[41].outputs[0]['text'] 
+        self.check_from_cell_output(out_get_name, 'get_name')
+
+        # Check KPIs when testing our Q-algorithm
+        out_kpis_Q_alg = executed_notebook.cells[119].outputs[0]['data']['text/plain'] 
+        self.check_from_cell_output(out_kpis_Q_alg, 'kpis_Q_alg')
+
+        # Check KPIs when testing DQN algorithm from stable-baselines3
+        out_kpis_DQN_alg = executed_notebook.cells[125].outputs[2]['data']['text/plain']
+        self.check_from_cell_output(out_kpis_DQN_alg, 'kpis_DQN_alg')
+
+    def check_from_cell_output(self, cell_output, str_output):
+        '''Compares a cell output to a reference file. 
+        Parameters
+        ----------
+        cell_output: str
+            Content of the cell output that is 
+            reformatted in this method to become json
+        str_ouput: str
+            Tag to identify the reference file of the output
+
+        '''
+
+        import json
+
+        # Conform to the json syntax rules to transform to json
+        out = cell_output.replace("\n","").replace("'","\"").replace("None","null")
         
+        # Convert string to json
+        out_json = json.loads(out)
+
+        # Drop time ratio if it is in output
+        if 'time_rat' in out_json:
+            del out_json['time_rat']
+
+        # Assign files
+        file_ref = os.path.join('testing', 'references',
+                                'tutorial_output_{}.json'.format(str_output))
+        
+        # Check results
+        self.compare_ref_json(out_json, file_ref)
+
 if __name__ == '__main__':
     utilities.run_tests(os.path.basename(__file__))
