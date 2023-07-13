@@ -492,6 +492,10 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Convert string to json
         out_json = json.loads(out)
 
+        # Drop time ratio if it is in output
+        if 'time_rat' in out_json:
+            del out_json['time_rat']
+
         # Assign files
         file_ref = os.path.join('testing', 'references',
                                 'tutorial_output_{}.json'.format(str_output))
