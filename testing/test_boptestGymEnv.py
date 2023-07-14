@@ -447,7 +447,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         root_dir = utilities.get_root_path()
 
         # Change working dir to tutorial directory
-        os.chdir(os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022'))
+        run_path = os.chdir(os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022'))
 
         # Path to the notebook file
         notebook_path = os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022', 
@@ -458,8 +458,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             notebook_content = f.read()
 
         # Execute the notebook cells
-        executor = ExecutePreprocessor(timeout=-1)
-        executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4))
+        executor = ExecutePreprocessor(timeout=-1, resources={'metadata': {'path': run_path}})
+        executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4),
+                                                   resources={'metadata': {'path': run_path}})
 
         # Test output when requesting test case name
         out_get_name = executed_notebook.cells[41].outputs[0]['text'] 
