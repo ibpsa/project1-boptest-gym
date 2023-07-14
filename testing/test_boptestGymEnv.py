@@ -444,9 +444,15 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         from nbconvert import NotebookExporter
         import nbformat
 
+        # Get root directory
+        root_dir = utilities.get_root_path()
+
+        # Change working dir to tutorial directory
+        os.chdir(os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022'))
+
         # Path to the notebook file
-        notebook_path = os.path.join(utilities.get_root_path(), 'docs', 'tutorials', 
-                                     'CCAI_Summer_School_2022', 'Building_Control_with_RL_using_BOPTEST.ipynb')
+        notebook_path = os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022', 
+                                     'Building_Control_with_RL_using_BOPTEST.ipynb')
 
         # Read the notebook file
         with open(notebook_path, 'r', encoding='utf-8') as f:
