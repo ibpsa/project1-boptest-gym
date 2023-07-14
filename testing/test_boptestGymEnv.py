@@ -499,7 +499,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             del out_json['time_rat']
 
         # Assign files
-        file_ref = os.path.join('testing', 'references',
+        file_ref = os.path.join(utilities.get_root_path(), 'testing', 'references',
                                 'tutorial_output_{}.json'.format(str_output))
         
         # Check results
