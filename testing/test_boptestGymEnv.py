@@ -441,7 +441,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         
         from nbconvert.preprocessors import ExecutePreprocessor
-        from nbconvert import NotebookExporter
         import nbformat
 
         # Get root directory
@@ -457,10 +456,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         # Read the notebook file
         with open(notebook_path, 'r', encoding='utf-8') as f:
             notebook_content = f.read()
-
-        # Convert the notebook to Python code
-        exporter = NotebookExporter()
-        python_code, _ = exporter.from_notebook_node(nbformat.reads(notebook_content, as_version=4))
 
         # Execute the notebook cells
         executor = ExecutePreprocessor(timeout=-1)
