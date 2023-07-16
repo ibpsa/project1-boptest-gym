@@ -10,44 +10,71 @@ The environment is described in [this paper](https://www.researchgate.net/public
 - `/examples` contains prototype code for the interaction of RL algorithms with an emulator building model from BOPTEST. 
 - `/testing` contains code for unit testing of this software. 
 
-## Quick-Start
+## Quick-Start (using BOPTEST-Service)
+BOPTEST-Service allows to directly access BOPTEST test cases in the cloud, without the need to run it locally. Interacting with BOPTEST-Service requires less configuration effort but is considerably slower because of the communication overhead between the agent and the test case running in the cloud. Use this approach when you want to quickly check out the functionality of this repository. 
+
 1) Create a conda environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). 
-2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
-3) Develop and test your own RL algorithms. See example below using the [Bestest hydronic case with a heat-pump](https://github.com/ibpsa/project1-boptest/tree/master/testcases/bestest_hydronic_heat_pump) and the [A2C algorithm](https://stable-baselines.readthedocs.io/en/master/modules/a2c.html) from Stable-Baselines: 
+2) Check out the `boptest-gym-service` branch and run the example below that uses the [Bestest hydronic case with a heat-pump](https://github.com/ibpsa/project1-boptest/tree/master/testcases/bestest_hydronic_heat_pump) and the [DQN algorithm](https://stable-baselines3.readthedocs.io/en/master/modules/dqn.html) from Stable-Baselines: 
 
 ```python
-from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper, NormalizedObservationWrapper
-from stable_baselines3 import A2C
-from examples.test_and_plot import test_agent
+from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
+from stable_baselines3 import DQN
 
-# BOPTEST case address
-url = 'http://127.0.0.1:5000'
+# url for the BOPTEST service. 
+url = 'https://api.boptest.net' 
 
-# Instantite environment
-env = BoptestGymEnv(url                   = url,
-                    actions               = ['oveHeaPumY_u'],
-                    observations          = {'reaTZon_y':(280.,310.)}, 
-                    random_start_time     = True,
-                    max_episode_length    = 24*3600,
-                    warmup_period         = 24*3600,
-                    step_period           = 900)
+# Decide the state-action space of your test case
+env = BoptestGymEnv(
+        url                  = url,
+        testcase             = 'bestest_hydronic_heat_pump',
+        actions              = ['oveHeaPumY_u'],
+        observations         = {'time':(0,604800),
+                                'reaTZon_y':(280.,310.),
+                                'TDryBul':(265,303),
+                                'HDirNor':(0,862),
+                                'InternalGainsRad[1]':(0,219),
+                                'PriceElectricPowerHighlyDynamic':(-0.4,0.4),
+                                'LowerSetp[1]':(280.,310.),
+                                'UpperSetp[1]':(280.,310.)}, 
+        predictive_period    = 24*3600, 
+        regressive_period    = 6*3600, 
+        random_start_time    = True,
+        max_episode_length   = 24*3600,
+        warmup_period        = 24*3600,
+        step_period          = 3600)
 
-# Add wrappers to normalize state and action spaces (Optional)
+# Normalize observations and discretize action space
 env = NormalizedObservationWrapper(env)
-env = NormalizedActionWrapper(env)  
+env = DiscretizedActionWrapper(env,n_bins_act=10)
 
-# Instantiate and train an RL algorithm
-model = A2C('MlpPolicy', env)
-model.learn(total_timesteps=int(1e5))
+# Instantiate an RL agent
+model = DQN('MlpPolicy', env, verbose=1, gamma=0.99,
+            learning_rate=5e-4, batch_size=24, 
+            buffer_size=365*24, learning_starts=24, train_freq=1)
 
-# Test trained agent
-observations, actions, rewards, kpis = test_agent(env, model, 
-                                                  start_time=0, 
-                                                  episode_length=14*24*3600,
-                                                  warmup_period=24*3600,
-                                                  plot=True)
+# Main training loop
+model.learn(total_timesteps=10)
+
+# Loop for one episode of experience (one day)
+done = False
+obs, _ = env.reset()
+while not done:
+  action, _ = model.predict(obs, deterministic=True) 
+  obs,reward,terminated,truncated,info = env.step(action)
+  done = (terminated or truncated)
+
+# Obtain KPIs for evaluation
+env.get_kpis()
 
 ```
+
+## Quick-Start (running BOPTEST locally)
+Running BOPTEST locally is substantially faster
+
+1) Create a conda environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). 
+2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
+3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
+
 
 ## Citing the project
 
