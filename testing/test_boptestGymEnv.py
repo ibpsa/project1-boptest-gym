@@ -484,14 +484,13 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         '''
         
         from nbconvert.preprocessors import ExecutePreprocessor
-        from nbconvert import NotebookExporter
         import nbformat
 
         # Get root directory
         root_dir = utilities.get_root_path()
 
         # Change working dir to tutorial directory
-        os.chdir(os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022'))
+        run_path = os.chdir(os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022'))
 
         # Path to the notebook file
         notebook_path = os.path.join(root_dir, 'docs', 'tutorials', 'CCAI_Summer_School_2022', 
@@ -501,13 +500,10 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         with open(notebook_path, 'r', encoding='utf-8') as f:
             notebook_content = f.read()
 
-        # Convert the notebook to Python code
-        exporter = NotebookExporter()
-        python_code, _ = exporter.from_notebook_node(nbformat.reads(notebook_content, as_version=4))
-
         # Execute the notebook cells
-        executor = ExecutePreprocessor(timeout=-1)
-        executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4))
+        executor = ExecutePreprocessor(timeout=-1, resources={'metadata': {'path': run_path}})
+        executed_notebook, _ = executor.preprocess(nbformat.reads(notebook_content, as_version=4),
+                                                   resources={'metadata': {'path': run_path}})
 
         # Test output when requesting test case name
         out_get_name = executed_notebook.cells[41].outputs[0]['text'] 
@@ -546,7 +542,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             del out_json['time_rat']
 
         # Assign files
-        file_ref = os.path.join('testing', 'references',
+        file_ref = os.path.join(utilities.get_root_path(), 'testing', 'references',
                                 'tutorial_output_{}.json'.format(str_output))
         
         # Check results
