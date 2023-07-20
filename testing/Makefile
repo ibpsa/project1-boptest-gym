@@ -8,15 +8,14 @@ IMG_HOME=/home/developer/boptestgym
 
 build:
 	docker build -f ${ROOT}/testing/Dockerfile \
-		--platform=linux/amd64 --progress=plain --rm -t ${IMG_NAME} .
+		--progress=plain --rm -t ${IMG_NAME} .
 
 build-no-cache:
 	docker build -f ${ROOT}/testing/Dockerfile \
-		--platform=linux/amd64 --progress=plain --no-cache --rm -t ${IMG_NAME}
+		--progress=plain --no-cache --rm -t ${IMG_NAME}
 	
 run:
 	docker run \
-		--platform=linux/amd64 \
 		--name ${IMG_NAME} \
 		--detach=false \
 		--rm \
