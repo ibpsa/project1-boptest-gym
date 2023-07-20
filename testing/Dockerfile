@@ -28,6 +28,7 @@ ENV HOME /home/developer
 # Install dependencies
 RUN pip install gymnasium==0.28.1 stable-baselines3==2.0.0 numpy==1.24.4 pandas==2.0.3
 
+ENV PYTHONPATH /home/developer/boptestgym
 # Expose port for interacting with BOPTEST
 EXPOSE 5000
 
