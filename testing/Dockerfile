@@ -17,13 +17,18 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
+# Gym dependency and shimmy can be removed after retraining missing agents:
+# A2C_simple, A2C_A, A2C_B
 RUN pip install \
     gymnasium==0.28.1 \
     stable-baselines3==2.0.0 \
     numpy==1.24.4 \
     pandas==2.0.3 \
     requests \
-    scipy
+    scipy \
+    nbconvert \
+    gym \
+    shimmy
 
 # Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer
