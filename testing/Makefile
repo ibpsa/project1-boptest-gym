@@ -18,23 +18,24 @@ run:
 	docker run \
 		--name ${IMG_NAME} \
 		--detach=false \
+		--network=host \
 		--rm \
-		-v ${ROOT}:${IMG_HOME} \
+		--user $(id -u):$(id -g) \
+		-v ${ROOT}:${IMG_HOME}:rw \
 		-w ${IMG_HOME}/testing \
 		-it \
-		-p 127.0.0.1:5000:5000 \
 		${IMG_NAME}
 
 run-detached:
 	docker run \
-		--platform=linux/amd64 \
 		--name ${IMG_NAME} \
 		--detach=true \
+		--network=host \
 		--rm \
-		-v ${ROOT}:${IMG_HOME} \
+		--user $(id -u):$(id -g) \
+		-v ${ROOT}:${IMG_HOME}:rw \
 		-w ${IMG_HOME}/testing \
 		-it \
-		-p 127.0.0.1:5000:5000 \
 		${IMG_NAME}
 
 stop:
