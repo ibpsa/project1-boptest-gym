@@ -49,7 +49,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         print(self.env)
         
         # Check that we can save the environment summary
-        file_ref = os.path.join('testing', 'references','summary_ref')
+        file_ref = os.path.join(utilities.get_root_path(), 'testing', 'references','summary_ref')
         file_tst = 'summary_tst'
         self.env.save_summary(file_tst)
         
