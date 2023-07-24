@@ -16,20 +16,21 @@ RUN apt update && \
     python3-pip  && \
     rm -rf /var/lib/apt/lists/*
 
-# Add developer user
+# Install dependencies
+RUN pip install \
+    gymnasium==0.28.1 \
+    stable-baselines3==2.0.0 \
+    numpy==1.24.4 \
+    pandas==2.0.3 \
+    requests \
+    scipy
+
+# Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer
+ENV HOME /home/developer
+RUN mkdir -m 1777 ${HOME}/boptestgym
+ENV PYTHONPATH ${HOME}/boptestgym
 
 # Activate developer
 USER developer
-
-# Set environment variables
-ENV HOME /home/developer
-
-# Install dependencies
-RUN pip install gymnasium==0.28.1 stable-baselines3==2.0.0 numpy==1.24.4 pandas==2.0.3
-
-ENV PYTHONPATH /home/developer/boptestgym
-# Expose port for interacting with BOPTEST
-EXPOSE 5000
-
 
