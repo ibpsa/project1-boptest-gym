@@ -46,3 +46,27 @@ exec-interactive:
 		-it \
 		${IMG_NAME} \
 		/bin/bash -c "${ARGS} && exit"
+
+# All tests except test_tutorial use the master version of boptest-gym
+test-local:
+	python3 -m unittest \
+		test_boptestGymEnv.BoptestGymEnvTest.test_summary \
+		test_boptestGymEnv.BoptestGymEnvTest.test_stable_baselines_check \
+		test_boptestGymEnv.BoptestGymEnvTest.test_reset_fixed \
+		test_boptestGymEnv.BoptestGymEnvTest.test_reset_random \
+		test_boptestGymEnv.BoptestGymEnvTest.test_get_reward_default \
+		test_boptestGymEnv.BoptestGymEnvTest.test_get_reward_custom \
+		test_boptestGymEnv.BoptestGymEnvTest.test_get_reward_clipping \
+		test_boptestGymEnv.BoptestGymEnvTest.test_normalized_observation_wrapper \
+		test_boptestGymEnv.BoptestGymEnvTest.test_set_scenario \
+		test_boptestGymEnv.BoptestGymEnvTest.test_A2C_simple \
+		test_boptestGymEnv.BoptestGymEnvTest.test_A2C_A \
+		test_boptestGymEnv.BoptestGymEnvTest.test_A2C_B \
+		test_boptestGymEnv.BoptestGymEnvTest.test_A2C_C \
+		test_boptestGymEnv.BoptestGymEnvTest.test_save_callback \
+		test_boptestGymEnv.BoptestGymEnvTest.test_variable_episode 
+
+# The tutorial is using boptest-gym-service and covers most of the functionality of boptest-gym 
+test-service:
+	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest.test_tutorial
+
