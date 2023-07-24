@@ -1,0 +1,37 @@
+name: CI of BOPTEST-Gym using GitHub Actions
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server called tony-de-rekenpony hosted by The Sysis team at KU Leuven"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          clean: true
+      - name: Change permissions of repository folder
+        run: chmod -R 777 /home/actions-runner/_work
+      - name: List of files in the repository
+        run: | 
+         ls ${{ github.workspace }}
+  test-local:
+    runs-on: self-hosted
+    needs: build
+    defaults:
+      run:
+        working-directory: testing
+    steps:
+      - name: Test local version
+        run: make test-local
+  test-service:
+    runs-on: self-hosted
+    needs: build
+    defaults:
+      run:
+        working-directory: testing
+    steps:
+      - name: Test service version
+        run: make test-service
+      
