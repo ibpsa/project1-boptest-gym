@@ -17,24 +17,24 @@ jobs:
       - name: List of files in the repository
         run: | 
          ls ${{ github.workspace }}
-      - name: Build BOPTEST-Gym image
-        run: make build-boptestgym
+      # - name: Build BOPTEST-Gym image
+      #   run: make build-boptestgym
   test-local:
     runs-on: ubuntu-latest
     needs: build
-    defaults:
-      run:
-        working-directory: testing
     steps:
+      - name: List of files in the repository
+        run: | 
+         ls ${{ github.workspace }}
       - name: Test local version
         run: make test-local-in-container
   test-service:
     runs-on: ubuntu-latest
     needs: build
-    defaults:
-      run:
-        working-directory: testing
     steps:
-      - name: Test service version
+      - name: List of files in the repository
+        run: | 
+         ls ${{ github.workspace }}
+      - name: Test local version
         run: make test-service-in-container
       
