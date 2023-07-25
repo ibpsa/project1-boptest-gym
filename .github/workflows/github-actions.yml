@@ -37,7 +37,7 @@ jobs:
         run: | 
          ls ${{ github.workspace }}
       - name: Test local version
-        run: cd testing && make test-local-in-container
+        run: make test-local-in-container
   test-service:
     runs-on: ubuntu-latest
     needs: build
@@ -56,5 +56,5 @@ jobs:
         run: | 
          ls ${{ github.workspace }}
       - name: Test service version
-        run: cd testing && make test-service-in-container
+        run: make test-service-in-container
       
