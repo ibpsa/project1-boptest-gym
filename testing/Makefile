@@ -89,7 +89,7 @@ test-local:
 
 # The tutorial is using boptest-gym-service and covers most of the functionality of boptest-gym 
 test-service:
-	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest.test_tutorial
+	python3 -m unittest test_boptestGymEnv.BoptestGymServiceTest.test_tutorial
 
 test-local-in-container:
 	make run-boptest-case

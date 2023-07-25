@@ -422,6 +422,12 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
             ref_filepath = os.path.join(utilities.get_root_path(), 'testing', 'references', 'kpis_{}.csv'.format(label))
             self.compare_ref_values_df(df, ref_filepath)
 
+
+class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
+    '''Tests the BOPTEST-Gym service.
+         
+    '''
+    
     def test_tutorial(self):
         '''
         Test the tutorial in the `docs`. The tutorial is written as 
