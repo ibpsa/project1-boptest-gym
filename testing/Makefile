@@ -50,6 +50,11 @@ exec-boptestgym:
 		${IMG_NAME} \
 		/bin/bash -c "${ARGS} && exit"
 
+push-boptestgym:
+# requires `docker login` first
+	docker tag boptestgym javierarroyo/boptestgym
+	docker push javierarroyo/boptestgym
+
 run-boptest-case:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
 	unzip -o boptest.zip
