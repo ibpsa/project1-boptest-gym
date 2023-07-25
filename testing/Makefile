@@ -46,7 +46,7 @@ stop-boptestgym:
 
 exec-boptestgym:
 	docker exec \
-		-it \
+		-i \
 		${IMG_NAME} \
 		/bin/bash -c "${ARGS} && exit"
 
