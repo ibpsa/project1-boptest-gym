@@ -23,7 +23,8 @@ run-boptestgym:
 		--detach=false \
 		--network=host \
 		--rm \
-		-v ${ROOT}:${IMG_HOME} \
+		--user $(id -u):$(id -g) \
+		-v ${ROOT}:${IMG_HOME}:rw \
 		-w ${IMG_HOME}/testing \
 		-it \
 		${IMG_NAME}
@@ -34,7 +35,8 @@ run-boptestgym-detached:
 		--detach=true \
 		--network=host \
 		--rm \
-		-v ${ROOT}:${IMG_HOME}\
+		--user $(id -u):$(id -g) \
+		-v ${ROOT}:${IMG_HOME}:rw \
 		-w ${IMG_HOME}/testing \
 		-it \
 		${IMG_NAME}
