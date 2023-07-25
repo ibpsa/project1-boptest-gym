@@ -55,7 +55,7 @@ push-boptestgym:
 
 run-boptest-case:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
-	unzip -o boptest.zip
+	unzip -o -q boptest.zip
 	cd project1-boptest-${BOPTEST_COMMIT} && TESTCASE=bestest_hydronic_heat_pump docker-compose up -d
 
 stop-boptest-case:
