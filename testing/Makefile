@@ -26,7 +26,7 @@ run-boptestgym:
 		--user $(id -u):$(id -g) \
 		-v ${ROOT}:${IMG_HOME}:rw \
 		-w ${IMG_HOME}/testing \
-		-i \
+		-it \
 		${IMG_NAME}
 
 run-boptestgym-detached:
@@ -38,7 +38,7 @@ run-boptestgym-detached:
 		--user $(id -u):$(id -g) \
 		-v ${ROOT}:${IMG_HOME}:rw \
 		-w ${IMG_HOME}/testing \
-		-i \
+		-it \
 		${IMG_NAME}
 
 stop-boptestgym:
