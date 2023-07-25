@@ -28,7 +28,8 @@ RUN pip install \
     scipy \
     nbconvert \
     gym \
-    shimmy
+    shimmy \
+    ipython
 
 # Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer
