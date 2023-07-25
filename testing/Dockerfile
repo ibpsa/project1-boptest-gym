@@ -29,7 +29,7 @@ RUN pip install \
     nbconvert \
     gym \
     shimmy \
-    ipython
+    ipykernel
 
 # Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer
