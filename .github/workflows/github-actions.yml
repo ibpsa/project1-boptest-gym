@@ -14,8 +14,6 @@ jobs:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server."
       - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Change permissions of repository folder
-        run: chmod -R 777 /home/actions-runner/_work
       - name: List of files in the repository
         run: | 
          ls ${{ github.workspace }}
