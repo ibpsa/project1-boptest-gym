@@ -1,36 +1,28 @@
 name: CI of BOPTEST-Gym using GitHub Actions
 on: [push, pull_request]
 jobs:
+  common:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: testing
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Pull boptestgym image from registry
+        run: docker pull javierarroyo/boptestgym && docker tag javierarroyo/boptestgym boptestgym
+      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: List of files in the repository
+        run: | 
+         ls ${{ github.workspace }}
   test-local:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: testing
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Pull boptestgym image from registry
-        run: docker pull javierarroyo/boptestgym && docker tag javierarroyo/boptestgym boptestgym
-      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: List of files in the repository
-        run: | 
-         ls ${{ github.workspace }}
-      - name: Test local version
-        run: make test-local-in-container
+    extends: common
+      steps:
+        - name: Test local version
+          run: make test-local-in-container
   test-service:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: testing
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Pull boptestgym image from registry
-        run: docker pull javierarroyo/boptestgym && docker tag javierarroyo/boptestgym boptestgym
-      - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: List of files in the repository
-        run: | 
-         ls ${{ github.workspace }}
-      - name: Test service version
-        run: make test-service-in-container
-      
+    extends: common
+      steps:  
+        - name: Test service version
+          run: make test-service-in-container
+        
