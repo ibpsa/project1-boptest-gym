@@ -438,7 +438,7 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
         branch, which should be even with the `master` branch but uses 
         BOPTEST-Service. Therefore, this is a check for the
         `boptest-gym-service` branch and, contrarily to other tests,
-        this one could be parallelized. The last section of the tutorial
+        this one can be parallelized. The last section of the tutorial
         (Gearing Up) is using the DQN algorithm from stable-baselines3
         and is used as such in the Quick Start example in the README.md
         of this repository. Therefore, this is also testing the 
@@ -477,7 +477,7 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
         self.check_from_cell_output(out_kpis_Q_alg, 'kpis_Q_alg')
 
         # Check KPIs when testing DQN algorithm from stable-baselines3
-        out_kpis_DQN_alg = executed_notebook.cells[125].outputs[2]['data']['text/plain']
+        out_kpis_DQN_alg = executed_notebook.cells[125].outputs[1]['data']['text/plain']
         self.check_from_cell_output(out_kpis_DQN_alg, 'kpis_DQN_alg')
 
     def check_from_cell_output(self, cell_output, str_output):
