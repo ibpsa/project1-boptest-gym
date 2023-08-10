@@ -26,10 +26,10 @@ RUN pip install \
     pandas==2.0.3 \
     requests \
     scipy \
-    nbconvert \
+    nbconvert==7.7.3 \
     gym \
     shimmy \
-    ipykernel
+    ipykernel==6.25.1
 
 # Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer
