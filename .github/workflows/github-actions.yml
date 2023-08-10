@@ -17,12 +17,12 @@ jobs:
          ls ${{ github.workspace }}
   test-local:
     extends: common
-    steps:
-      - name: Test local version
-        run: make test-local-in-container
+      steps:
+        - name: Test local version
+          run: make test-local-in-container
   test-service:
     extends: common
-    steps:  
-      - name: Test service version
-        run: make test-service-in-container
+      steps:  
+        - name: Test service version
+          run: make test-service-in-container
         
