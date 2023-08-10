@@ -10,7 +10,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Pull boptestgym image from registry
-        run: docker pull javierarroyo/boptestgym && docker tag javierarroyo/boptestgym boptestgym
+        run: make pull-boptestgym
       - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       - name: List of files in the repository
         run: | 
@@ -26,7 +26,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
       - name: Pull boptestgym image from registry
-        run: docker pull javierarroyo/boptestgym && docker tag javierarroyo/boptestgym boptestgym
+        run: make pull-boptestgym
       - run: echo "The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
       - name: List of files in the repository
         run: | 

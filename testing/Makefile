@@ -55,6 +55,10 @@ push-boptestgym:
 	docker tag boptestgym javierarroyo/boptestgym
 	docker push javierarroyo/boptestgym
 
+pull-boptestgym:
+	docker pull javierarroyo/boptestgym 
+	docker tag javierarroyo/boptestgym boptestgym
+
 run-boptest-case:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
 	unzip -o -q boptest.zip
