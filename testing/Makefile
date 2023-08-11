@@ -7,7 +7,7 @@ IMG_NAME=boptestgym
 IMG_HOME=/home/developer/boptestgym
 
 # BOPTEST commit used for the tests
-BOPTEST_COMMIT=619d43cb39c1e6b19bd8c9c71beba259e4cca143
+BOPTEST_COMMIT=1fd96639518853c1ddc41355a8f9e29edce3242d
 
 build-boptestgym:
 	docker build -f ${ROOT}/testing/Dockerfile \

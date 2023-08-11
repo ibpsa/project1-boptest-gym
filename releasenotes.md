@@ -6,6 +6,9 @@ BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simpli
 
 Released on xx/xx/xxxx.
 
+- Remove arbitrarily small offset when requesting forecasts. This is for [#127](https://github.com/ibpsa/project1-boptest-gym/issues/127). 
+- Implement CI and testing using GitHub Actions. This is for [#23](https://github.com/ibpsa/project1-boptest-gym/issues/23). 
+
 ## BOPTEST-Gym v0.4.0
 
 Released on 17/07/2023.
