@@ -759,12 +759,10 @@ class BoptestGymEnv(gym.Env):
                 observations.extend(list(res_var_reindexed))
 
         # Get predictions if this is a predictive agent. 
-        # 0.1 is added to avoid the following error when self.predictive_period=0
-        # 'Invalid value 0.0 for parameter horizon. Value must be positive.'
         if self.is_predictive:
             predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
                                        data={'point_names': self.predictive_vars,
-                                             'horizon':     self.predictive_period+0.1,
+                                             'horizon':     self.predictive_period,
                                              'interval':    self.step_period}).json()['payload']
             for var in self.predictive_vars:
                 for i in range(self.pred_n):

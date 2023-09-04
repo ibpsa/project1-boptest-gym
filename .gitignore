@@ -9,3 +9,5 @@ examples/agents/variable_episode_A2C/monitor.csv
 *.pdf
 *.prefs
 examples/kpis/
+*testing/boptest.zip
+*testing/project1-boptest*
