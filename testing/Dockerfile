@@ -1,42 +1,37 @@
-# Start with a base Ubuntu image
-FROM ubuntu:20.04
-# This is the Focal Fossa ubuntu version
-MAINTAINER Javier Arroyo <javier.arroyo@kuleuven.be>
+FROM michaelwetter/ubuntu-1804_jmodelica_trunk
 
-# Avoid warnings while installing ubuntu
-# debconf: unable to initialize frontend: Dialog
-# debconf: (TERM is not set, so the dialog frontend is not usable.)
-RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+USER root
 
-# Install packages
-RUN apt update && \
-    apt install -y \
-    git \
-    python3.9 \
-    python3-pip  && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y git && \
+    apt-get install -y sudo
 
-# Install dependencies
-# Gym dependency and shimmy can be removed after retraining missing agents:
-# A2C_simple, A2C_A, A2C_B
-RUN pip install \
-    gymnasium==0.28.1 \
-    stable-baselines3==2.0.0 \
-    numpy==1.24.4 \
-    pandas==2.0.3 \
-    requests \
-    scipy \
-    nbconvert==7.7.3 \
-    gym \
-    shimmy \
-    ipykernel==6.25.1
-
-# Add developer user with permissions in the working directory
-RUN useradd -ms /bin/bash developer
-ENV HOME /home/developer
-RUN mkdir -m 1777 ${HOME}/boptestgym
-ENV PYTHONPATH ${HOME}/boptestgym
-
-# Activate developer
 USER developer
 
+ENV ROOT_DIR /usr/local
+
+WORKDIR $HOME
+
+RUN mkdir $HOME/MODELICAPATH && mkdir git && \
+    cd git && \
+    git clone https://github.com/ibpsa/modelica-ibpsa.git && cd modelica-ibpsa && git checkout a8b77f6d2820c52a63cd5964db6db9913a5f669d && cd .. && \
+    git clone https://github.com/open-ideas/IDEAS.git && \
+    git clone https://github.com/lbl-srg/modelica-buildings.git && \
+    ln -s $HOME/git/IDEAS/IDEAS $HOME/MODELICAPATH/IDEAS && \
+    ln -s $HOME/git/modelica-buildings/Buildings $HOME/MODELICAPATH/Buildings && \
+    ln -s $HOME/git/modelica-ibpsa/IBPSA $HOME/MODELICAPATH/IBPSA && \
+    ln -s $ROOT_DIR/JModelica/ThirdParty/MSL/Modelica $HOME/MODELICAPATH/Modelica && \
+    ln -s $ROOT_DIR/JModelica/ThirdParty/MSL/ModelicaServices $HOME/MODELICAPATH/ModelicaServices && \
+    ln -s $ROOT_DIR/JModelica/ThirdParty/MSL/Complex.mo $HOME/MODELICAPATH/Complex.mo
+ENV MODELICAPATH $HOME/MODELICAPATH
+
+RUN python -m pip install --user flask-restful==0.3.9 pandas==0.24.2 requests==2.18.4
+
+WORKDIR $ROOT_DIR
+
+ENV JMODELICA_HOME $ROOT_DIR/JModelica
+ENV IPOPT_HOME $ROOT_DIR/Ipopt-3.12.4
+ENV SUNDIALS_HOME $JMODELICA_HOME/ThirdParty/Sundials
+ENV SEPARATE_PROCESS_JVM /usr/lib/jvm/java-8-openjdk-amd64/
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+ENV PYTHONPATH $PYTHONPATH:$JMODELICA_HOME/Python:$JMODELICA_HOME/Python/pymodelica:/usr/local/testing
