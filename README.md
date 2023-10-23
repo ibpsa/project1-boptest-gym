@@ -75,6 +75,27 @@ Running BOPTEST locally is substantially faster
 2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
 3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
 
+## Parallel-Start (running BOPTEST locally)
+
+To facilitate the training and testing process, we provide scripts that automates the deployment of multiple BOPTEST instances using Docker Compose. The deployment dynamically checks for available ports, generates a Docker Compose YAML file, and takes care of naming conflicts to ensure smooth deployment.
+
+### Usage
+
+1. Specify the BOPTEST root directory either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `generateDockerComposeYml.py`. The script prioritizes the command-line argument if provided.
+
+Example using command-line argument:
+
+```bash
+python generateDockerComposeYml.py absolute_boptest_root_dir
+```
+
+2. Train the BOPTEST-gym environment in parallel either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `parallel_BOPTESTgymTrain.py`. The script prioritizes the command-line argument if provided.
+
+Example using command-line argument:
+
+```bash
+python parallel_BOPTESTgymTrain.py absolute_boptest_root_dir
+```
 
 ## Citing the project
 
