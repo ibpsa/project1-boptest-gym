@@ -77,11 +77,11 @@ Running BOPTEST locally is substantially faster
 
 ## Parallel-Start (running BOPTEST locally)
 
-To facilitate the training and testing process, we provide scripts that automates the deployment of multiple BOPTEST instances using Docker Compose. The deployment dynamically checks for available ports, generates a Docker Compose YAML file, and takes care of naming conflicts to ensure smooth deployment.
+To facilitate the training and testing process, we provide scripts that automate the deployment of multiple BOPTEST instances using Docker Compose and then train the BOPTEST-gym environment in parallel. The deployment dynamically checks for available ports, generates a Docker Compose YAML file, and takes care of naming conflicts to ensure smooth deployment.
 
 ### Usage
 
-1. Specify the BOPTEST root directory either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `generateDockerComposeYml.py`. The script prioritizes the command-line argument if provided.
+1. Specify the BOPTEST root directory either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `generateDockerComposeYml.py`. The script prioritizes the command-line argument if provided. Users are allowed to change the Start Port number and Total Services as needed.
 
 Example using command-line argument:
 
@@ -89,7 +89,7 @@ Example using command-line argument:
 python generateDockerComposeYml.py absolute_boptest_root_dir
 ```
 
-2. Train the BOPTEST-gym environment in parallel either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `parallel_BOPTESTgymTrain.py`. The script prioritizes the command-line argument if provided.
+2. Train the BOPTEST-gym environment in parallel either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `parallel_BOPTESTgymTrain.py`. The script prioritizes the command-line argument if provided. Users are allowed to change the initial conditions, algorithms and hyperparameters.
 
 Example using command-line argument:
 
