@@ -537,10 +537,10 @@ class BoptestGymEnv(gym.Env):
         # Assign values to inputs if any
         for i, act in enumerate(self.actions):
             # Assign value
-            u[act] = action[i]
+            u[act] = float(action[i])
             
             # Indicate that the input is active
-            u[act.replace('_u','_activate')] = 1.
+            u[act.replace('_u','_activate')] = float(1)
                 
         # Advance a BOPTEST simulation
         res = requests.post('{0}/advance'.format(self.url), json=u).json()['payload']
