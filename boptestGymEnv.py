@@ -483,14 +483,14 @@ class BoptestGymEnv(gym.Env):
         
         # Initialize the building simulation
         res = requests.put('{0}/initialize/{1}'.format(self.url,self.testid),
-                           data={'start_time':self.start_time,
+                           json={'start_time':self.start_time,
                                  'warmup_period':self.warmup_period}).json()['payload']
         
         # Set simulation step
-        requests.put('{0}/step/{1}'.format(self.url,self.testid), data={'step':self.step_period})
+        requests.put('{0}/step/{1}'.format(self.url,self.testid), json={'step':self.step_period})
         
         # Set BOPTEST scenario
-        requests.put('{0}/scenario/{1}'.format(self.url,self.testid), data=self.scenario)
+        requests.put('{0}/scenario/{1}'.format(self.url,self.testid), json=self.scenario)
         
         # Initialize objective integrand
         self.objective_integrand = 0.
@@ -565,13 +565,13 @@ class BoptestGymEnv(gym.Env):
         # Assign values to inputs if any
         for i, act in enumerate(self.actions):
             # Assign value
-            u[act] = action[i]
+            u[act] = float(action[i])
             
             # Indicate that the input is active
-            u[act.replace('_u','_activate')] = 1.
+            u[act.replace('_u','_activate')] = float(1)
                 
         # Advance a BOPTEST simulation
-        res = requests.post('{0}/advance/{1}'.format(self.url,self.testid), data=u).json()['payload']
+        res = requests.post('{0}/advance/{1}'.format(self.url,self.testid), json=u).json()['payload']
         
         # Compute reward of this (state-action-state') tuple
         reward = self.get_reward()
@@ -745,7 +745,7 @@ class BoptestGymEnv(gym.Env):
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
                 res_var = requests.put('{0}/results/{1}'.format(self.url, self.testid), 
-                                       data={'point_names':[var],
+                                       json={'point_names':[var],
                                              'start_time':regr_index[-1], 
                                              'final_time':regr_index[0]}).json()['payload']
                 # fill_value='extrapolate' is needed for the very few cases when
@@ -761,7 +761,7 @@ class BoptestGymEnv(gym.Env):
         # Get predictions if this is a predictive agent. 
         if self.is_predictive:
             predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
-                                       data={'point_names': self.predictive_vars,
+                                       json={'point_names': self.predictive_vars,
                                              'horizon':     self.predictive_period,
                                              'interval':    self.step_period}).json()['payload']
             for var in self.predictive_vars:

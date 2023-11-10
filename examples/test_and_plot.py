@@ -82,7 +82,7 @@ def plot_results(env, rewards, points=['reaTZon_y','reaTSetHea_y','reaTSetCoo_y'
     # point from the initialization period to don't confuse it with 
     # actions taken by the agent in a previous episode. 
     res = requests.put('{0}/results/{1}'.format(env.url, env.testid), 
-                        data={'point_names':points,
+                        json={'point_names':points,
                               'start_time':env.start_time+1, 
                               'final_time':3.1536e7}).json()['payload']
 
