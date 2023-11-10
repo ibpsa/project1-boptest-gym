@@ -2,10 +2,11 @@
 
 BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simplicity, the first two digits of the version number match the same two digits of the BOPTEST version of which BOPTEST-Gym is compatible with. For example, BOPTEST-Gym v0.3.x is compatible with BOPTEST v0.3.x. The last digit is reserved for other internal edits specific to this repository only. See [here](https://github.com/ibpsa/project1-boptest/blob/master/releasenotes.md) for BOPTEST release notes. 
 
-## BOPTEST-Gym v0.4.0-dev
+## BOPTEST-Gym v0.5.0
 
-Released on xx/xx/xxxx.
+Released on 10/11/2023.
 
+- Update for `BOPTEST v0.5.0`. This is for [#135](https://github.com/ibpsa/project1-boptest-gym/pull/136).  
 - Remove arbitrarily small offset when requesting forecasts. This is for [#127](https://github.com/ibpsa/project1-boptest-gym/issues/127). 
 - Implement CI and testing using GitHub Actions. This is for [#23](https://github.com/ibpsa/project1-boptest-gym/issues/23). 
 
