@@ -6,6 +6,9 @@ ROOT ?= $(shell dirname \
 IMG_NAME=boptestgym
 IMG_HOME=/home/developer/boptestgym
 
+# Name of remote registry image
+IMG_REGI=javierarroyo/boptestgym
+
 # BOPTEST commit used for the tests
 BOPTEST_COMMIT=1fd96639518853c1ddc41355a8f9e29edce3242d
 
