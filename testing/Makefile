@@ -65,11 +65,19 @@ pull-boptestgym:
 	docker pull ${IMG_REGI}:${VERSION}
 	docker tag ${IMG_REGI}:${VERSION} ${IMG_NAME}
 
-run-boptest-case:
+make download-doptest:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
 	unzip -o -q boptest.zip
+	
+run-boptest-case:
+	make download-doptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --quiet-pull
+
+run-boptest-case-no-cache:
+	make download-doptest
+	cd project1-boptest-${BOPTEST_COMMIT} && \
+	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --force-recreate --build
 
 stop-boptest-case:
 	cd project1-boptest-${BOPTEST_COMMIT} && docker-compose down
