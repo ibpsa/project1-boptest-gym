@@ -483,11 +483,11 @@ class BoptestGymEnv(gym.Env):
         
         # Initialize the building simulation
         res = requests.put('{0}/initialize/{1}'.format(self.url,self.testid),
-                           json={'start_time':self.start_time,
-                                 'warmup_period':self.warmup_period}).json()['payload']
+                           json={'start_time':int(self.start_time),
+                                 'warmup_period':int(self.warmup_period)}).json()['payload']
         
         # Set simulation step
-        requests.put('{0}/step/{1}'.format(self.url,self.testid), json={'step':self.step_period})
+        requests.put('{0}/step/{1}'.format(self.url,self.testid), json={'step':int(self.step_period)})
         
         # Set BOPTEST scenario
         requests.put('{0}/scenario/{1}'.format(self.url,self.testid), json=self.scenario)
@@ -746,8 +746,8 @@ class BoptestGymEnv(gym.Env):
             for var in self.regressive_vars:
                 res_var = requests.put('{0}/results/{1}'.format(self.url, self.testid), 
                                        json={'point_names':[var],
-                                             'start_time':regr_index[-1], 
-                                             'final_time':regr_index[0]}).json()['payload']
+                                             'start_time':int(regr_index[-1]), 
+                                             'final_time':int(regr_index[0])}).json()['payload']
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -762,8 +762,8 @@ class BoptestGymEnv(gym.Env):
         if self.is_predictive:
             predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
                                        json={'point_names': self.predictive_vars,
-                                             'horizon':     self.predictive_period,
-                                             'interval':    self.step_period}).json()['payload']
+                                             'horizon':     int(self.predictive_period),
+                                             'interval':    int(self.step_period)}).json()['payload']
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])
