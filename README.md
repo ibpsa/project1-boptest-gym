@@ -75,6 +75,12 @@ Running BOPTEST locally is substantially faster
 2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
 3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
 
+## Versioning and main dependencies
+
+Current BOPTEST-Gym version is `v0.5.0` which is compatible with BOPTEST `v0.5.0` 
+(BOPTEST-Gym version should always be even with the BOPTEST version used). 
+The framework has been tested with `gymnasium==0.28.1` and `stable-baselines3==2.0.0`.
+You can see [testing/Dockerfile](testing/Dockerfile) for a full description of the testing environment. 
 
 ## Citing the project
 
@@ -91,6 +97,3 @@ Please use the following reference if you used this repository for your research
 }
 
 ```
-
-
-
