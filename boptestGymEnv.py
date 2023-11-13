@@ -471,14 +471,14 @@ class BoptestGymEnv(gym.Env):
         
         # Initialize the building simulation
         res = requests.put('{0}/initialize'.format(self.url), 
-                           data={'start_time':self.start_time,
-                                 'warmup_period':self.warmup_period}).json()['payload']
+                           json={'start_time':int(self.start_time),
+                                 'warmup_period':int(self.warmup_period)}).json()['payload']
         
         # Set simulation step
-        requests.put('{0}/step'.format(self.url), data={'step':self.step_period})
+        requests.put('{0}/step'.format(self.url), json={'step':int(self.step_period)})
         
         # Set BOPTEST scenario
-        requests.put('{0}/scenario'.format(self.url), data=self.scenario)
+        requests.put('{0}/scenario'.format(self.url), json=self.scenario)
         
         # Initialize objective integrand
         self.objective_integrand = 0.
@@ -537,13 +537,13 @@ class BoptestGymEnv(gym.Env):
         # Assign values to inputs if any
         for i, act in enumerate(self.actions):
             # Assign value
-            u[act] = action[i]
+            u[act] = float(action[i])
             
             # Indicate that the input is active
-            u[act.replace('_u','_activate')] = 1.
+            u[act.replace('_u','_activate')] = float(1)
                 
         # Advance a BOPTEST simulation
-        res = requests.post('{0}/advance'.format(self.url), data=u).json()['payload']
+        res = requests.post('{0}/advance'.format(self.url), json=u).json()['payload']
         
         # Compute reward of this (state-action-state') tuple
         reward = self.get_reward()
@@ -717,9 +717,9 @@ class BoptestGymEnv(gym.Env):
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
                 res_var = requests.put('{0}/results'.format(self.url), 
-                                       data={'point_names':[var],
-                                             'start_time':regr_index[-1], 
-                                             'final_time':regr_index[0]}).json()['payload']
+                                       json={'point_names':[var],
+                                             'start_time':int(regr_index[-1]), 
+                                             'final_time':int(regr_index[0])}).json()['payload']
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -733,9 +733,9 @@ class BoptestGymEnv(gym.Env):
         # Get predictions if this is a predictive agent. 
         if self.is_predictive:
             predictions = requests.put('{0}/forecast'.format(self.url), 
-                                       data={'point_names': self.predictive_vars,
-                                             'horizon':     self.predictive_period,
-                                             'interval':    self.step_period}).json()['payload']
+                                       json={'point_names': self.predictive_vars,
+                                             'horizon':     int(self.predictive_period),
+                                             'interval':    int(self.step_period)}).json()['payload']
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])

@@ -6,8 +6,14 @@ ROOT ?= $(shell dirname \
 IMG_NAME=boptestgym
 IMG_HOME=/home/developer/boptestgym
 
+# Name of remote registry image
+IMG_REGI=javierarroyo/boptestgym
+
 # BOPTEST commit used for the tests
-BOPTEST_COMMIT=1fd96639518853c1ddc41355a8f9e29edce3242d
+BOPTEST_COMMIT=12ceafe42983d42e535385dee1daa1d25673e2aa
+
+# Define current BOPTEST-Gym version (should be even with BOPTEST version defined in commit above)
+VERSION = 0.5.0
 
 build-boptestgym:
 	docker build -f ${ROOT}/testing/Dockerfile \
@@ -52,18 +58,26 @@ exec-boptestgym:
 
 push-boptestgym:
 # requires `docker login` first
-	docker tag boptestgym javierarroyo/boptestgym
-	docker push javierarroyo/boptestgym
+	docker tag ${IMG_NAME} ${IMG_REGI}:${VERSION}
+	docker push ${IMG_REGI}:${VERSION}
 
 pull-boptestgym:
-	docker pull javierarroyo/boptestgym 
-	docker tag javierarroyo/boptestgym boptestgym
+	docker pull ${IMG_REGI}:${VERSION}
+	docker tag ${IMG_REGI}:${VERSION} ${IMG_NAME}
 
-run-boptest-case:
+make download-doptest:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
 	unzip -o -q boptest.zip
+	
+run-boptest-case:
+	make download-doptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --quiet-pull
+
+run-boptest-case-no-cache:
+	make download-doptest
+	cd project1-boptest-${BOPTEST_COMMIT} && \
+	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --force-recreate --build
 
 stop-boptest-case:
 	cd project1-boptest-${BOPTEST_COMMIT} && docker-compose down
