@@ -91,7 +91,7 @@ if __name__ == '__main__':
         model = DQN('MlpPolicy', vec_env, verbose=1, gamma=0.99, learning_rate=5e-4,
                     batch_size=24, seed=123456, buffer_size=365 * 24,
                     learning_starts=24, train_freq=1, exploration_initial_eps=1.0,
-                    exploration_final_eps=0.01, exploration_fraction=0.1, tensorboard_log=log_dir, device=device)
+                    exploration_final_eps=0.01, exploration_fraction=0.1, device=device)
         # Main training loop
         model.learn(total_timesteps=500000, callback=eval_callback)
     else:
