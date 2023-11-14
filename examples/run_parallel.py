@@ -90,8 +90,12 @@ if __name__ == '__main__':
         # Modify the environment to include the callback
         vec_env = VecMonitor(venv=vec_env, filename=os.path.join(log_dir,'monitor.csv'))
                 
-        # Create the callback: check every 100 steps. We keep it very short for testing 
-        eval_callback = EvalCallback(vec_env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=100)
+        # Create the callback: evaluate with one episode after 100 steps for training. We keep it very short for testing.
+        # When using multiple environments, each call to ``env.step()`` will effectively correspond to ``n_envs`` steps. 
+        # To account for that, you can use ``eval_freq = eval_freq/len(envs)``
+        eval_freq = 100
+        eval_callback = EvalCallback(vec_env, best_model_save_path=log_dir, log_path=log_dir, 
+                                     eval_freq=int(eval_freq/len(envs)), n_eval_episodes=1, deterministic=True)
 
         # Try to find CUDA core since it's optimized for parallel computing tasks
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -107,7 +111,7 @@ if __name__ == '__main__':
         model.set_logger(new_logger)
 
         # Main training loop
-        model.learn(total_timesteps=500, callback=eval_callback)
+        model.learn(total_timesteps=100, callback=eval_callback)
     else:
         print("No URLs found. Please check your docker-compose.yml file.")
 
