@@ -17,16 +17,7 @@ seed = 123456
 # Seed for random starting times of episodes
 random.seed(seed)
 
-boptest_root = "./"  # You can define boptest_root_dir here when use IDLE
-
-# Get the argument from command line when use Linux
-if len(sys.argv) >= 2:
-    boptest_root_dir = sys.argv[1]
-else:
-    boptest_root_dir = boptest_root
-
-
-def generate_urls_from_yml(boptest_root_dir=boptest_root_dir):
+def generate_urls_from_yml(boptest_root_dir):
     '''Method that returns as many urls for BOPTEST-Gym environments 
     as those specified at the BOPTEST `docker-compose.yml` file. 
     It assumes that `generateDockerComposeYml.py` has been called first. 
@@ -67,8 +58,9 @@ def generate_urls_from_yml(boptest_root_dir=boptest_root_dir):
     
     return urls
 
-# Create a function to initialize the environment
 def make_env(url):
+    ''' Function that instantiates the environment. 
+    '''
     def _init():
         env = BoptestGymEnv(
             url=url,
@@ -99,35 +91,26 @@ def make_env(url):
 
     return _init
 
-
-if __name__ == '__main__':
-    # Use URLs obtained from docker-compose.yml
-    urls = generate_urls_from_yml(boptest_root_dir)
-
-    envs = [make_env(url) for url in urls]
-
-    # Create a parallel environment using SubprocVecEnv
-    vec_env = SubprocVecEnv(envs)
-
+def train_DQN_vectorized(venv):
     # Define logging directory. Monitoring data and agent model will be stored here
     log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')
     os.makedirs(log_dir, exist_ok=True)
 
     # Modify the environment to include the callback
-    vec_env = VecMonitor(venv=vec_env, filename=os.path.join(log_dir,'monitor.csv'))
+    venv = VecMonitor(venv=venv, filename=os.path.join(log_dir,'monitor.csv'))
             
     # Create the callback: evaluate with one episode after 100 steps for training. We keep it very short for testing.
     # When using multiple environments, each call to ``env.step()`` will effectively correspond to ``n_envs`` steps. 
     # To account for that, you can use ``eval_freq = eval_freq/len(envs)``
     eval_freq = 100
-    eval_callback = EvalCallback(vec_env, best_model_save_path=log_dir, log_path=log_dir, 
-                                    eval_freq=int(eval_freq/len(envs)), n_eval_episodes=1, deterministic=True)
+    eval_callback = EvalCallback(venv, best_model_save_path=log_dir, log_path=log_dir, 
+                                 eval_freq=int(eval_freq/len(envs)), n_eval_episodes=1, deterministic=True)
 
     # Try to find CUDA core since it's optimized for parallel computing tasks
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Instantiate an RL agent with DQN
-    model = DQN('MlpPolicy', vec_env, verbose=1, gamma=0.99, learning_rate=5e-4,
+    model = DQN('MlpPolicy', venv, verbose=1, gamma=0.99, learning_rate=5e-4,
                 batch_size=24, seed=123456, buffer_size=365 * 24,
                 learning_starts=24, train_freq=1, exploration_initial_eps=1.0,
                 exploration_final_eps=0.01, exploration_fraction=0.1, device=device)
@@ -138,6 +121,28 @@ if __name__ == '__main__':
 
     # Main training loop
     model.learn(total_timesteps=100, callback=eval_callback)
+
+if __name__ == '__main__':
+
+    boptest_root = "./"
+
+    # Get the argument from command line when use Linux
+    if len(sys.argv) >= 2:
+        boptest_root_dir = sys.argv[1]
+    else:
+        boptest_root_dir = boptest_root
+
+    # Use URLs obtained from docker-compose.yml
+    urls = generate_urls_from_yml(boptest_root_dir=boptest_root_dir)
+
+    # Create BOPTEST-Gym environment replicas
+    envs = [make_env(url) for url in urls]
+    
+    # Create a vectorized environment using SubprocVecEnv
+    venv = SubprocVecEnv(envs)
+    
+    # Train vectorized environment
+    train_DQN_vectorized(venv)
 
 
 
