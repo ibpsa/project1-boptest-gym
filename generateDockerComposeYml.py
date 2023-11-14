@@ -13,7 +13,7 @@ if len(sys.argv) >= 2:
 else:
     boptest_root_dir = boptest_root
 
-num_services = 15  # Total Services needed
+num_services = 2  # Total Services needed
 base_port = 5000  # Start Port number
 
 
