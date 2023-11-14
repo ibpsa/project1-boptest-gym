@@ -3,10 +3,13 @@ import sys
 import yaml
 import torch
 
+from testing import utilities
 from stable_baselines3 import DQN
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3.common.callbacks import EvalCallback
-from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
+from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
+from stable_baselines3.common.logger import configure
+from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper, SaveAndTestCallback
 
 
 boptest_root = "./"  # You can define boptest_root_dir here when use IDLE
@@ -38,7 +41,6 @@ with open(docker_compose_loc, 'r') as stream:
 
     except yaml.YAMLError as exc:
         print(exc)
-
 
 # Create a function to initialize the environment
 def make_env(url):
@@ -81,10 +83,17 @@ if __name__ == '__main__':
         # Create a parallel environment using SubprocVecEnv
         vec_env = SubprocVecEnv(envs)
 
-        # Example: Create a DQN model
-        log_dir = "./vec_dqn_log/"
-        eval_callback = EvalCallback(vec_env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=5000)
+        # Define logging directory. Monitoring data and agent model will be stored here
+        log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_parallel')
+        os.makedirs(log_dir, exist_ok=True)
+    
+        # Modify the environment to include the callback
+        vec_env = VecMonitor(venv=vec_env, filename=os.path.join(log_dir,'monitor.csv'))
+                
+        # Create the callback: check every 100 steps. We keep it very short for testing 
+        eval_callback = EvalCallback(vec_env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=100)
 
+        # Try to find CUDA core since it's optimized for parallel computing tasks
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         # Instantiate an RL agent with DQN
@@ -92,8 +101,13 @@ if __name__ == '__main__':
                     batch_size=24, seed=123456, buffer_size=365 * 24,
                     learning_starts=24, train_freq=1, exploration_initial_eps=1.0,
                     exploration_final_eps=0.01, exploration_fraction=0.1, device=device)
+        
+        # set up logger
+        new_logger = configure(log_dir, ['csv'])
+        model.set_logger(new_logger)
+
         # Main training loop
-        model.learn(total_timesteps=500000, callback=eval_callback)
+        model.learn(total_timesteps=500, callback=eval_callback)
     else:
         print("No URLs found. Please check your docker-compose.yml file.")
 
