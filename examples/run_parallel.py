@@ -2,6 +2,7 @@ import os
 import sys
 import yaml
 import torch
+import random
 
 from testing import utilities
 from stable_baselines3 import DQN
@@ -11,6 +12,10 @@ from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 from stable_baselines3.common.logger import configure
 from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper, SaveAndTestCallback
 
+seed = 123456
+
+# Seed for random starting times of episodes
+random.seed(seed)
 
 boptest_root = "./"  # You can define boptest_root_dir here when use IDLE
 
