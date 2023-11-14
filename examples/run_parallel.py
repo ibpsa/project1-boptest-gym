@@ -68,7 +68,7 @@ def make_env(url):
             regressive_period=6 * 3600,
             random_start_time=True,
             excluding_periods=[(16 * 24 * 3600, 30 * 24 * 3600), (108 * 24 * 3600, 122 * 24 * 3600)],
-            max_episode_length=14 * 24 * 3600,
+            max_episode_length=24 * 3600,
             warmup_period=24 * 3600,
             step_period=15 * 60
         )
