@@ -91,9 +91,18 @@ def make_env(url):
 
     return _init
 
-def train_DQN_vectorized(venv):
-    # Define logging directory. Monitoring data and agent model will be stored here
-    log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')
+def train_DQN_vectorized(venv, 
+                         log_dir=os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')):
+    '''Method to train DQN agent using vectorized environment. 
+
+    Parameters
+    ----------
+    venv: stable_baselines3.common.vec_env.SubprocVecEnv
+        vectorized environment to be learned. 
+
+    '''
+
+    # Create logging directory if not exists. Monitoring data and agent model will be stored here
     os.makedirs(log_dir, exist_ok=True)
 
     # Modify the environment to include the callback
@@ -101,10 +110,10 @@ def train_DQN_vectorized(venv):
             
     # Create the callback: evaluate with one episode after 100 steps for training. We keep it very short for testing.
     # When using multiple environments, each call to ``env.step()`` will effectively correspond to ``n_envs`` steps. 
-    # To account for that, you can use ``eval_freq = eval_freq/len(envs)``
+    # To account for that, you can use ``eval_freq = eval_freq/venv.num_envs``
     eval_freq = 100
     eval_callback = EvalCallback(venv, best_model_save_path=log_dir, log_path=log_dir, 
-                                 eval_freq=int(eval_freq/len(envs)), n_eval_episodes=1, deterministic=True)
+                                 eval_freq=int(eval_freq/venv.num_envs), n_eval_episodes=1, deterministic=True)
 
     # Try to find CUDA core since it's optimized for parallel computing tasks
     device = 'cuda' if torch.cuda.is_available() else 'cpu'

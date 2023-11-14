@@ -12,11 +12,12 @@ import random
 import shutil
 from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
-    run_variable_episode, train_RL
+    run_variable_episode, run_vectorized, train_RL
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines3.common.env_checker import check_env
-from stable_baselines3 import A2C
+from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3 import A2C, DQN
 
 url = 'http://127.0.0.1:5000'
 
@@ -382,6 +383,48 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         # Remove model to prove further testing
         shutil.rmtree(log_dir, ignore_errors=True)
+    
+    def test_vectorized(self, boptest_root = "./"):
+        '''
+        Instantiates a vectorized environment with two BOPTEST-Gym environment replicas
+        and learns from them when running in parallel using DQN for 100 timesteps.
+        It assumes that `generateDockerComposeYml.py` is called first using
+        `num_services=2` and `TESTCASE=bestest_hydronic_heat_pump docker-compose up` 
+        is invoked after to initialize the two BOPTEST test cases. 
+        Note that this test is also using the `EvalCallback` class from 
+        `stable_baselines3.common.callbacks` instead of the
+        `boptestGymEnv.SaveAndTestCallback` that we typically use because 
+        the former was more convenient for use with vectorized environments. 
+
+        '''
+        # Define logging directory. Monitoring data and agent model will be stored here
+        log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')
+
+        # Use URLs obtained from docker-compose.yml
+        urls = run_vectorized.generate_urls_from_yml(boptest_root_dir=boptest_root)
+
+        # Create BOPTEST-Gym environment replicas
+        envs = [run_vectorized.make_env(url) for url in urls]
+        
+        # Create a vectorized environment using SubprocVecEnv
+        venv = SubprocVecEnv(envs)
+        
+        # Perform a short training example with parallel learning
+        run_vectorized.train_DQN_vectorized(venv, log_dir=log_dir)  
+        
+        # Load the trained agent
+        model = DQN.load(os.path.join(log_dir, 'best_model'))
+        
+        # Test one step with the trained model
+        obs = venv.reset()[0]
+        df = pd.DataFrame([model.predict(obs)[0]], columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath    = os.path.join(utilities.get_root_path(), 
+                            'testing', 'references', 'vectorized_training.csv')
+        self.compare_ref_values_df(df, ref_filepath)
+        
+        # Remove model to prove further testing
+        shutil.rmtree(log_dir, ignore_errors=True)     
         
     def check_obs_act_rew_kpi(self, obs=None, act=None, rew=None, kpi=None,
                               label='default'):
