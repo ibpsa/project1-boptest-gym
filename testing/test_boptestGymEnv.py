@@ -397,14 +397,16 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         the former was more convenient for use with vectorized environments. 
 
         '''
+
         # Define logging directory. Monitoring data and agent model will be stored here
         log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')
 
         # Use URLs obtained from docker-compose.yml
         urls = run_vectorized.generate_urls_from_yml(boptest_root_dir=boptest_root)
 
-        # Create BOPTEST-Gym environment replicas
-        envs = [run_vectorized.make_env(url) for url in urls]
+        # Create BOPTEST-Gym environment replicas, each with its own random seed
+        seed = 123456
+        envs = [run_vectorized.make_env(url,seed+idx) for idx,url in enumerate(urls)]
         
         # Create a vectorized environment using SubprocVecEnv
         venv = SubprocVecEnv(envs)
