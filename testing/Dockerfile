@@ -29,7 +29,8 @@ RUN pip install \
     nbconvert==7.7.3 \
     gym \
     shimmy \
-    ipykernel==6.25.1
+    ipykernel==6.25.1 \
+    PyYAML
 
 # Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer
