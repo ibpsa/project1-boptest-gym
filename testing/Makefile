@@ -79,6 +79,12 @@ run-boptest-case-no-cache:
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --force-recreate --build
 
+run-boptest-vectorized:
+	make download-boptest && \
+	cd .. && python3 generateDockerComposeYml.py testing/project1-boptest-${BOPTEST_COMMIT} && \
+	cd testing/project1-boptest-${BOPTEST_COMMIT} && \
+	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --quiet-pull
+
 stop-boptest-case:
 	cd project1-boptest-${BOPTEST_COMMIT} && docker-compose down
 
@@ -91,6 +97,10 @@ cleanup-boptest:
 test-local:
 	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest
 
+# Vectorized needs to run separate since modifies docker-compose.yml to have multiple boptest instances 
+test-vectorized:
+	python3 -m unittest test_boptestGymEnv.BoptestGymVecTest project1-boptest-${BOPTEST_COMMIT}
+
 # The tutorial is using boptest-gym-service and covers most of the functionality of boptest-gym 
 test-service:
 	python3 -m unittest test_boptestGymEnv.BoptestGymServiceTest
@@ -99,6 +109,14 @@ test-local-in-container:
 	make run-boptest-case
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-local"
+	make stop-boptestgym
+	make stop-boptest-case
+	make cleanup-boptest
+
+test-vectorized-in-container:
+	make run-boptest-vectorized
+	make run-boptestgym-detached
+	make exec-boptestgym ARGS="make test-vectorized"
 	make stop-boptestgym
 	make stop-boptest-case
 	make cleanup-boptest
