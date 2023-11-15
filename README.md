@@ -75,9 +75,10 @@ Running BOPTEST locally is substantially faster
 2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
 3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
 
-## Quick-Start (running BOPTEST locally with parallel training)
+## Quick-Start (running BOPTEST locally in a vectorized environment)
 
-To facilitate the training and testing process, we provide scripts that automate the deployment of multiple BOPTEST instances using Docker Compose and then train the BOPTEST-gym environment in parallel. The deployment dynamically checks for available ports, generates a Docker Compose YAML file, and takes care of naming conflicts to ensure smooth deployment.
+To facilitate the training and testing process, we provide scripts that automate the deployment of multiple BOPTEST instances using Docker Compose and then train an RL agent with a vectorized BOPTEST-gym environment. The deployment dynamically checks for available ports, generates a Docker Compose YAML file, and takes care of naming conflicts to ensure smooth deployment.
+Running a vectorized environment allows you to deploy as many BoptestGymEnv instances as cores you have available for the agent to learn from all of them in parallel (see [here](https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html) for more information, we specifically use [`SubprocVecEnv`](https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html#subprocvecenv)). This substantially speeds up the training process. 
 
 ### Usage
 
@@ -89,13 +90,7 @@ Example using command-line argument:
 python generateDockerComposeYml.py absolute_boptest_root_dir
 ```
 
-2. Train the BOPTEST-gym environment in parallel either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `parallel_BOPTESTgymTrain.py`. The script prioritizes the command-line argument if provided. Users are allowed to change the initial conditions, algorithms and hyperparameters.
-
-Example using command-line argument:
-
-```bash
-python parallel_BOPTESTgymTrain.py absolute_boptest_root_dir
-```
+2. Train an RL agent with parallel learning with the vectorized BOPTEST-gym environment. See `/examples/run_vectorized.py` for an example on how to do so. 
 
 ## Versioning and main dependencies
 
