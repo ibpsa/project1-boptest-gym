@@ -21,7 +21,7 @@ build-boptestgym:
 
 build-boptestgym-no-cache:
 	docker build -f ${ROOT}/testing/Dockerfile \
-		--progress=plain --no-cache --rm -t ${IMG_NAME}
+		--progress=plain --no-cache --rm -t ${IMG_NAME} .
 	
 run-boptestgym:
 	docker run \
