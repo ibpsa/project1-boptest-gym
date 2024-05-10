@@ -435,7 +435,8 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         the terminal when invoking this test. 
         '''
         
-        boptest_root = "./"
+        # Take parent directory as default
+        boptest_root = os.path.dirname(os.path.abspath(__file__))
 
         # Get the argument from command line when use Linux
         if len(sys.argv) >= 2:
