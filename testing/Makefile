@@ -13,7 +13,7 @@ IMG_REGI=javierarroyo/boptestgym
 BOPTEST_COMMIT=78665506a620fc07bc2a8f301661aef3dd6c88c2
 
 # Define current BOPTEST-Gym version (should be even with BOPTEST version defined in commit above)
-VERSION = 0.5.0-dev
+VERSION = 0.6.0
 
 build-boptestgym:
 	docker build -f ${ROOT}/testing/Dockerfile \
