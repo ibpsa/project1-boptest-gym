@@ -1,5 +1,5 @@
 # Start with a base Ubuntu image
-FROM ubuntu:20.04
+FROM --platform=linux/x86_64 ubuntu:20.04
 # This is the Focal Fossa ubuntu version
 MAINTAINER Javier Arroyo <javier.arroyo@kuleuven.be>
 
@@ -30,7 +30,8 @@ RUN pip install \
     gym \
     shimmy \
     ipykernel==6.25.1 \
-    PyYAML
+    PyYAML \
+    pytest
 
 # Add developer user with permissions in the working directory
 RUN useradd -ms /bin/bash developer

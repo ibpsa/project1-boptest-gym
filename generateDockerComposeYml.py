@@ -5,13 +5,15 @@ import yaml
 import sys
 
 
-boptest_root = "./"  # You can define boptest_root_dir here when use IDLE
 
-# Get the argument from command line when use Linux
 if len(sys.argv) >= 2:
-    boptest_root_dir = sys.argv[1]
+    # Check if there is an argument when calling the script defining the yaml target directory
+    # This is just convenient for dropping the generated script directly in the BOPTEST root directory,
+    # but if not provided it can be manually moved once it's generated
+    yaml_target_dir = sys.argv[1]
 else:
-    boptest_root_dir = boptest_root
+    # Otherwise use parent directory as default
+    yaml_target_dir = os.path.dirname(os.path.abspath(__file__))
 
 num_services = 2  # Total Services needed
 base_port = 5000  # Start Port number
@@ -69,10 +71,10 @@ docker_compose_content = {
 }
 
 # Check whether the docker-compose.yml file exists in the BOPTEST root directory
-docker_compose_path = os.path.join(boptest_root_dir, 'docker-compose.yml')
+docker_compose_path = os.path.join(yaml_target_dir, 'docker-compose.yml')
 if os.path.exists(docker_compose_path):
     # If it exists, rename to docker-compose_origin.yml
-    shutil.move(docker_compose_path, os.path.join(boptest_root_dir, 'docker-compose_origin.yml'))
+    shutil.move(docker_compose_path, os.path.join(yaml_target_dir, 'docker-compose_origin.yml'))
 
 # Create a new docker-compose.yml file in the BOPTEST root directory
 with open(docker_compose_path, "w") as file:
