@@ -2,10 +2,12 @@
 
 BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simplicity, the first two digits of the version number match the same two digits of the BOPTEST version of which BOPTEST-Gym is compatible with. For example, BOPTEST-Gym v0.3.x is compatible with BOPTEST v0.3.x. The last digit is reserved for other internal edits specific to this repository only. See [here](https://github.com/ibpsa/project1-boptest/blob/master/releasenotes.md) for BOPTEST release notes. 
 
-## BOPTEST-Gym v0.5.0-dev
+## BOPTEST-Gym v0.6.0
 
-Released on xx/xx/xxxx.
+Released on 10/05/2024.
 
+- Update CCAI tutorial for numeric results with new Python v3.10.
+- Pin Dockerfile image to linux/x86_64.
 - Implement functionality and example with vectorized environment for parallel learning. This is for [#133](https://github.com/ibpsa/project1-boptest-gym/issues/133). 
 
 ## BOPTEST-Gym v0.5.0
