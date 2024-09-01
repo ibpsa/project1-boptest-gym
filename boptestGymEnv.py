@@ -41,7 +41,6 @@ class BoptestGymEnv(gym.Env):
                  observations       = {'reaTZon_y':(280.,310.)}, 
                  reward             = ['reward'],
                  max_episode_length = 3*3600,
-                 random_start_time  = False,
                  excluding_periods  = None,
                  regressive_period  = None,
                  predictive_period  = None,
@@ -79,15 +78,13 @@ class BoptestGymEnv(gym.Env):
             buffer of data in case the algorithm is going to use pretraining
         max_episode_length: integer
             Maximum duration of each episode in seconds
-        random_start_time: boolean
-            Set to True if desired to use a random start time for each episode
         excluding_periods: list of tuples
             List where each element is a tuple indicating the start and 
             end time of the periods that should not overlap with any 
             episode used for training. Example:
             excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                                 (304*24*3600, 304*24*3600+14*24*3600)]
-            This is only used when `random_start_time=True`
+            This is only used when `start_time=None`
         regressive_period: integer, default is None
             Number of seconds for the regressive horizon. The observations
             will be extended for each of the measurement variables indicated
@@ -115,8 +112,8 @@ class BoptestGymEnv(gym.Env):
             ambient temperature. 
         start_time: integer
             Initial fixed episode time in seconds from beginning of the 
-            year for each episode. Use in combination with 
-            `random_start_time=False` 
+            year for each episode. For random start time, set 
+            `start_time=None` 
         warmup_period: integer
             Desired simulation period to initialize each episode 
         scenario: dictionary
