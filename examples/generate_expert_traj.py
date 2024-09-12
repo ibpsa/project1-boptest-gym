@@ -99,10 +99,8 @@ if __name__ == "__main__":
     start           = '2021-02-01 00:00:00'
     start_time      = (pd.Timestamp(start)-pd.Timestamp(start_year)).total_seconds()    
     if isinstance(env,Wrapper): 
-        env.unwrapped.random_start_time   = False
         env.unwrapped.start_time          = start_time
     else:
-        env.random_start_time   = False
         env.start_time          = start_time
     
     # Instantiate expert model. Distinguish between continuous or discrete

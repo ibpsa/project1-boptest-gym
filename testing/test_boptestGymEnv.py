@@ -36,7 +36,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
                                 observations        = {'reaTZon_y':(280.,310.)}, 
                                 reward              = ['reward'],
                                 max_episode_length  = 24*3600,
-                                random_start_time   = True,
                                 warmup_period       = 3600,
                                 step_period         = 900)
     
@@ -79,7 +78,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''
         
-        self.env.random_start_time  = False
         self.env.start_time         = 14*24*3600
         self.env.warmup_period      = 3*3600
         
@@ -98,7 +96,6 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         
         '''
         
-        self.env.random_start_time  = True
         self.env.warmup_period      = 1*3600
         # Set the excluding periods to be the two first weeks of February
         # and the two first weeks of November

@@ -50,7 +50,6 @@ def run(envClass, wrapper=None, plot=False):
     env = envClass(url                 = url,
                    actions             = ['oveHeaPumY_u'],
                    observations        = {'reaTZon_y':(280.,310.)}, 
-                   random_start_time   = False,
                    start_time          = 31*24*3600,
                    max_episode_length  = 3*24*3600,
                    warmup_period       = 3*24*3600,

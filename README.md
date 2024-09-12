@@ -38,7 +38,6 @@ env = BoptestGymEnv(
                                 'UpperSetp[1]':(280.,310.)}, 
         predictive_period    = 24*3600, 
         regressive_period    = 6*3600, 
-        random_start_time    = True,
         max_episode_length   = 24*3600,
         warmup_period        = 24*3600,
         step_period          = 3600)

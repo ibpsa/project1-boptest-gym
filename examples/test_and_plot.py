@@ -23,12 +23,10 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
         
     # Set a fixed start time
     if isinstance(env,Wrapper): 
-        env.unwrapped.random_start_time   = False
         env.unwrapped.start_time          = start_time
         env.unwrapped.max_episode_length  = episode_length
         env.unwrapped.warmup_period       = warmup_period
     else:
-        env.random_start_time   = False
         env.start_time          = start_time
         env.max_episode_length  = episode_length
         env.warmup_period       = warmup_period
@@ -62,9 +60,9 @@ def test_agent(env, model, start_time, episode_length, warmup_period,
     
     # Back to random start time, just in case we're testing in the loop
     if isinstance(env,Wrapper): 
-        env.unwrapped.random_start_time = True
+        env.unwrapped.start_time = None
     else:
-        env.random_start_time = True
+        env.start_time = None
     
     return observations, actions, rewards, kpis
 

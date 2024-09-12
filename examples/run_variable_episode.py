@@ -86,7 +86,6 @@ def train_A2C_with_variable_episode(start_time_tests    = [31*24*3600, 304*24*36
     env = BoptestGymEnvVariableEpisodeLength(url                   = url,
                                              actions               = ['oveHeaPumY_u'],
                                              observations          = {'reaTZon_y':(280.,310.)}, 
-                                             random_start_time     = True,
                                              excluding_periods     = excluding_periods,
                                              max_episode_length    = 6*3600, 
                                              warmup_period         = 3*3600,
