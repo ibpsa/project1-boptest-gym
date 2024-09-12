@@ -1,5 +1,4 @@
 name: CI of BOPTEST-Gym using GitHub Actions
-on: [push]
 on:
   push:
   pull_request:
