@@ -579,8 +579,7 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
 class TestMultiActions(unittest.TestCase):
     def setUp(self):
         '''Set up the environment and model for testing.'''
-        #env:singlezone_commercial_hydronic
-        print(url)
+        # env:singlezone_commercial_hydronic
         # Initialize the environment
         self.env = BoptestGymEnv(
             url=url,
