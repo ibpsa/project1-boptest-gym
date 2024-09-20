@@ -461,7 +461,8 @@ class BoptestGymEnv(gym.Env):
             return start_time
         
         # Assign random start_time if start_time is None
-        if not self.start_time:
+        if not self.start_time or self.random_start_time:
+            self.random_start_time = True
             self.start_time = find_start_time()
 
         # Initialize the building simulation
