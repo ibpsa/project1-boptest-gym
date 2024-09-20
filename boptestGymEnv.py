@@ -27,7 +27,7 @@ from examples.test_and_plot import plot_results, test_agent
 
 class BoptestGymEnv(gym.Env):
     '''
-    BOPTEST Environment that follows gym interface.
+    BOPTEST Environment that follows the gym interface.
     This environment allows the interaction of RL agents with building
     emulator models from BOPTEST. 
      
