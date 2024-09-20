@@ -54,7 +54,7 @@ def train_A2C_with_variable_episode(start_time_tests    = [31*24*3600, 304*24*36
         '''
         
         def compute_truncated(self, res, reward=None, 
-                              objective_integrand_threshold=0.1):
+                              objective_integrand_threshold=0.01):
             '''Custom method to determine that the episode is truncated not only 
             when the maximum episode length is exceeded but also when the 
             objective integrand overpasses a certain threshold. The latter is
