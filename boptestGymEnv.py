@@ -41,10 +41,11 @@ class BoptestGymEnv(gym.Env):
                  observations       = {'reaTZon_y':(280.,310.)}, 
                  reward             = ['reward'],
                  max_episode_length = 3*3600,
+                 random_start_time  = False,
                  excluding_periods  = None,
                  regressive_period  = None,
                  predictive_period  = None,
-                 start_time         = None,
+                 start_time         = 0,
                  warmup_period      = 0,
                  scenario           = {'electricity_price':'constant'},
                  step_period        = 900,
@@ -78,13 +79,15 @@ class BoptestGymEnv(gym.Env):
             buffer of data in case the algorithm is going to use pretraining
         max_episode_length: integer
             Maximum duration of each episode in seconds
+        random_start_time: boolean
+            Set to True if desired to use a random start time for each episode
         excluding_periods: list of tuples
             List where each element is a tuple indicating the start and 
             end time of the periods that should not overlap with any 
             episode used for training. Example:
             excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                                 (304*24*3600, 304*24*3600+14*24*3600)]
-            This is only used when `start_time=None`
+            This is only used when `random_start_time=True`
         regressive_period: integer, default is None
             Number of seconds for the regressive horizon. The observations
             will be extended for each of the measurement variables indicated
@@ -112,8 +115,8 @@ class BoptestGymEnv(gym.Env):
             ambient temperature. 
         start_time: integer
             Initial fixed episode time in seconds from beginning of the 
-            year for each episode. For random start time, set 
-            `start_time=None` 
+            year for each episode. Use in combination with 
+            `random_start_time=False` 
         warmup_period: integer
             Desired simulation period to initialize each episode 
         scenario: dictionary
@@ -134,6 +137,7 @@ class BoptestGymEnv(gym.Env):
         self.actions            = actions
         self.observations       = list(observations.keys())
         self.max_episode_length = max_episode_length
+        self.random_start_time  = random_start_time
         self.excluding_periods  = excluding_periods
         self.start_time         = start_time
         self.warmup_period      = warmup_period
@@ -366,6 +370,7 @@ class BoptestGymEnv(gym.Env):
         summary['GYM ENVIRONMENT INFORMATION']['Measurement variables used in observation space'] = pformat(self.measurement_vars)
         summary['GYM ENVIRONMENT INFORMATION']['Predictive variables used in observation space'] = pformat(self.predictive_vars)
         summary['GYM ENVIRONMENT INFORMATION']['Sampling time (seconds)'] = pformat(self.step_period)
+        summary['GYM ENVIRONMENT INFORMATION']['Random start time'] = pformat(self.random_start_time)
         summary['GYM ENVIRONMENT INFORMATION']['Excluding periods (seconds from the beginning of the year)'] = pformat(self.excluding_periods)
         summary['GYM ENVIRONMENT INFORMATION']['Warmup period for each episode (seconds)'] = pformat(self.warmup_period)
         summary['GYM ENVIRONMENT INFORMATION']['Maximum episode length (seconds)'] = pformat(self.max_episode_length)
@@ -415,7 +420,7 @@ class BoptestGymEnv(gym.Env):
         Method to reset the environment. The associated building model is 
         initialized by running the baseline controller for a  
         `self.warmup_period` of time right before `self.start_time`. 
-        If `self.start_time` is None, a random time is assigned 
+        If `self.random_start_time` is True, a random time is assigned 
         to `self.start_time` such that there are not episodes that overlap
         with the indicated `self.excluding_periods`. This is useful to 
         define testing periods that should not use data from training.   
@@ -460,10 +465,10 @@ class BoptestGymEnv(gym.Env):
             # This point is reached only when a good starting point is found
             return start_time
         
-        # Assign random start_time if start_time is None
-        if not self.start_time:
+        # Assign random start_time if it is None
+        if self.random_start_time:
             self.start_time = find_start_time()
-
+        
         # Initialize the building simulation
         res = requests.put('{0}/initialize'.format(self.url), 
                            json={'start_time':int(self.start_time),
