@@ -72,21 +72,21 @@ make download-boptest:
 run-boptest-case:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --quiet-pull
+	TESTCASE=bestest_hydronic_heat_pump docker compose up -d --quiet-pull
 
 run-boptest-case-no-cache:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --force-recreate --build
+	TESTCASE=bestest_hydronic_heat_pump docker compose up -d --force-recreate --build
 
 run-boptest-vectorized:
 	make download-boptest && \
 	cd .. && python3 generateDockerComposeYml.py testing/project1-boptest-${BOPTEST_COMMIT} && \
 	cd testing/project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker-compose up -d --quiet-pull
+	TESTCASE=bestest_hydronic_heat_pump docker compose up -d --quiet-pull
 
 stop-boptest-case:
-	cd project1-boptest-${BOPTEST_COMMIT} && docker-compose down
+	cd project1-boptest-${BOPTEST_COMMIT} && docker compose down
 
 cleanup-boptest:
 	rm boptest.zip
