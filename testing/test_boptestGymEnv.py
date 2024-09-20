@@ -50,14 +50,14 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         print(self.env)
         
         # Check that we can save the environment summary
-        file_ref = os.path.join(utilities.get_root_path(), 'testing', 'references','summary_ref')
         file_tst = 'summary_tst'
         self.env.save_summary(file_tst)
         
         # Check that we can load the environment summary. This test only checks sorted keys
         summary = self.env.load_summary(file_tst)
         for i,k in enumerate(summary.keys()):
-            self.compare_ref_json(sorted(dict(summary[k])), file_ref+'_'+str(i)+'.json')
+            file_ref = os.path.join(utilities.get_root_path(),'testing','references','summary_ref','_'+str(i)+'.json')
+            self.compare_ref_json(sorted(dict(summary[k])), file_ref)
         
         # Remove generated file
         os.remove(file_tst+'.json')
