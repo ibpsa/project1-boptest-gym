@@ -45,7 +45,7 @@ class BoptestGymEnv(gym.Env):
                  excluding_periods  = None,
                  regressive_period  = None,
                  predictive_period  = None,
-                 start_time         = None,
+                 start_time         = 0,
                  warmup_period      = 0,
                  scenario           = {'electricity_price':'constant'},
                  step_period        = 900,
