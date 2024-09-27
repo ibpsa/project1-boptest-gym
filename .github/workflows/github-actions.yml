@@ -25,7 +25,6 @@ jobs:
       - name: Test local version
         run: make test-local-in-container
   test-multiaction:
-    test-local:
     runs-on: ubuntu-latest
     defaults:
       run:
