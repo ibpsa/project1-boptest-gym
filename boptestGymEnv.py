@@ -1012,6 +1012,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         
         # Instantiate discretized action space
         self.action_space = spaces.Discrete((n_bins_act+1) ** self.n_act)
+        
     def _get_indices(self, action_wrapper):
         """
         Returns the indices of the discretized action space corresponding to the given action wrapper.

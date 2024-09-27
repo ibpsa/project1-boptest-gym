@@ -576,11 +576,13 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
         # Check results
         self.compare_ref_json(out_json, file_ref)
 
-class TestMultiActions(unittest.TestCase):
+class BoptestGymEnvMultiActTest(unittest.TestCase):
+    """ Test multi-action training with the `singlezone_commercial_hydronic`
+    test case. 
+    """
+
     def setUp(self):
         '''Set up the environment and model for testing.'''
-        # env:singlezone_commercial_hydronic
-        # Initialize the environment
         self.env = BoptestGymEnv(
             url=url,
             actions=['oveTZonSet_u', 'oveTSupSet_u', 'oveCO2ZonSet_u'],
@@ -610,9 +612,8 @@ class TestMultiActions(unittest.TestCase):
                          learning_rate=5e-4, batch_size=24,
                          buffer_size=365*24, learning_starts=24, train_freq=1)
 
-    def test_training(self):
+    def test_training_multi_action(self):
         '''Test that the environment and RL agent interact as expected.'''
-        # Main training loop
         self.model.learn(total_timesteps=100)
 
     def tearDown(self):
