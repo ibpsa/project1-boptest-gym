@@ -138,7 +138,7 @@ test-local-in-container:
 	make stop-boptest-case
 	make cleanup-boptest
 
-test-multiaction-in-container
+test-multiaction-in-container:
 	make run-boptest-case-commercial
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-multiaction"
