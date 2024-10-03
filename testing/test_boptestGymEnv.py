@@ -13,9 +13,9 @@ import random
 import shutil
 from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
-    run_variable_episode, run_vectorized, train_RL
+    run_variable_episode, run_vectorized, run_multiaction, train_RL
 from collections import OrderedDict
-from boptestGymEnv import BoptestGymEnv,NormalizedObservationWrapper,DiscretizedActionWrapper
+from boptestGymEnv import BoptestGymEnv
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import A2C, DQN
@@ -581,46 +581,16 @@ class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
     test case. 
     '''
 
-    def setUp(self):
-        '''Set up the environment and model for testing.'''
-        self.env = BoptestGymEnv(
-            url=url,
-            actions=['oveTZonSet_u', 'oveTSupSet_u', 'oveCO2ZonSet_u'],
-            observations={
-                'time': (0, 604800),
-                'reaTZon_y': (280., 310.),
-                'TDryBul': (265, 303),
-                'HDirNor': (0, 862),
-                'InternalGainsRad[1]': (0, 219),
-                'PriceElectricPowerHighlyDynamic': (-0.4, 0.4),
-                'LowerSetp[1]': (280., 310.),
-                'UpperSetp[1]': (280., 310.)
-            },
-            predictive_period=24*3600,
-            regressive_period=6*3600,
-            max_episode_length=24*3600,
-            warmup_period=24*3600,
-            step_period=3600,
-            random_start_time=False,
-            start_time=31*24*3600
-        )
-
-        # Normalize observations and discretize action space
-        self.env = NormalizedObservationWrapper(self.env)
-        self.env = DiscretizedActionWrapper(self.env, n_bins_act=10)
-
-        # Instantiate an RL agent
-        self.model = DQN('MlpPolicy', self.env, verbose=1, gamma=0.99,
-                         learning_rate=5e-4, batch_size=24,
-                         buffer_size=365*24, learning_starts=24, train_freq=1)
 
     def test_training_multi_action(self):
-        '''Test that the environment and RL agent interact as expected.'''
-        self.model.learn(total_timesteps=100)
-        
+        '''Checks an estimated action after an agent is trained in a multi-action environment.'''
+
+        # Train an agent in a multi-action environment.
+        self.env, model = run_multiaction.train_multiaction()
+
         # Test one step with the trained model
         obs = self.env.reset()[0]
-        df = pd.DataFrame([self.model.predict(obs)[0]], columns=['value'])
+        df = pd.DataFrame([model.predict(obs)[0]], columns=['value'])
         df.index.name = 'keys'
         ref_filepath    = os.path.join(utilities.get_root_path(), 
                             'testing', 'references', 'multiaction_training.csv')
