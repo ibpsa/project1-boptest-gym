@@ -99,7 +99,8 @@ run-boptest-case-no-cache:
 run-boptest-case-commercial:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=singlezone_commercial_hydronic docker compose up -d
+	TESTCASE=singlezone_commercial_hydronic docker compose up -d && \
+	sleep 10
 
 run-boptest-vectorized:
 	make download-boptest && \

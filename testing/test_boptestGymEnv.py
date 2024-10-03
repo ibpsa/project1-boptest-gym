@@ -583,12 +583,6 @@ class BoptestGymEnvMultiActTest(unittest.TestCase):
 
     def setUp(self):
         '''Set up the environment and model for testing.'''
-        
-        print("url is:")
-        print(url)
-        import time
-        time.sleep(30)
-
         self.env = BoptestGymEnv(
             url=url,
             actions=['oveTZonSet_u', 'oveTSupSet_u', 'oveCO2ZonSet_u'],
