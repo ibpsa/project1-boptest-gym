@@ -1065,14 +1065,20 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         Then, `_get_indices` example, for action_wrapper = 37:
         indices = []
         Loop 3 times:
-        Iteration 1: indices.append(37 % 4) -> indices = [1], action_wrapper //= 4 -> action_wrapper = 9
-        Iteration 2: indices.append(9 % 4) -> indices = [1, 1], action_wrapper //= 4 -> action_wrapper = 2
-        Iteration 3: indices.append(2 % 4) -> indices = [1, 1, 2], action_wrapper //= 4 -> action_wrapper = 0
-        Reverse indices: [2, 1, 1]
+        Iteration 1: indices.append((37+1) % 4) -> indices = [2], action_wrapper //= 4 -> action_wrapper = 9
+        Iteration 2: indices.append((9+1) % 4) -> indices = [2, 2], action_wrapper //= 4 -> action_wrapper = 2
+        Iteration 3: indices.append((2+1) % 4) -> indices = [2, 2, 3], action_wrapper //= 4 -> action_wrapper = 0
+        Reverse indices: [3, 2, 2]
+
+        Note
+        ----
+        To understand why we need to add 1 in `action_wrapper+1)%self.n_bins_act` think of the corner case
+        where we only have one bin. If the action_wrapper is 1, then the index should be 1, but if we do not
+        add 1, the index would be 0 (because 1%1=0).
         """
         indices=[]
         for _ in range(self.n_act):
-            indices.append(action_wrapper%self.n_bins_act)
+            indices.append((action_wrapper+1)%self.n_bins_act)
             action_wrapper //= self.n_bins_act
         return indices[::-1]    
 
