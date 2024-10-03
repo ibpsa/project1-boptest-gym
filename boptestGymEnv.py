@@ -1026,6 +1026,21 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         -------
         list
             A list of indices representing the discretized action space.
+
+        Example
+        -------
+        Suppose:
+        self.n_act = 3 (number of actions)
+        self.n_bins_act = 4 (number of bins per action)
+        self.val_bins_act = [[0, 1, 2, 3], [10, 11, 12, 13], [20, 21, 22, 23]] (value bins for each action)
+        
+        Then, `_get_indices` example, for action_wrapper = 37:
+        indices = []
+        Loop 3 times:
+        Iteration 1: indices.append(37 % 4) -> indices = [1], action_wrapper //= 4 -> action_wrapper = 9
+        Iteration 2: indices.append(9 % 4) -> indices = [1, 1], action_wrapper //= 4 -> action_wrapper = 2
+        Iteration 3: indices.append(2 % 4) -> indices = [1, 1, 2], action_wrapper //= 4 -> action_wrapper = 0
+        Reverse indices: [2, 1, 1]
         """
         indices=[]
         for _ in range(self.n_act):
@@ -1055,7 +1070,18 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         
         Implement something here that performs the following mapping:
         DiscretizedObservationWrapper.action_space --> DiscretizedActionWrapper.action_space
-        
+
+        Example
+        -------
+        For action_wrapper = 37 (follows the example of `_get_indices` above):
+
+        indices = [2, 1, 1]
+        Map indices to action values:
+        bins[2] from [0, 1, 2, 3] -> 2
+        bins[1] from [10, 11, 12, 13] -> 11
+        bins[1] from [20, 21, 22, 23] -> 21
+        Convert to NumPy array: np.asarray([2, 11, 21])
+        Return action: [2, 11, 21]
         '''
         indices = self._get_indices(action_wrapper)
         # Get the action values from bin indexes
