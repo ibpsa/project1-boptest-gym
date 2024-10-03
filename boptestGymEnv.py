@@ -1044,7 +1044,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
 
         Note
         ----
-        To understand why we need to add 1 in `action_wrapper+1)%self.n_bins_act` think of the corner case
+        To understand why we need to add 1 in `(action_wrapper+1)%self.n_bins_act` think of the corner case
         where we only have one bin. If the action_wrapper is 1, then the index should be 1, but if we do not
         add 1, the index would be 0 (because 1%1=0).
         """
