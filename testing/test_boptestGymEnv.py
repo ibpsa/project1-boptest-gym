@@ -600,7 +600,9 @@ class BoptestGymEnvMultiActTest(unittest.TestCase):
             regressive_period=6*3600,
             max_episode_length=24*3600,
             warmup_period=24*3600,
-            step_period=3600
+            step_period=3600,
+            random_start_time=False,
+            start_time=31*24*3600
         )
 
         # Normalize observations and discretize action space
