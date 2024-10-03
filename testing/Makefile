@@ -102,7 +102,7 @@ run-boptest-case-commercial:
 	TESTCASE=singlezone_commercial_hydronic docker compose up -d
 
 run-boptest-vectorized:
-	# make download-boptest && \
+	make download-boptest && \
 	cd .. && python3 generateDockerComposeYml.py testing/project1-boptest-${BOPTEST_COMMIT} && \
 	cd testing/project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker compose up -d 
