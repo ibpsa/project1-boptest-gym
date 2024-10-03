@@ -13,7 +13,7 @@ import random
 import shutil
 from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
-    run_variable_episode, run_vectorized, train_RL
+    run_variable_episode, run_vectorized, run_multiaction, train_RL
 from collections import OrderedDict
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines3.common.env_checker import check_env
@@ -575,6 +575,31 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
         
         # Check results
         self.compare_ref_json(out_json, file_ref)
+
+class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
+    ''' Test multi-action training with the `singlezone_commercial_hydronic`
+    test case. 
+    '''
+
+
+    def test_training_multi_action(self):
+        '''Checks an estimated action after an agent is trained in a multi-action environment.'''
+
+        # Train an agent in a multi-action environment.
+        self.env, model = run_multiaction.train_multiaction()
+
+        # Test one step with the trained model
+        obs = self.env.reset()[0]
+        df = pd.DataFrame([model.predict(obs)[0]], columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath    = os.path.join(utilities.get_root_path(), 
+                            'testing', 'references', 'multiaction_training.csv')
+        self.compare_ref_values_df(df, ref_filepath)
+
+    def tearDown(self):
+        '''Clean up after each test.'''
+        self.env.close()
+
 
 if __name__ == '__main__':
     utilities.run_tests(os.path.basename(__file__))

@@ -24,6 +24,24 @@ jobs:
           sudo apt-get install -y docker-compose
       - name: Test local version
         run: make test-local-in-container
+  test-multiaction:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: testing
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Pull boptestgym image from registry
+        run: make pull-boptestgym
+      - name: Pull boptest_base image from registry
+        run: make pull-boptestbase
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+      - name: Test multi-action
+        run: make test-multiaction-in-container
   test-vectorized:
     runs-on: ubuntu-latest
     defaults:

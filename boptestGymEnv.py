@@ -985,8 +985,8 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         env: gym.Env
             Original gym environment
         n_bins_obs: integer
-            Number of bins to be used in the transformed observation space
-            for each observation. 
+            Number of bins to be used in the transformed action space
+            for each action. 
         
         '''
         
@@ -1012,6 +1012,48 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         
         # Instantiate discretized action space
         self.action_space = spaces.Discrete((n_bins_act+1) ** self.n_act)
+        
+    def _get_indices(self, action_wrapper):
+        """
+        Returns the indices of the discretized action space corresponding to the given action wrapper.
+        
+        Parameters
+        ----------
+        action_wrapper : int
+            The action wrapper value to be converted to indices.
+        
+        Returns
+        -------
+        list
+            A list of indices representing the discretized action space.
+
+        Example
+        -------
+        Suppose:
+        self.n_act = 3 (number of actions)
+        self.n_bins_act = 3 (number of bins per action, this means 4 values possible per action)
+        self.val_bins_act = [[0, 1, 2, 3], [10, 11, 12, 13], [20, 21, 22, 23]] (value bins for each action)
+        
+        Then, `_get_indices` example, for action_wrapper = 37:
+        indices = []
+        Loop 3 times:
+        Iteration 1: indices.append((37 % (3+1)) -> indices = [1], action_wrapper //= 4 -> action_wrapper = 9
+        Iteration 2: indices.append((9 % (3+1)) -> indices = [1, 1], action_wrapper //= 4 -> action_wrapper = 2
+        Iteration 3: indices.append((2 % (3+1)) -> indices = [1, 1, 2], action_wrapper //= 4 -> action_wrapper = 0
+        Reverse indices: [2, 1, 1]
+
+        Note
+        ----
+        To understand why we need to add 1 in `action_wrapper%(self.n_bins_act+1)` think of the edge case
+        where we only have one bin. If the action_wrapper is 1, then the index should be 1, but if we do not
+        add 1 to `self.n_bins_act`, the index would be 0 (because 1%1=0). The underlying reason is that 
+        n_bins_act is the number of bins, not the number of possible action values.
+        """
+        indices=[]
+        for _ in range(self.n_act):
+            indices.append(action_wrapper%(self.n_bins_act+1))
+            action_wrapper //= self.n_bins_act
+        return indices[::-1]    
 
     def action(self, action_wrapper):
         '''This method accepts a single parameter (the modified action
@@ -1030,17 +1072,28 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         
         Notes
         -----
-        To better understand what this method needs to do, see how the 
+        To better understand what this method needs to do, see what the 
         `gym.ActionWrapper` parent class is doing in `gym.core`:
         
         Implement something here that performs the following mapping:
         DiscretizedObservationWrapper.action_space --> DiscretizedActionWrapper.action_space
-        
+
+        Example
+        -------
+        For action_wrapper = 37 (follows the example of `_get_indices` above):
+
+        indices = [2, 1, 1]
+        Map indices to action values:
+        bins[2] from [0, 1, 2, 3] -> 2
+        bins[1] from [10, 11, 12, 13] -> 11
+        bins[1] from [20, 21, 22, 23] -> 21
+        Convert to NumPy array: np.asarray([2, 11, 21])
+        Return action: [2, 11, 21]
         '''
-        
+        indices = self._get_indices(action_wrapper)
         # Get the action values from bin indexes
         action = [bins[x]
-                  for x, bins in zip(action_wrapper.flatten(), 
+                  for x, bins in zip(indices, 
                                      self.val_bins_act)]
 
         action = np.asarray(action).astype(self.env.action_space.dtype)

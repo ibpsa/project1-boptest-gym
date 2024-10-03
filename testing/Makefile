@@ -90,11 +90,19 @@ run-boptest-case:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker compose up -d
+	sleep 10
 
 run-boptest-case-no-cache:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker compose up -d --force-recreate --build
+	sleep 10
+
+run-boptest-case-commercial:
+	make download-boptest
+	cd project1-boptest-${BOPTEST_COMMIT} && \
+	TESTCASE=singlezone_commercial_hydronic docker compose up -d && \
+	sleep 10
 
 run-boptest-vectorized:
 	make download-boptest && \
@@ -114,6 +122,9 @@ cleanup-boptest:
 test-local:
 	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest
 
+test-multiaction:
+	python3 -m unittest test_boptestGymEnv.BoptestGymEnvMultiActTest
+
 # Vectorized needs to run separate since modifies docker-compose.yml to have multiple boptest instances 
 test-vectorized:
 	python3 -m unittest test_boptestGymEnv.BoptestGymVecTest project1-boptest-${BOPTEST_COMMIT}
@@ -126,6 +137,14 @@ test-local-in-container:
 	make run-boptest-case
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-local"
+	make stop-boptestgym
+	make stop-boptest-case
+	make cleanup-boptest
+
+test-multiaction-in-container:
+	make run-boptest-case-commercial
+	make run-boptestgym-detached
+	make exec-boptestgym ARGS="make test-multiaction"
 	make stop-boptestgym
 	make stop-boptest-case
 	make cleanup-boptest
