@@ -985,8 +985,8 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         env: gym.Env
             Original gym environment
         n_bins_obs: integer
-            Number of bins to be used in the transformed observation space
-            for each observation. 
+            Number of bins to be used in the transformed action space
+            for each action. 
         
         '''
         
