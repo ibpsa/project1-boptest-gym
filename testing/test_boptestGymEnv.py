@@ -576,10 +576,10 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
         # Check results
         self.compare_ref_json(out_json, file_ref)
 
-class BoptestGymEnvMultiActTest(unittest.TestCase):
-    """ Test multi-action training with the `singlezone_commercial_hydronic`
+class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
+    ''' Test multi-action training with the `singlezone_commercial_hydronic`
     test case. 
-    """
+    '''
 
     def setUp(self):
         '''Set up the environment and model for testing.'''
