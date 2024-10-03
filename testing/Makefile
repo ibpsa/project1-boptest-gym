@@ -90,11 +90,13 @@ run-boptest-case:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker compose up -d
+	sleep 10
 
 run-boptest-case-no-cache:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	TESTCASE=bestest_hydronic_heat_pump docker compose up -d --force-recreate --build
+	sleep 10
 
 run-boptest-case-commercial:
 	make download-boptest
