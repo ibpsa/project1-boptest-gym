@@ -1050,7 +1050,7 @@ class DiscretizedActionWrapper(gym.ActionWrapper):
         
         Notes
         -----
-        To better understand what this method needs to do, see how the 
+        To better understand what this method needs to do, see what the 
         `gym.ActionWrapper` parent class is doing in `gym.core`:
         
         Implement something here that performs the following mapping:
