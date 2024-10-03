@@ -617,6 +617,14 @@ class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
     def test_training_multi_action(self):
         '''Test that the environment and RL agent interact as expected.'''
         self.model.learn(total_timesteps=100)
+        
+        # Test one step with the trained model
+        obs = self.env.reset()[0]
+        df = pd.DataFrame([self.model.predict(obs)[0]], columns=['value'])
+        df.index.name = 'keys'
+        ref_filepath    = os.path.join(utilities.get_root_path(), 
+                            'testing', 'references', 'multiaction_training.csv')
+        self.compare_ref_values_df(df, ref_filepath)
 
     def tearDown(self):
         '''Clean up after each test.'''
