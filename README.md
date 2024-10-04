@@ -75,7 +75,7 @@ Running BOPTEST locally is substantially faster
 
 1) Create a conda environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). 
 2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
-3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
+3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:80'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
 
 ## Quick-Start (running BOPTEST locally in a vectorized environment)
 
