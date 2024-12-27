@@ -10,7 +10,7 @@ from boptestGymEnv import BoptestGymEnv, NormalizedActionWrapper
 from examples.test_and_plot import test_agent
 import random
 
-url = 'http://127.0.0.1:5000'
+url = 'http://127.0.0.1'
 
 # Seed for random starting times of episodes
 random.seed(123456)
@@ -68,6 +68,9 @@ def run(envClass, wrapper=None, plot=False):
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
                          plot=plot)
+
+    # stop the test
+    env.stop()
     
     return observations, actions, rewards
         

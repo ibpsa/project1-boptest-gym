@@ -16,7 +16,7 @@ else:
     yaml_target_dir = os.path.dirname(os.path.abspath(__file__))
 
 num_services = 2  # Total Services needed
-base_port = 5000  # Start Port number
+base_port = 80  # Start Port number
 
 
 # Function to check if a port is available
@@ -53,7 +53,7 @@ for _ in range(num_services):
             "./forecast:${APP_PATH}/forecast/",
             "./kpis:${APP_PATH}/kpis/",
         ],
-        "ports": [f"127.0.0.1:{port}:5000"],
+        "ports": [f"127.0.0.1:{port}:80"],
         "networks": ["boptest-net"],
         "restart": "on-failure"  # restart on-failure
     }

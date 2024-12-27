@@ -1,6 +1,8 @@
-# BOPTEST-Gym
+# BOPTEST-Gym-service
 
 BOPTESTS-Gym is the [OpenAI-Gym](https://gym.openai.com/) environment for the [BOPTEST](https://github.com/ibpsa/project1-boptest) framework. This repository accommodates the BOPTEST API to the OpenAI-Gym convention in order to facilitate the implementation, assessment and benchmarking of reinforcement learning (RL) algorithms for their application in building energy management. RL algorithms from the [Stable-Baselines 3](https://github.com/DLR-RM/stable-baselines3) repository are used to exemplify and test this framework. 
+
+This is the service version of BOPTEST-Gym, meaning that it has been adapted to use BOPTEST test cases that can be run in a server instead of just locally. 
 
 The environment is described in [this paper](https://www.researchgate.net/publication/354386346_An_OpenAI-Gym_environment_for_the_Building_Optimization_Testing_BOPTEST_framework). 
 
@@ -73,7 +75,7 @@ Running BOPTEST locally is substantially faster
 
 1) Create a conda environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). 
 2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
-3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
+3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:80'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
 
 ## Quick-Start (running BOPTEST locally in a vectorized environment)
 
