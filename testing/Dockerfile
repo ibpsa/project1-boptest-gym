@@ -1,7 +1,7 @@
 # Start with a base Ubuntu image
 FROM --platform=linux/x86_64 ubuntu:20.04
 # This is the Focal Fossa ubuntu version
-MAINTAINER Javier Arroyo <javier.arroyo@kuleuven.be>
+MAINTAINER Javier Arroyo <javier.arroyo@wedoco.io>
 
 # Avoid warnings while installing ubuntu
 # debconf: unable to initialize frontend: Dialog
