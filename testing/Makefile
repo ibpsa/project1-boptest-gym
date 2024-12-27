@@ -89,7 +89,7 @@ download-boptest:
 run-boptest-case:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	docker compose up web worker provision && \
+	docker compose up -d web worker provision && \
 	sleep 10
 
 run-boptest-case-commercial:
