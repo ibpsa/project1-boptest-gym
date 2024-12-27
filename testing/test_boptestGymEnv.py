@@ -102,7 +102,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         env.start_time         = 14*24*3600
         env.warmup_period      = 3*3600
         
-        obs, _ = self.env.reset()
+        obs, _ = env.reset()
         
         # Check values
         df = pd.DataFrame(data=[obs], index=['obs_reset_fixed'], columns=['value'])
@@ -134,9 +134,9 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         start_times = OrderedDict()
         # Reset hundred times
         for i in range(100):
-            obs, _ = self.env.reset()
-            start_time = self.env.start_time
-            episode = (start_time, start_time+self.env.max_episode_length)
+            obs, _ = env.reset()
+            start_time = env.start_time
+            episode = (start_time, start_time+env.max_episode_length)
             for period in excluding_periods:
                 # Make sure that the episodes don't overlap with excluding_periods
                 assert not(episode[0] < period[1] and period[0] < episode[1]),\
