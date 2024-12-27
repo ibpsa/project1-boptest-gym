@@ -25,7 +25,7 @@ build-boptestgym-no-cache:
 	docker build -f ${ROOT}/testing/Dockerfile \
 		--progress=plain --no-cache --rm -t ${IMG_NAME_BOPTESTGYM} .
 
-# Build the generic BOPTEST base image without mounting any test case
+# Build all needed services without selecting any test case
 build-boptestbase:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
