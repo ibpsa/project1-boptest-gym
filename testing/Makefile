@@ -92,6 +92,10 @@ run-boptest-case:
 	docker compose up -d web worker provision && \
 	sleep 10
 
+restart-boptest-app:
+	cd project1-boptest-${BOPTEST_COMMIT} && \
+	docker compose restart
+
 run-boptest-case-commercial:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
