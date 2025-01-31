@@ -127,9 +127,9 @@ test-multiaction:
 test-vectorized:
 	python3 -m unittest test_boptestGymEnv.BoptestGymVecTest project1-boptest-${BOPTEST_COMMIT}
 
-# The tutorial is using boptest-gym-service and covers most of the functionality of boptest-gym 
-test-service:
-	python3 -m unittest test_boptestGymEnv.BoptestGymServiceTest
+# The tutorial covers most of the functionality of boptest-gym 
+test-tutorial:
+	python3 -m unittest test_boptestGymEnv.BoptestGymTutorialTest
 
 test-local-in-container:
 	make run-boptest-case
@@ -155,8 +155,8 @@ test-vectorized-in-container:
 	make stop-boptest-case
 	make cleanup-boptest
 
-test-service-in-container:
+test-tutorial-in-container:
 	make run-boptestgym-detached
-	make exec-boptestgym ARGS="make test-service"
+	make exec-boptestgym ARGS="make test-tutorial"
 	make stop-boptestgym
 

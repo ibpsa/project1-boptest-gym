@@ -1,5 +1,5 @@
 '''
-Module to test features of the OpenAI-Gym interface for BOPTEST-Service.
+Module to test features of the OpenAI-Gym interface for BOPTEST.
 The BOPTEST bestest_hydronic_heat_pump case needs to be deployed to perform
 the tests. 
 
@@ -531,8 +531,8 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         # Remove model to prove further testing
         shutil.rmtree(log_dir, ignore_errors=True)     
 
-class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
-    '''Tests the BOPTEST-Gym service.
+class BoptestGymTutorialTest(unittest.TestCase, utilities.partialChecks):
+    '''Tests the BOPTEST-Gym tutorial.
          
     '''
     
@@ -543,8 +543,8 @@ class BoptestGymServiceTest(unittest.TestCase, utilities.partialChecks):
         the notebook to plain python to execute the test by comparing the
         outputs of some of the notebook cells with references.
         Note that the notebook actually uses the `boptest-gym-service` 
-        branch, which should be even with the `master` branch but uses 
-        BOPTEST-Service. Therefore, this is a check for the
+        branch, which should be even with the `master` branch. 
+        Therefore, this is a check for the
         `boptest-gym-service` branch and, contrarily to other tests,
         this one can be parallelized. The last section of the tutorial
         (Gearing Up) is using the DQN algorithm from stable-baselines3
