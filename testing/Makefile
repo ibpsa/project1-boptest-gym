@@ -113,7 +113,7 @@ stop-boptest-case:
 
 cleanup-boptest:
 	-rm boptest.zip
-	-chmod -R u+rwx service && \
+	-chmod -R u+rwx project1-boptest-${BOPTEST_COMMIT}/service && \
 	-rm -r project1-boptest-${BOPTEST_COMMIT}
 
 # All tests except test_tutorial use the master version of boptest-gym
