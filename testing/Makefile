@@ -110,7 +110,6 @@ run-boptest-vectorized:
 
 stop-boptest-case:
 	cd project1-boptest-${BOPTEST_COMMIT} && docker compose down
-	sleep 10
 
 cleanup-boptest:
 	rm boptest.zip
