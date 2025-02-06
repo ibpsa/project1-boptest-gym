@@ -99,7 +99,7 @@ restart-boptest-app:
 run-boptest-case-commercial:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=singlezone_commercial_hydronic docker compose up -d && \
+	TESTCASE=singlezone_commercial_hydronic docker compose up -d web worker provision && \
 	sleep 10
 
 run-boptest-vectorized:
