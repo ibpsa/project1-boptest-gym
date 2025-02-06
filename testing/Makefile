@@ -86,7 +86,7 @@ download-boptest:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
 	unzip -o -q boptest.zip
 	
-run-boptest-case:
+run-boptest:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	docker compose up -d web worker provision && \
@@ -96,17 +96,11 @@ restart-boptest-app:
 	cd project1-boptest-${BOPTEST_COMMIT} && \
 	docker compose restart
 
-run-boptest-case-commercial:
-	make download-boptest
-	cd project1-boptest-${BOPTEST_COMMIT} && \
-	docker compose up -d web worker provision && \
-	sleep 10
-
 run-boptest-vectorized:
 	make download-boptest && \
-	cd .. && python3 generateDockerComposeYml.py testing/project1-boptest-${BOPTEST_COMMIT} && \
 	cd testing/project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker compose up -d 
+	docker compose up -d --scale worker=2 web worker provision && \
+	sleep 10 
 
 stop-boptest-case:
 	cd project1-boptest-${BOPTEST_COMMIT} && docker compose down
@@ -131,7 +125,7 @@ test-tutorial:
 	python3 -m unittest test_boptestGymEnv.BoptestGymTutorialTest
 
 test-local-in-container:
-	make run-boptest-case
+	make run-boptest
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-local"
 	make stop-boptestgym
@@ -139,7 +133,7 @@ test-local-in-container:
 	make cleanup-boptest
 
 test-multiaction-in-container:
-	make run-boptest-case-commercial
+	make run-boptest
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-multiaction"
 	make stop-boptestgym
