@@ -66,7 +66,8 @@ def make_env(url, seed):
     def _init():
         random.seed(seed)
         env = BoptestGymEnv(
-            url=url,
+            url= 'http://127.0.0.1',
+            testcase='bestest_hydronic_heat_pump',
             actions=['oveHeaPumY_u'],
             observations={
                 'time': (0, 604800),
