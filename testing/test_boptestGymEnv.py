@@ -487,7 +487,7 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         else:
             self.boptest_root_dir = boptest_root
 
-    def test_vectorized(self):
+    def test_vectorized(self, n_envs=2):
         '''
         Instantiates a vectorized environment with two BOPTEST-Gym environment replicas
         and learns from them when running in parallel using DQN for 100 timesteps.
@@ -504,13 +504,12 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         # Define logging directory. Monitoring data and agent model will be stored here
         log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')
 
-        # Use URLs obtained from docker-compose.yml
-        urls = run_vectorized.generate_urls_from_yml(boptest_root_dir=self.boptest_root_dir)
-
         # Create BOPTEST-Gym environment replicas, each with its own random seed
         seed = 123456
-        envs = [run_vectorized.make_env(url,seed+idx) for idx,url in enumerate(urls)]
+        envs = [run_vectorized.make_env(url,seed+idx) for idx in range(n_envs)]
         
+        e1 = envs[0]()
+
         # Create a vectorized environment using SubprocVecEnv
         venv = SubprocVecEnv(envs)
         
@@ -640,4 +639,8 @@ class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
 
 
 if __name__ == '__main__':
-    utilities.run_tests(os.path.basename(__file__))
+    # utilities.run_tests(os.path.basename(__file__))
+
+    test_instance = BoptestGymVecTest()
+    test_instance.setUp()
+    test_instance.test_vectorized()
