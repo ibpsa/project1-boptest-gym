@@ -115,7 +115,6 @@ cleanup-boptest:
 	-rm boptest.zip
 	-rm -r project1-boptest-${BOPTEST_COMMIT}
 
-# All tests except test_tutorial use the master version of boptest-gym
 # Assumes bestest_hydronic_heat_pump test case is running
 test-local:
 	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest
