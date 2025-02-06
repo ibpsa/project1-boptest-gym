@@ -15,6 +15,7 @@ def train_multiaction():
 
     env = BoptestGymEnv(
             url=url,
+            testcase='singlezone_commercial_hydronic',
             actions=['oveTZonSet_u', 'oveTSupSet_u', 'oveCO2ZonSet_u'],
             observations={
                 'time': (0, 604800),
