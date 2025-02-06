@@ -2,7 +2,7 @@ import random
 from stable_baselines3 import DQN
 from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
 
-url = 'http://127.0.0.1:5000'
+url = 'http://127.0.0.1'
 seed = 123456
 
 # Seed for random starting times of episodes
