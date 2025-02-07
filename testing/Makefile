@@ -98,7 +98,7 @@ restart-boptest-app:
 
 run-boptest-vectorized:
 	make download-boptest && \
-	cd testing/project1-boptest-${BOPTEST_COMMIT} && \
+	cd project1-boptest-${BOPTEST_COMMIT} && \
 	docker compose up -d --scale worker=2 web worker provision && \
 	sleep 10 
 
