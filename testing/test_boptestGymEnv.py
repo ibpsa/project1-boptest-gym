@@ -508,8 +508,6 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         seed = 123456
         envs = [run_vectorized.make_env(url,seed+idx) for idx in range(n_envs)]
         
-        e1 = envs[0]()
-
         # Create a vectorized environment using SubprocVecEnv
         venv = SubprocVecEnv(envs)
         
