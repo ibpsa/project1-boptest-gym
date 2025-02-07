@@ -21,6 +21,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from stable_baselines3 import A2C, DQN
 
 url = 'http://127.0.0.1'
+seed = 123456
 
 class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
     '''Tests the OpenAI-Gym interface for BOPTESTS.
@@ -130,7 +131,7 @@ class BoptestGymEnvTest(unittest.TestCase, utilities.partialChecks):
         excluding_periods = [(31*24*3600,  31*24*3600+14*24*3600),
                             (304*24*3600, 304*24*3600+14*24*3600)]
         env.excluding_periods = excluding_periods
-        random.seed(123456)
+        random.seed(seed)
         start_times = OrderedDict()
         # Reset hundred times
         for i in range(100):
@@ -505,8 +506,7 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         log_dir = os.path.join(utilities.get_root_path(), 'examples', 'agents', 'DQN_vectorized')
 
         # Create BOPTEST-Gym environment replicas, each with its own random seed
-        seed = 123456
-        envs = [run_vectorized.make_env(url,seed+idx) for idx in range(n_envs)]
+        envs = [run_vectorized.make_env(seed=seed+idx) for idx in range(n_envs)]
         
         # Create a vectorized environment using SubprocVecEnv
         venv = SubprocVecEnv(envs)

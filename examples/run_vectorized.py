@@ -12,6 +12,8 @@ from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 from stable_baselines3.common.logger import configure
 from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
 
+url = 'http://127.0.0.1'
+
 def generate_urls_from_yml(boptest_root_dir):
     '''Method that returns as many urls for BOPTEST-Gym environments 
     as those specified at the BOPTEST `docker-compose.yml` file. 
@@ -53,12 +55,10 @@ def generate_urls_from_yml(boptest_root_dir):
     
     return urls
 
-def make_env(url, seed):
+def make_env(seed):
     ''' Function that instantiates the environment. 
     Parameters
     ----------
-    url: string
-        Rest API url for communication with this environment. 
     seed: integer
         Seed for random starting times of episodes in this environment.
     '''
@@ -66,7 +66,7 @@ def make_env(url, seed):
     def _init():
         random.seed(seed)
         env = BoptestGymEnv(
-            url= 'http://127.0.0.1',
+            url= url,
             testcase='bestest_hydronic_heat_pump',
             actions=['oveHeaPumY_u'],
             observations={
