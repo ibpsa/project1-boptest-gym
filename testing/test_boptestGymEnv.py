@@ -478,9 +478,8 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
         '''
         Instantiates a vectorized environment with two BOPTEST-Gym environment replicas
         and learns from them when running in parallel using DQN for 100 timesteps.
-        It assumes that `generateDockerComposeYml.py` is called first using
-        `num_services=2` and `TESTCASE=bestest_hydronic_heat_pump docker-compose up` 
-        is invoked after to initialize the two BOPTEST test cases. 
+        It assumes that boptest service is running with at least two workers:
+        `docker compose up -d --scale worker=2 web worker provision`.
         Note that this test is also using the `EvalCallback` class from 
         `stable_baselines3.common.callbacks` instead of the
         `boptestGymEnv.SaveAndTestCallback` that we typically use because 
