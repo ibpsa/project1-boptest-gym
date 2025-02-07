@@ -15,7 +15,9 @@ from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, Discretiz
 url = 'http://127.0.0.1'
 
 def make_env(seed):
-    ''' Function that instantiates the environment. 
+    ''' Function that returns a method to instantiate a BoptestGymEnv environment
+    as required by the SubprocVecEnv class of stable_baselines3.
+
     Parameters
     ----------
     seed: integer
