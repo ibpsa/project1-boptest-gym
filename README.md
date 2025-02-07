@@ -1,20 +1,19 @@
 # BOPTEST-Gym
 
-BOPTESTS-Gym is the [OpenAI-Gym](https://gym.openai.com/) environment for the [BOPTEST](https://github.com/ibpsa/project1-boptest) framework. This repository accommodates the BOPTEST API to the OpenAI-Gym convention in order to facilitate the implementation, assessment and benchmarking of reinforcement learning (RL) algorithms for their application in building energy management. RL algorithms from the [Stable-Baselines 3](https://github.com/DLR-RM/stable-baselines3) repository are used to exemplify and test this framework. 
+BOPTESTS-Gym is the [Gymnasium](https://gymnasium.farama.org/index.html) environment of the [BOPTEST](https://github.com/ibpsa/project1-boptest) framework. This repository accommodates the BOPTEST API to the Gymnasium standard in order to facilitate the implementation, assessment and benchmarking of reinforcement learning (RL) algorithms for their application in building energy management. RL algorithms from the [Stable-Baselines 3](https://github.com/DLR-RM/stable-baselines3) repository are used to exemplify and test this framework. 
 
 The environment is described in [this paper](https://www.researchgate.net/publication/354386346_An_OpenAI-Gym_environment_for_the_Building_Optimization_Testing_BOPTEST_framework). 
 
 ## Structure
-- `boptestGymEnv.py` contains the core functionality of this Gym environment.
+- `boptestGymEnv.py` contains the core functionality of this Gymnasium environment.
 - `environment.yml` contains the dependencies required to run this software. 
 - `/examples` contains prototype code for the interaction of RL algorithms with an emulator building model from BOPTEST. 
-- `/testing` contains code for unit testing of this software. 
+- `/testing` contains code for testing this software. 
 
-## Quick-Start (using BOPTEST-Service)
-BOPTEST-Service allows to directly access BOPTEST test cases in the cloud, without the need to run it locally. Interacting with BOPTEST-Service requires less configuration effort but is considerably slower because of the communication overhead between the agent and the test case running in the cloud. Use this approach when you want to quickly check out the functionality of this repository. 
+## Quick-Start
 
-1) Create a conda environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). 
-2) Check out the `boptest-gym-service` branch and run the example below that uses the [Bestest hydronic case with a heat-pump](https://github.com/ibpsa/project1-boptest/tree/master/testcases/bestest_hydronic_heat_pump) and the [DQN algorithm](https://stable-baselines3.readthedocs.io/en/master/modules/dqn.html) from Stable-Baselines: 
+1) Create an environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). You can also see our Dockerfile in [testing/Dockerfile](testing/Dockerfile) that we use to define our testing environment. 
+2) Run the example below that uses the [Bestest hydronic case with a heat-pump](https://github.com/ibpsa/project1-boptest/tree/master/testcases/bestest_hydronic_heat_pump) and the [DQN algorithm](https://stable-baselines3.readthedocs.io/en/master/modules/dqn.html) from Stable-Baselines: 
 
 ```python
 from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, DiscretizedActionWrapper
@@ -68,33 +67,38 @@ env.get_kpis()
 
 ```
 
-## Quick-Start (running BOPTEST locally)
-Running BOPTEST locally is substantially faster
+In [this tutorial](https://github.com/ibpsa/project1-boptest-gym/blob/master/docs/tutorials/CCAI_Summer_School_2022/Building_Control_with_RL_using_BOPTEST.ipynb) you can find more details on how to use BOPTEST-Gym and on RL applied to buildings in general. 
 
-1) Create a conda environment from the `environment.yml` file provided (instructions [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html#creating-an-environment-from-an-environment-yml-file)). 
-2) Run a BOPTEST case with the building emulator model to be controlled (instructions [here](https://github.com/ibpsa/project1-boptest/blob/master/README.md)).  
-3) Check out the `master` branch of this repository and run the example above replacing the url to be `url = 'http://127.0.0.1:5000'` and avoiding the `testcase` argument to the `BoptestGymEnv` class. 
+### Note 1: on running BOPTEST in the server vs. locally
+The previous example interacts with BOPTEST in a server at `https://api.boptest.net` which is readily available anytime. Interacting with BOPTEST from this server requires less configuration effort but is slower because of the communication overhead between the agent and the test case running in the cloud. Use this approach when you want to quickly check out the functionality of this repository. 
 
-## Quick-Start (running BOPTEST locally in a vectorized environment)
-
-To facilitate the training and testing process, we provide scripts that automate the deployment of multiple BOPTEST instances using Docker Compose and then train an RL agent with a vectorized BOPTEST-gym environment. The deployment dynamically checks for available ports, generates a Docker Compose YAML file, and takes care of naming conflicts to ensure smooth deployment.
-Running a vectorized environment allows you to deploy as many BoptestGymEnv instances as cores you have available for the agent to learn from all of them in parallel (see [here](https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html) for more information, we specifically use [`SubprocVecEnv`](https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html#subprocvecenv)). This substantially speeds up the training process. 
-
-### Usage
-
-1. Specify the BOPTEST root directory either by passing it as a command-line argument or by defining the `boptest_root` variable at the beginning of the script `generateDockerComposeYml.py`. The script prioritizes the command-line argument if provided. Users are allowed to change the Start Port number and Total Services as needed.
-
-Example using command-line argument:
-
+If you prioritize speed (which is usually the case when training RL agents), running BOPTEST locally is substantially faster. 
+You can do so by downloading the BOPTEST repository and running:
 ```bash
-python generateDockerComposeYml.py absolute_boptest_root_dir
+docker compose up web worker provision
+
 ```
 
-2. Train an RL agent with parallel learning with the vectorized BOPTEST-gym environment. See `/examples/run_vectorized.py` for an example on how to do so. 
+Further details in the [BOPTEST GitHub page](https://github.com/ibpsa/project1-boptest/blob/master/README.md#quick-start-to-deploy-and-use-boptest-on-a-local-computer). 
+
+Then you only need to change the `url` to point to your local BOPTEST service deployment instead of the remote server (`url = 'http://127.0.0.1').
+
+### Note 2: on running BOPTEST locally in a vectorized environment
+
+BOPTEST allows the deployment of multiple test case instances using Docker Compose. 
+Running a vectorized environment enables the deployment of as many BoptestGymEnv instances as cores you have available for the agent to learn from all of them in parallel. See [here](https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html) for more information, we specifically use [`SubprocVecEnv`](https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html#subprocvecenv). This can substantially speed up the training process. 
+
+To do so, deploy BOPTEST with multiple workers to spin multiple test cases. See the example below that prepares BOPTEST to spin two test cases.
+
+```bash
+docker compose up --scale worker=2 web worker provision
+```
+
+Then you can train an RL agent with parallel learning with the vectorized BOPTEST-gym environment. See [`/examples/run_vectorized.py`](https://github.com/ibpsa/project1-boptest-gym/blob/master/examples/run_vectorized.py) for an example on how to do so. 
 
 ## Versioning and main dependencies
 
-Current BOPTEST-Gym version is `v0.6.0` which is compatible with BOPTEST `v0.6.0` 
+Current BOPTEST-Gym version is `v0.7.0` which is compatible with BOPTEST `v0.7.0` 
 (BOPTEST-Gym version should always be even with the BOPTEST version used). 
 The framework has been tested with `gymnasium==0.28.1` and `stable-baselines3==2.0.0`.
 You can see [testing/Dockerfile](testing/Dockerfile) for a full description of the testing environment. 

@@ -11,7 +11,7 @@ import random
 from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, NormalizedActionWrapper
 from examples.test_and_plot import test_agent
 
-url = 'http://127.0.0.1:5000'
+url = 'http://127.0.0.1'
 
 # Seed for random starting times of episodes
 random.seed(123456)
@@ -77,7 +77,7 @@ def run_reward_custom(plot=False):
             w = 0.1
             
             # Compute BOPTEST core kpis
-            kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
+            kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
             
             # Calculate objective integrand function at this point
             objective_integrand = kpis['cost_tot']*12.*16. + w*kpis['tdis_tot']
@@ -125,7 +125,7 @@ def run_reward_clipping(plot=False):
             '''
             
             # Compute BOPTEST core kpis
-            kpis = requests.get('{0}/kpi'.format(self.url)).json()['payload']
+            kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
             
             # Calculate objective integrand function at this point
             objective_integrand = kpis['cost_tot']*12.*16. + kpis['tdis_tot']
@@ -249,7 +249,10 @@ def run(envClass, wrapper=None, scenario={'electricity_price':'constant'},
                          episode_length=episode_length_test,
                          warmup_period=warmup_period_test,
                          plot=plot)
-    
+
+    # stop the test
+    env.stop()
+
     return observations, actions, rewards
         
 class BaselineModel(object):

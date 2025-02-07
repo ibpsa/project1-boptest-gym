@@ -12,10 +12,10 @@ IMG_NAME_BOPTESTBASE=boptest_base
 IMG_REGI_BOPTESTBASE=javierarroyo/boptest_base
 
 # BOPTEST commit used for the tests
-BOPTEST_COMMIT=78665506a620fc07bc2a8f301661aef3dd6c88c2
+BOPTEST_COMMIT=e7602c766932ca140459609a66e6b999bbb2bed7
 
 # Define current BOPTEST-Gym version (should be even with BOPTEST version defined in commit above)
-VERSION = 0.6.0-dev
+VERSION = 0.7.0
 
 build-boptestgym:
 	docker build -f ${ROOT}/testing/Dockerfile \
@@ -25,7 +25,7 @@ build-boptestgym-no-cache:
 	docker build -f ${ROOT}/testing/Dockerfile \
 		--progress=plain --no-cache --rm -t ${IMG_NAME_BOPTESTGYM} .
 
-# Build the generic BOPTEST base image without mounting any test case
+# Build all needed services without selecting any test case
 build-boptestbase:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
@@ -86,38 +86,29 @@ download-boptest:
 	curl -L -o boptest.zip https://github.com/ibpsa/project1-boptest/archive/${BOPTEST_COMMIT}.zip
 	unzip -o -q boptest.zip
 	
-run-boptest-case:
+run-boptest:
 	make download-boptest
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker compose up -d
+	docker compose up -d web worker provision && \
 	sleep 10
 
-run-boptest-case-no-cache:
-	make download-boptest
+restart-boptest-app:
 	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker compose up -d --force-recreate --build
-	sleep 10
-
-run-boptest-case-commercial:
-	make download-boptest
-	cd project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=singlezone_commercial_hydronic docker compose up -d && \
-	sleep 10
+	docker compose restart
 
 run-boptest-vectorized:
 	make download-boptest && \
-	cd .. && python3 generateDockerComposeYml.py testing/project1-boptest-${BOPTEST_COMMIT} && \
-	cd testing/project1-boptest-${BOPTEST_COMMIT} && \
-	TESTCASE=bestest_hydronic_heat_pump docker compose up -d 
+	cd project1-boptest-${BOPTEST_COMMIT} && \
+	docker compose up -d --scale worker=2 web worker provision && \
+	sleep 10 
 
 stop-boptest-case:
 	cd project1-boptest-${BOPTEST_COMMIT} && docker compose down
 
 cleanup-boptest:
-	rm boptest.zip
-	rm -r project1-boptest-${BOPTEST_COMMIT}
+	-rm boptest.zip
+	-rm -r project1-boptest-${BOPTEST_COMMIT}
 
-# All tests except test_tutorial use the master version of boptest-gym
 # Assumes bestest_hydronic_heat_pump test case is running
 test-local:
 	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest
@@ -129,12 +120,12 @@ test-multiaction:
 test-vectorized:
 	python3 -m unittest test_boptestGymEnv.BoptestGymVecTest project1-boptest-${BOPTEST_COMMIT}
 
-# The tutorial is using boptest-gym-service and covers most of the functionality of boptest-gym 
-test-service:
-	python3 -m unittest test_boptestGymEnv.BoptestGymServiceTest
+# The tutorial covers most of the functionality of boptest-gym 
+test-tutorial:
+	python3 -m unittest test_boptestGymEnv.BoptestGymTutorialTest
 
 test-local-in-container:
-	make run-boptest-case
+	make run-boptest
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-local"
 	make stop-boptestgym
@@ -142,7 +133,7 @@ test-local-in-container:
 	make cleanup-boptest
 
 test-multiaction-in-container:
-	make run-boptest-case-commercial
+	make run-boptest
 	make run-boptestgym-detached
 	make exec-boptestgym ARGS="make test-multiaction"
 	make stop-boptestgym
@@ -157,8 +148,8 @@ test-vectorized-in-container:
 	make stop-boptest-case
 	make cleanup-boptest
 
-test-service-in-container:
+test-tutorial-in-container:
 	make run-boptestgym-detached
-	make exec-boptestgym ARGS="make test-service"
+	make exec-boptestgym ARGS="make test-tutorial"
 	make stop-boptestgym
 
