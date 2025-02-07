@@ -135,29 +135,6 @@ def train_DQN_vectorized(venv,
     # Main training loop
     model.learn(total_timesteps=100, callback=eval_callback)
 
-if __name__ == '__main__':
-
-    boptest_root = "./"
-
-    # Get the argument from command line when use Linux
-    if len(sys.argv) >= 2:
-        boptest_root_dir = sys.argv[1]
-    else:
-        boptest_root_dir = boptest_root
-
-    # Use URLs obtained from docker-compose.yml
-    urls = generate_urls_from_yml(boptest_root_dir=boptest_root_dir)
-
-    # Create BOPTEST-Gym environment replicas
-    envs = [make_env(url) for url in urls]
-    
-    # Create a vectorized environment using SubprocVecEnv
-    venv = SubprocVecEnv(envs)
-    
-    # Train vectorized environment
-    train_DQN_vectorized(venv)
-
-
 
 
 
