@@ -474,20 +474,6 @@ class BoptestGymVecTest(unittest.TestCase, utilities.partialChecks):
          
     '''
 
-    def setUp(self):
-        '''Reads the location of boptest root directory which should be passed from 
-        the terminal when invoking this test. 
-        '''
-        
-        # Take parent directory as default
-        boptest_root = os.path.dirname(os.path.abspath(__file__))
-
-        # Get the argument from command line when use Linux
-        if len(sys.argv) >= 2:
-            self.boptest_root_dir = sys.argv[1:][1]
-        else:
-            self.boptest_root_dir = boptest_root
-
     def test_vectorized(self, n_envs=2):
         '''
         Instantiates a vectorized environment with two BOPTEST-Gym environment replicas
