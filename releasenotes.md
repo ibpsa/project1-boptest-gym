@@ -1,12 +1,13 @@
 # Release Notes
 
-BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simplicity, the first two digits of the version number match the same two digits of the BOPTEST version of which BOPTEST-Gym is compatible with. For example, BOPTEST-Gym v0.6.x is compatible with BOPTEST v0.6.x. The last digit is reserved for other internal edits specific to this repository only. See [here](https://github.com/ibpsa/project1-boptest/blob/master/releasenotes.md) for BOPTEST release notes. 
+BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simplicity, the first two digits of the version number match the same two digits of the BOPTEST version of which BOPTEST-Gym is compatible with. For example, BOPTEST-Gym v0.7.x is compatible with BOPTEST v0.7.x. The last digit is reserved for other internal edits specific to this repository only. See [here](https://github.com/ibpsa/project1-boptest/blob/master/releasenotes.md) for BOPTEST release notes. 
 
 
-## BOPTEST-Gym v0.6.0-dev
+## BOPTEST-Gym v0.7.0
 
-Released on xx/xx/xxxx.
+Released on 07/02/2025.
 
+- Update for BOPTEST v0.7.0. This version streamlines the formerly local and service developments by using a unified service architecture. This is for [#155](https://github.com/ibpsa/project1-boptest-gym/issues/155).  
 - Support for multi-dimensional action spaces. A multi-dimensional action space is tested in the `singlezone_commercial_hydronic` test case. This is for [#19](https://github.com/ibpsa/project1-boptest-gym/issues/19). 
 
 ## BOPTEST-Gym v0.6.0
