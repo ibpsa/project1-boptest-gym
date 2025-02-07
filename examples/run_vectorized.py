@@ -14,47 +14,6 @@ from boptestGymEnv import BoptestGymEnv, NormalizedObservationWrapper, Discretiz
 
 url = 'http://127.0.0.1'
 
-def generate_urls_from_yml(boptest_root_dir):
-    '''Method that returns as many urls for BOPTEST-Gym environments 
-    as those specified at the BOPTEST `docker-compose.yml` file. 
-    It assumes that `generateDockerComposeYml.py` has been called first. 
-
-    Parameters
-    ----------
-    boptest_root_dir: str
-        String with directory to BOPTEST where the `docker-compose.yml` 
-        file should be located. 
-
-    Returns
-    -------
-    urls: list
-        List of urls where BOPTEST test cases will be allocated. 
-
-    '''
-    docker_compose_loc = os.path.join(boptest_root_dir, "docker-compose.yml")
-
-    # Read the docker-compose.yml file
-    with open(docker_compose_loc, 'r') as stream:
-        try:
-            docker_compose_data = yaml.safe_load(stream)
-            services = docker_compose_data.get('services', {})
-
-            # Extract the port and URL of the service
-            urls = []
-            for service, config in services.items():
-                ports = config.get('ports', [])
-                for port in ports:
-                    # Extract host port
-                    host_port = port.split(':')[1]
-                    urls.append(f'http://127.0.0.1:{host_port}')
-
-            print(urls)  # Print URLs
-
-        except yaml.YAMLError as exc:
-            print(exc)
-    
-    return urls
-
 def make_env(seed):
     ''' Function that instantiates the environment. 
     Parameters
