@@ -1,6 +1,5 @@
 # Start with a base Ubuntu image
-FROM --platform=linux/x86_64 ubuntu:20.04
-# This is the Focal Fossa ubuntu version
+FROM --platform=linux/x86_64 ubuntu:22.04
 MAINTAINER Javier Arroyo <javier.arroyo@wedoco.io>
 
 # Avoid warnings while installing ubuntu
@@ -12,7 +11,7 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 RUN apt update && \
     apt install -y \
     git \
-    python3.9 \
+    python3.10 \
     python3-pip  && \
     rm -rf /var/lib/apt/lists/*
 
