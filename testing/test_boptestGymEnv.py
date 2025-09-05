@@ -606,19 +606,18 @@ class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
         '''Checks an estimated action after an agent is trained in a multi-action environment.'''
 
         # Train an agent in a multi-action environment.
-        self.env, model = run_multiaction.train_multiaction()
+        env, model = run_multiaction.train_multiaction()
 
         # Test one step with the trained model
-        obs = self.env.reset()[0]
+        obs = env.reset()[0]
         df = pd.DataFrame([model.predict(obs)[0]], columns=['value'])
         df.index.name = 'keys'
         ref_filepath    = os.path.join(utilities.get_root_path(), 
                             'testing', 'references', 'multiaction_training.csv')
         self.compare_ref_values_df(df, ref_filepath)
 
-    def tearDown(self):
-        '''Clean up after each test.'''
-        self.env.close()
+        # stop the environment to not overload the server
+        env.stop()
 
 
 if __name__ == '__main__':
