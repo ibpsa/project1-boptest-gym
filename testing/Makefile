@@ -12,10 +12,10 @@ IMG_NAME_BOPTESTBASE=boptest_base
 IMG_REGI_BOPTESTBASE=javierarroyo/boptest_base
 
 # BOPTEST commit used for the tests
-BOPTEST_COMMIT=e7602c766932ca140459609a66e6b999bbb2bed7
+BOPTEST_COMMIT=e5a744c1c8a4615ccbaf55d16f9ecb918e90c35d
 
 # Define current BOPTEST-Gym version (should be even with BOPTEST version defined in commit above)
-VERSION = 0.7.0
+VERSION = 0.8.0
 
 build-boptestgym:
 	docker build -f ${ROOT}/testing/Dockerfile \

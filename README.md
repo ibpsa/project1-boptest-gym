@@ -98,7 +98,7 @@ Then you can train an RL agent with parallel learning with the vectorized BOPTES
 
 ## Versioning and main dependencies
 
-Current BOPTEST-Gym version is `v0.7.0` which is compatible with BOPTEST `v0.7.0` 
+Current BOPTEST-Gym version is `v0.8.0` which is compatible with BOPTEST `v0.8.0` 
 (BOPTEST-Gym version should always be even with the BOPTEST version used). 
 The framework has been tested with `gymnasium==0.28.1` and `stable-baselines3==2.0.0`.
 You can see [testing/Dockerfile](testing/Dockerfile) for a full description of the testing environment. 

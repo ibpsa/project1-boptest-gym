@@ -3,6 +3,12 @@
 BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simplicity, the first two digits of the version number match the same two digits of the BOPTEST version of which BOPTEST-Gym is compatible with. For example, BOPTEST-Gym v0.7.x is compatible with BOPTEST v0.7.x. The last digit is reserved for other internal edits specific to this repository only. See [here](https://github.com/ibpsa/project1-boptest/blob/master/releasenotes.md) for BOPTEST release notes. 
 
 
+## BOPTEST-Gym v0.8.0
+
+Released on 05/09/2025.
+
+- Update for BOPTEST v0.8.0. This versiondid not require any update since BOPTEST API v0.8.0 is compatible with its previous version v0.7.0. 
+
 ## BOPTEST-Gym v0.7.0
 
 Released on 07/02/2025.
