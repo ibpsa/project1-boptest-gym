@@ -7,7 +7,7 @@ BOPTEST-Gym has two main dependencies: BOPTEST and Stable-Baselines3. For simpli
 
 Released on 05/09/2025.
 
-- Update for BOPTEST v0.8.0. This versiondid not require any update since BOPTEST API v0.8.0 is compatible with its previous version v0.7.0. 
+- Update for BOPTEST v0.8.0. This version did not require any update since BOPTEST API v0.8.0 is compatible with its previous version v0.7.0. 
 
 ## BOPTEST-Gym v0.7.0
 
