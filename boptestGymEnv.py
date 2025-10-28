@@ -512,15 +512,7 @@ class BoptestGymEnv(gym.Env):
         '''
 
         requests.put('{0}/stop/{1}'.format(self.url, self.testid))
-
-    def stop(self):
-        '''
-        Stop the test case
-
-        '''
-
-        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
-
+        
     def step(self, action):
         '''
         Advance the simulation one time step
