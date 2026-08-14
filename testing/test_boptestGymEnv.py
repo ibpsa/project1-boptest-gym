@@ -6,6 +6,7 @@ the tests.
 '''
 
 import unittest
+from unittest import mock
 import os
 import sys
 import pandas as pd
@@ -15,6 +16,7 @@ from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
     run_variable_episode, run_vectorized, run_multiaction, train_RL
 from collections import OrderedDict
+import boptestGymEnv
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
@@ -618,6 +620,301 @@ class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
 
         # stop the environment to not overload the server
         env.stop()
+
+
+class StubRequests(object):
+    '''Stands in for the requests module.
+
+    Records every call and replays a canned response for the first url that
+    contains a registered pattern, so that BOPTEST versions that do and do not
+    support an option can both be exercised without a deployed test case.
+
+    '''
+
+    class Response(object):
+        def __init__(self, body, status_code=200, text=''):
+            self._body, self.status_code, self.text = body, status_code, text
+
+        def json(self):
+            if self._body is None:
+                raise ValueError('not json')
+            return self._body
+
+    def __init__(self):
+        self.calls = []
+        self.responses = {}
+
+    def _record(self, method, url, **kwargs):
+        self.calls.append((method, url, kwargs))
+        for pattern, response in self.responses.items():
+            if pattern in url:
+                return response(kwargs) if callable(response) else response
+        return self.Response({'status': 200, 'message': '', 'payload': {}})
+
+    def get(self, url, **kwargs):
+        return self._record('get', url, **kwargs)
+
+    def put(self, url, **kwargs):
+        return self._record('put', url, **kwargs)
+
+    def post(self, url, **kwargs):
+        return self._record('post', url, **kwargs)
+
+
+class BoptestClientTest(unittest.TestCase):
+    '''Tests the client that carries every request to BOPTEST.
+
+    These need no deployed test case: boptestGymEnv's requests module is
+    patched with StubRequests for the duration of each test.
+
+    '''
+
+    def setUp(self):
+        self.stub = StubRequests()
+        patcher = mock.patch.object(boptestGymEnv, 'requests', self.stub)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    # --- tests ---------------------------------------------------------------
+
+    def _client(self, select_options=None):
+        self.stub.responses['select'] = StubRequests.Response({'testid': 'a-test-id'})
+        return boptestGymEnv.BoptestClient(url, 'bestest_hydronic_heat_pump',
+                                           select_options or {})
+
+    def test_select_options_are_sent_as_given(self):
+        '''Test that the select body carries exactly the options asked for, so
+        that BOPTEST keeps its own defaults for the rest.
+
+        '''
+
+        self._client()
+        self.assertEqual(self.stub.calls[-1][2]['json'], {})
+        self.stub.calls = []
+        self._client({'direct_step': True, 'fmu_log_level': 0})
+        self.assertEqual(self.stub.calls[-1][2]['json'],
+                         {'direct_step': True, 'fmu_log_level': 0})
+
+    def test_kpi_subset_when_the_server_supports_it(self):
+        '''Test that only the named KPIs are requested and returned.
+
+        '''
+
+        client = self._client()
+        self.stub.responses['kpi'] = StubRequests.Response(
+            {'payload': {'cost_tot': 1.0, 'tdis_tot': 2.0}})
+        kpis = client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(sorted(kpis), sorted(boptestGymEnv.REWARD_KPIS))
+        self.assertEqual(self.stub.calls[-1][2]['params'],
+                         {'names': ','.join(boptestGymEnv.REWARD_KPIS)})
+        self.assertTrue(client._kpi_subset_supported)
+
+    def test_falls_back_when_the_server_ignores_names(self):
+        '''Test the case of a BOPTEST that predates the names parameter: it
+        ignores it and returns every KPI, which still contains what the reward
+        reads, so the request must succeed rather than fail.
+
+        '''
+
+        client = self._client()
+        every_kpi = {'cost_tot': 1.0, 'tdis_tot': 2.0, 'ener_tot': 3.0,
+                     'pele_tot': 4.0}
+        self.stub.responses['kpi'] = StubRequests.Response({'payload': dict(every_kpi)})
+        kpis = client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(sorted(kpis), sorted(every_kpi))
+
+    def test_falls_back_when_the_server_rejects_names(self):
+        '''Test the case of a BOPTEST that rejects the parameter: the client
+        asks again for everything and then stops asking for a subset.
+
+        '''
+
+        client = self._client()
+        every_kpi = {'cost_tot': 1.0, 'tdis_tot': 2.0, 'ener_tot': 3.0}
+
+        def kpi_response(kwargs):
+            if kwargs.get('params'):
+                return StubRequests.Response({'status': 400, 'message': 'bad names',
+                                       'payload': None})
+            return StubRequests.Response({'payload': dict(every_kpi)})
+
+        self.stub.responses['kpi'] = kpi_response
+        kpis = client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(sorted(kpis), sorted(every_kpi))
+        self.assertFalse(client._kpi_subset_supported)
+
+        # ...and the next reward does not pay for the failed attempt again
+        self.stub.calls = []
+        client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(len(self.stub.calls), 1)
+        self.assertIsNone(self.stub.calls[0][2].get('params'))
+
+
+class LocalClientTest(unittest.TestCase):
+    '''Tests the in-process BOPTEST backend.
+
+    Constructing one for real needs pyfmi and a test case FMU, neither of
+    which is available here, so these cover what can be checked without them:
+    that it refuses clearly when it cannot work, and that it dispatches the
+    endpoints the environment uses to the right TestCase methods.
+
+    '''
+
+    class _StubTestCase(object):
+        '''Answers with the (status, message, payload) contract of TestCase.'''
+
+        def __init__(self):
+            self.calls = []
+
+        def _record(self, name, *args):
+            self.calls.append((name,) + args)
+            return 200, 'ok', {name: args}
+
+        def get_name(self):             return self._record('get_name')
+        def get_measurements(self):     return self._record('get_measurements')
+        def get_inputs(self):           return self._record('get_inputs')
+        def get_forecast_points(self):  return self._record('get_forecast_points')
+        def get_step(self):             return self._record('get_step')
+        def get_scenario(self):         return self._record('get_scenario')
+        def get_version(self):          return self._record('get_version')
+        def set_step(self, step):       return self._record('set_step', step)
+        def set_scenario(self, s):      return self._record('set_scenario', s)
+        def advance(self, u):           return self._record('advance', u)
+        def initialize(self, s, w, warmup_interval=None):
+            return self._record('initialize', s, w, warmup_interval)
+        def get_results(self, p, s, f): return self._record('get_results', p, s, f)
+        def get_forecast(self, p, h, i):return self._record('get_forecast', p, h, i)
+
+        def get_kpis(self, names=None):
+            self.calls.append(('get_kpis', names))
+            return 200, 'ok', {'cost_tot': 1.0, 'tdis_tot': 2.0}
+
+    def _client(self):
+        '''A LocalClient wired to a stub, bypassing __init__ so that no FMU is
+        needed.
+
+        '''
+
+        client = boptestGymEnv.LocalClient.__new__(boptestGymEnv.LocalClient)
+        client.url = 'local'
+        client.testid = 'stub'
+        client.case = self._StubTestCase()
+        client._workdir = None
+        client._kpi_subset_supported = True
+        client._warmup_interval_supported = True
+        return client
+
+    def test_requires_a_boptest_source_tree(self):
+        '''Test that it says what is missing rather than failing on an import.
+
+        '''
+
+        previous = os.environ.pop('BOPTEST_ROOT', None)
+        try:
+            with self.assertRaises(ValueError) as caught:
+                boptestGymEnv.LocalClient(url, 'bestest_hydronic_heat_pump', {})
+            self.assertIn('BOPTEST_ROOT', str(caught.exception))
+        finally:
+            if previous is not None:
+                os.environ['BOPTEST_ROOT'] = previous
+
+    def test_dispatches_the_endpoints_the_environment_uses(self):
+        '''Test that every endpoint BoptestGymEnv asks for reaches the right
+        TestCase method with the right arguments.
+
+        '''
+
+        client = self._client()
+        for endpoint, method in [('name', 'get_name'),
+                                 ('measurements', 'get_measurements'),
+                                 ('inputs', 'get_inputs'),
+                                 ('forecast_points', 'get_forecast_points'),
+                                 ('step', 'get_step'),
+                                 ('scenario', 'get_scenario')]:
+            client.get(endpoint)
+            self.assertEqual(client.case.calls[-1][0], method)
+
+        client.put('initialize', json={'start_time': 900, 'warmup_period': 60})
+        self.assertEqual(client.case.calls[-1], ('initialize', 900, 60, None))
+        client.put('step', json={'step': 900})
+        self.assertEqual(client.case.calls[-1], ('set_step', 900))
+        client.post('advance', json={'oveHeaPumY_u': 0.5})
+        self.assertEqual(client.case.calls[-1], ('advance', {'oveHeaPumY_u': 0.5}))
+        client.put('results', json={'point_names': ['a'], 'start_time': 0,
+                                    'final_time': 900})
+        self.assertEqual(client.case.calls[-1], ('get_results', ['a'], 0, 900))
+        client.put('forecast', json={'point_names': ['a'], 'horizon': 900,
+                                     'interval': 300})
+        self.assertEqual(client.case.calls[-1], ('get_forecast', ['a'], 900, 300))
+
+    def test_scenario_keys_are_filled_in(self):
+        '''Test that a partial scenario is completed with None, which
+        TestCase.set_scenario reads as "leave unchanged" and which it requires
+        to be present.
+
+        '''
+
+        client = self._client()
+        client.put('scenario', json={'electricity_price': 'constant'})
+        sent = client.case.calls[-1][1]
+        self.assertEqual(sent['electricity_price'], 'constant')
+        for key in ['time_period', 'temperature_uncertainty',
+                    'solar_uncertainty', 'seed']:
+            self.assertIsNone(sent[key], '{0} was not filled in'.format(key))
+
+    def test_kpi_subset_is_passed_through(self):
+        '''Test that requesting named KPIs reaches TestCase, and that asking
+        for all of them passes no names.
+
+        '''
+
+        client = self._client()
+        client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(client.case.calls[-1],
+                         ('get_kpis', boptestGymEnv.REWARD_KPIS))
+        client.kpis()
+        self.assertEqual(client.case.calls[-1], ('get_kpis', None))
+
+    def test_warmup_interval_is_passed_through(self):
+        '''Test that a warmup grid asked for by the environment reaches
+        TestCase.initialize in process, and that it is left out when the
+        environment did not ask for one or the local BOPTEST is too old to
+        accept it.
+
+        '''
+
+        client = self._client()
+        client.put('initialize', json={'start_time': 900, 'warmup_period': 60,
+                                       'warmup_interval': 900})
+        self.assertEqual(client.case.calls[-1], ('initialize', 900, 60, 900))
+        client._warmup_interval_supported = False
+        client.put('initialize', json={'start_time': 900, 'warmup_period': 60,
+                                       'warmup_interval': 900})
+        self.assertEqual(client.case.calls[-1], ('initialize', 900, 60, None))
+
+    def test_unsupported_endpoint_is_reported(self):
+        '''Test that an endpoint with no local equivalent says so, rather than
+        failing somewhere less obvious.
+
+        '''
+
+        client = self._client()
+        for method in [client.get, client.put, client.post]:
+            with self.assertRaises(ValueError) as caught:
+                method('nonsense')
+            self.assertIn('nonsense', str(caught.exception))
+
+    def test_error_from_testcase_becomes_a_runtime_error(self):
+        '''Test that a non-200 status from TestCase is raised with its
+        message, matching what the REST client does with the same response.
+
+        '''
+
+        client = self._client()
+        client.case.get_name = lambda: (400, 'something was wrong', None)
+        with self.assertRaises(RuntimeError) as caught:
+            client.get('name')
+        self.assertIn('something was wrong', str(caught.exception))
 
 
 if __name__ == '__main__':

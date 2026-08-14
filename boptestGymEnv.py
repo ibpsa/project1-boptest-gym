@@ -14,6 +14,9 @@ import pandas as pd
 import inspect
 import json
 import os
+import shutil
+import sys
+import tempfile
 
 from collections import OrderedDict
 from scipy import interpolate
@@ -24,6 +27,233 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 from stable_baselines3.common.callbacks import BaseCallback
 
 from examples.test_and_plot import plot_results, test_agent
+
+# The core KPIs that every reward in this module reads
+REWARD_KPIS = ['cost_tot', 'tdis_tot']
+
+
+class BoptestClient(object):
+    '''Handles the communication with a BOPTEST test case.
+
+    Every request the environment makes goes through this object, so that the
+    environment itself does not need to know how BOPTEST is reached.
+
+    '''
+
+    def __init__(self, url, testcase, select_options):
+        '''Select a test case and remember its identifier.
+
+        Parameters
+        ----------
+        url: string
+            Rest API url for communication with the BOPTEST interface.
+        testcase: string
+            The string identifier of the testcase.
+        select_options: dict
+            Test case options, sent in the select request body.  A BOPTEST that
+            does not know a key ignores it.
+
+        '''
+
+        self.url = url.rstrip('/')
+        self._kpi_subset_supported = True
+        self.testid = requests.post('{0}/testcases/{1}/select'.format(self.url, testcase),
+                                    json=select_options).json()['testid']
+
+    def get(self, endpoint, params=None):
+        return requests.get('{0}/{1}/{2}'.format(self.url, endpoint, self.testid),
+                            params=params).json()['payload']
+
+    def put(self, endpoint, json=None):
+        return requests.put('{0}/{1}/{2}'.format(self.url, endpoint, self.testid),
+                            json=json).json()['payload']
+
+    def post(self, endpoint, json=None):
+        return requests.post('{0}/{1}/{2}'.format(self.url, endpoint, self.testid),
+                             json=json).json()['payload']
+
+    def kpis(self, names=None):
+        '''Return the core KPIs, optionally only the ones named.
+
+        A BOPTEST that does not support the names parameter returns the full
+        set, so this falls back silently and stops asking.
+
+        '''
+
+        if names and self._kpi_subset_supported:
+            payload = self.get('kpi', params={'names': ','.join(names)})
+            if payload is not None and all(name in payload for name in names):
+                return payload
+            self._kpi_subset_supported = False
+        return self.get('kpi')
+
+    def stop(self):
+        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
+
+
+class LocalClient(BoptestClient):
+    '''Runs a BOPTEST test case in this process, with no web service.
+
+    Requires pyfmi and a BOPTEST source tree with the test case FMUs.  The
+    distributed FMUs need libgfortran.so.4, which the BOPTEST worker image
+    provides and a current Linux distribution generally does not.
+
+    Only ONE such client may exist per process, since every BOPTEST test case
+    FMU declares canBeInstantiatedOnlyOncePerProcess=true and a second one
+    corrupts both silently.  Use SubprocVecEnv to run several environments.
+
+    '''
+
+    def __init__(self, url, testcase, select_options,
+                 boptest_root=None, testcase_dir=None):
+        '''
+        Parameters
+        ----------
+        url: string
+            Ignored, kept so the two clients are interchangeable.
+        testcase: string
+            The string identifier of the testcase.
+        select_options: dict
+            Test case options, passed to TestCase.  A BOPTEST that does not
+            take them is used without them.
+        boptest_root: string, optional
+            Path to a BOPTEST source tree.  Defaults to the BOPTEST_ROOT
+            environment variable.
+        testcase_dir: string, optional
+            Directory holding the test case FMUs.  Defaults to
+            <boptest_root>/testcases.
+
+        '''
+
+        self._workdir = None
+        self._kpi_subset_supported = True
+
+        boptest_root = boptest_root or os.environ.get('BOPTEST_ROOT')
+        if not boptest_root:
+            raise ValueError(
+                'A local BOPTEST backend needs the BOPTEST source tree. Pass '
+                'boptest_root= or set the BOPTEST_ROOT environment variable '
+                'to a checkout of '
+                'https://github.com/ibpsa/project1-boptest.')
+        boptest_root = os.path.abspath(boptest_root)
+        for path in (boptest_root, os.path.join(boptest_root, 'kpis'),
+                     os.path.join(boptest_root, 'forecast'),
+                     os.path.join(boptest_root, 'data')):
+            if path not in sys.path:
+                sys.path.insert(0, path)
+
+        testcase_dir = testcase_dir or os.path.join(boptest_root, 'testcases')
+        fmupath = os.path.join(testcase_dir, testcase, 'models', 'wrapped.fmu')
+        if not os.path.isfile(fmupath):
+            raise IOError('No test case FMU at {0}. BOPTEST distributes these '
+                          'separately from the source tree.'.format(fmupath))
+
+        self.url = 'local'
+        self._workdir = tempfile.mkdtemp(prefix='boptestgym_{0}_'.format(testcase))
+        self.testid = os.path.basename(self._workdir)
+        shutil.copyfile(os.path.join(boptest_root, 'version.txt'),
+                        os.path.join(self._workdir, 'version.txt'))
+
+        from testcase import TestCase
+
+        # TestCase only needs the working directory while it is constructed
+        previous_cwd = os.getcwd()
+        os.chdir(self._workdir)
+        try:
+            forecast_params = os.path.join(boptest_root, 'forecast',
+                                           'forecast_uncertainty_params.json')
+            try:
+                self.case = TestCase(fmupath, forecast_params, **select_options)
+            except TypeError:
+                # A BOPTEST without these options: correct, just slower
+                self.case = TestCase(fmupath, forecast_params)
+            # A BOPTEST without warmup_interval warms up on its own grid
+            self._warmup_interval_supported = 'warmup_interval' in \
+                inspect.signature(self.case.initialize).parameters
+        finally:
+            os.chdir(previous_cwd)
+        # pyfmi would otherwise write its result file to the caller's directory
+        self.case.options['result_file_name'] = os.path.join(self._workdir, 'result.mat')
+
+    def _call(self, endpoint, method, *args, **kwargs):
+        '''Invoke a TestCase method and apply the REST layer's error contract.
+
+        '''
+
+        status, message, payload = method(*args, **kwargs)
+        if status != 200:
+            raise RuntimeError('BOPTEST "{0}" failed with status {1}: {2}'
+                               .format(endpoint, status, message))
+        return payload
+
+    def get(self, endpoint, params=None):
+        case = self.case
+        if endpoint == 'kpi':
+            names = None
+            if params and params.get('names'):
+                names = [n for n in str(params['names']).split(',') if n]
+            if names is None:
+                return self._call(endpoint, case.get_kpis)
+            try:
+                return self._call(endpoint, case.get_kpis, names)
+            except TypeError:
+                # A BOPTEST without the names argument: correct, just slower
+                self._kpi_subset_supported = False
+                return self._call(endpoint, case.get_kpis)
+        handlers = {'name': case.get_name,
+                    'measurements': case.get_measurements,
+                    'inputs': case.get_inputs,
+                    'forecast_points': case.get_forecast_points,
+                    'step': case.get_step,
+                    'scenario': case.get_scenario,
+                    'version': case.get_version}
+        if endpoint not in handlers:
+            raise ValueError('Unsupported local GET endpoint "{0}"'.format(endpoint))
+        return self._call(endpoint, handlers[endpoint])
+
+    def put(self, endpoint, json=None):
+        case = self.case
+        json = json or {}
+        if endpoint == 'initialize':
+            # Forward the warmup grid only when one was asked for
+            kwargs = {}
+            if json.get('warmup_interval') is not None \
+                    and self._warmup_interval_supported:
+                kwargs['warmup_interval'] = json['warmup_interval']
+            return self._call(endpoint, case.initialize,
+                              json['start_time'], json['warmup_period'],
+                              **kwargs)
+        if endpoint == 'step':
+            return self._call(endpoint, case.set_step, json['step'])
+        if endpoint == 'scenario':
+            # set_scenario reads every key, None to leave it unchanged
+            scenario = dict(json)
+            for key in ('electricity_price', 'time_period',
+                        'temperature_uncertainty', 'solar_uncertainty', 'seed'):
+                scenario.setdefault(key, None)
+            return self._call(endpoint, case.set_scenario, scenario)
+        if endpoint == 'results':
+            return self._call(endpoint, case.get_results, json['point_names'],
+                              json['start_time'], json['final_time'])
+        if endpoint == 'forecast':
+            return self._call(endpoint, case.get_forecast, json['point_names'],
+                              json['horizon'], json['interval'])
+        raise ValueError('Unsupported local PUT endpoint "{0}"'.format(endpoint))
+
+    def post(self, endpoint, json=None):
+        if endpoint == 'advance':
+            return self._call(endpoint, self.case.advance, json or {})
+        raise ValueError('Unsupported local POST endpoint "{0}"'.format(endpoint))
+
+    def stop(self):
+        '''Release the test case and remove its temporary directory.
+
+        '''
+
+        if self._workdir is not None:
+            shutil.rmtree(self._workdir, ignore_errors=True)
+            self._workdir = None
+
 
 class BoptestGymEnv(gym.Env):
     '''
@@ -51,7 +281,13 @@ class BoptestGymEnv(gym.Env):
                  scenario           = {'electricity_price':'constant'},
                  step_period        = 900,
                  render_episodes    = False,
-                 log_dir            = os.getcwd()):
+                 log_dir            = os.getcwd(),
+                 direct_step        = False,
+                 fmu_log_level      = None,
+                 log_level          = None,
+                 warmup_interval    = None,
+                 local              = False,
+                 boptest_root       = None):
         '''
         Parameters
         ----------
@@ -129,9 +365,40 @@ class BoptestGymEnv(gym.Env):
             Sampling time in seconds
         render_episodes: boolean
             True to render every episode
-        log_dir: string    
+        log_dir: string
             Directory to store results like plots or KPIs
-            
+        direct_step: boolean
+            True to ask BOPTEST to step the emulator FMU directly rather than
+            through pyfmi's simulate on every control step.  Measurements and
+            KPIs are unchanged, and a BOPTEST that does not support the option
+            ignores it.
+            Default is False.
+        fmu_log_level: int
+            Log level for the emulator FMU, from 0 for nothing to 7 for
+            everything.  Lowering it makes a control step cheaper.
+            Default is None, which leaves BOPTEST its own level.
+        log_level: int or str
+            Log level for BOPTEST's own log file and console output.  Lowering
+            it makes a control step cheaper.
+            Default is None, which leaves BOPTEST its own level.
+        warmup_interval: float
+            Sample interval in seconds for the warmup simulation that every
+            episode reset performs.  A larger value makes the reset cheaper
+            but slightly moves the state reached at the start time, and with
+            it the reported KPIs.  Control steps always use 30 s.  A BOPTEST
+            that does not support the option ignores it.
+            Default is None, which leaves the grid to BOPTEST, where it is
+            30 s.
+        local: boolean
+            True to run the test case in this process instead of talking to a
+            BOPTEST web service.  Requires pyfmi and a local BOPTEST source
+            tree with the test case FMUs, and only ONE such environment may
+            exist per process.  See LocalClient.
+            Default is False.
+        boptest_root: string
+            Path to a BOPTEST source tree, used only when local=True.
+            Defaults to the BOPTEST_ROOT environment variable.
+
         '''
         
         super(BoptestGymEnv, self).__init__()
@@ -152,7 +419,12 @@ class BoptestGymEnv(gym.Env):
         self.scenario           = scenario
         self.render_episodes    = render_episodes
         self.log_dir            = log_dir
-        
+        self.direct_step        = direct_step
+        self.fmu_log_level      = fmu_log_level
+        self.log_level          = log_level
+        self.warmup_interval    = warmup_interval
+        self.local              = local
+
         # Avoid requesting data before the beginning of the year
         if self.regressive_period is not None:
             self.bgn_year_margin = self.regressive_period
@@ -167,23 +439,29 @@ class BoptestGymEnv(gym.Env):
         # Get testid for the particular testcase
         # Check if already started a test case and stop it if so before starting another
         try:
-            requests.put('{0}/stop/{1}'.format(url, self.testid))
+            self.client.stop()
         except:
             pass
         # Select and start a new test case
-        self.testid = requests.post('{0}/testcases/{1}/select'.format(url, testcase)).json()['testid']
+        # Select and start a new test case, over REST or in this process
+        if self.local:
+            self.client = LocalClient(url, testcase, self._select_options(),
+                                      boptest_root=boptest_root)
+        else:
+            self.client = BoptestClient(url, testcase, self._select_options())
+        self.testid = self.client.testid
         # Test case name
-        self.name = requests.get('{0}/name/{1}'.format(url, self.testid)).json()['payload']
+        self.name = self.client.get('name')
         # Measurements available
-        self.all_measurement_vars = requests.get('{0}/measurements/{1}'.format(url, self.testid)).json()['payload']
+        self.all_measurement_vars = self.client.get('measurements')
         # Predictive variables available
-        self.all_predictive_vars = requests.get('{0}/forecast_points/{1}'.format(url, self.testid)).json()['payload']
+        self.all_predictive_vars = self.client.get('forecast_points')
         # Inputs available
-        self.all_input_vars = requests.get('{0}/inputs/{1}'.format(url, self.testid)).json()['payload']
+        self.all_input_vars = self.client.get('inputs')
         # Default simulation step
-        self.step_def = requests.get('{0}/step/{1}'.format(url, self.testid)).json()['payload']
+        self.step_def = self.client.get('step')
         # Default scenario
-        self.scenario_def = requests.get('{0}/scenario/{1}'.format(url, self.testid)).json()['payload']
+        self.scenario_def = self.client.get('scenario')
         
         #=============================================================
         # Define observation space
@@ -427,6 +705,22 @@ class BoptestGymEnv(gym.Env):
         
         return summary
 
+    def _select_options(self):
+        '''Return the test case options to send when selecting, omitting any
+        that were not asked for so that BOPTEST keeps its own defaults.
+
+        '''
+
+        options = {}
+        if self.direct_step:
+            options['direct_step'] = True
+        if self.fmu_log_level is not None:
+            options['fmu_log_level'] = self.fmu_log_level
+        if self.log_level is not None:
+            options['log_level'] = self.log_level
+
+        return options
+
     def reset(self, seed=None, options=None):
         '''
         Method to reset the environment. The associated building model is 
@@ -482,15 +776,18 @@ class BoptestGymEnv(gym.Env):
             self.start_time = find_start_time()
         
         # Initialize the building simulation
-        res = requests.put('{0}/initialize/{1}'.format(self.url,self.testid),
-                           json={'start_time':int(self.start_time),
-                                 'warmup_period':int(self.warmup_period)}).json()['payload']
-        
+        initialize_params = {'start_time':int(self.start_time),
+                             'warmup_period':int(self.warmup_period)}
+        # Leave the warmup grid to BOPTEST unless one was asked for
+        if self.warmup_interval is not None:
+            initialize_params['warmup_interval'] = self.warmup_interval
+        res = self.client.put('initialize', json=initialize_params)
+
         # Set simulation step
-        requests.put('{0}/step/{1}'.format(self.url,self.testid), json={'step':int(self.step_period)})
-        
+        self.client.put('step', json={'step':int(self.step_period)})
+
         # Set BOPTEST scenario
-        requests.put('{0}/scenario/{1}'.format(self.url,self.testid), json=self.scenario)
+        self.client.put('scenario', json=self.scenario)
         
         # Initialize objective integrand
         self.objective_integrand = 0.
@@ -511,7 +808,7 @@ class BoptestGymEnv(gym.Env):
 
         '''
 
-        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
+        self.client.stop()
 
     def stop(self):
         '''
@@ -519,7 +816,7 @@ class BoptestGymEnv(gym.Env):
 
         '''
 
-        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
+        self.client.stop()
 
     def step(self, action):
         '''
@@ -571,7 +868,7 @@ class BoptestGymEnv(gym.Env):
             u[act.replace('_u','_activate')] = float(1)
                 
         # Advance a BOPTEST simulation
-        res = requests.post('{0}/advance/{1}'.format(self.url,self.testid), json=u).json()['payload']
+        res = self.client.post('advance', json=u)
         
         # Compute reward of this (state-action-state') tuple
         reward = self.get_reward()
@@ -646,7 +943,7 @@ class BoptestGymEnv(gym.Env):
         w = 1
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url,self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
@@ -744,10 +1041,10 @@ class BoptestGymEnv(gym.Env):
         if self.is_regressive:
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
-                res_var = requests.put('{0}/results/{1}'.format(self.url, self.testid), 
-                                       json={'point_names':[var],
-                                             'start_time':int(regr_index[-1]), 
-                                             'final_time':int(regr_index[0])}).json()['payload']
+                res_var = self.client.put('results',
+                                          json={'point_names':[var],
+                                                'start_time':int(regr_index[-1]),
+                                                'final_time':int(regr_index[0])})
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -760,10 +1057,10 @@ class BoptestGymEnv(gym.Env):
 
         # Get predictions if this is a predictive agent. 
         if self.is_predictive:
-            predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
-                                       json={'point_names': self.predictive_vars,
-                                             'horizon':     int(self.predictive_period),
-                                             'interval':    int(self.step_period)}).json()['payload']
+            predictions = self.client.put('forecast',
+                                          json={'point_names': self.predictive_vars,
+                                                'horizon':     int(self.predictive_period),
+                                                'interval':    int(self.step_period)})
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])
@@ -781,7 +1078,7 @@ class BoptestGymEnv(gym.Env):
         '''
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis()
         
         return kpis
     
@@ -1274,7 +1571,7 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
         '''
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + kpis['tdis_tot']
@@ -1311,7 +1608,7 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         w = 0.1
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
@@ -1345,7 +1642,7 @@ class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
         w = 10
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
