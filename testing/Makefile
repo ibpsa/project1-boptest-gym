@@ -109,6 +109,10 @@ cleanup-boptest:
 	-rm boptest.zip
 	-rm -r project1-boptest-${BOPTEST_COMMIT}
 
+# Does not need a running BOPTEST: the client is tested against a stub
+test-client:
+	python3 -m unittest test_boptestGymEnv.BoptestClientTest
+
 # Assumes bestest_hydronic_heat_pump test case is running
 test-local:
 	python3 -m unittest test_boptestGymEnv.BoptestGymEnvTest
@@ -123,6 +127,11 @@ test-vectorized:
 # The tutorial covers most of the functionality of boptest-gym 
 test-tutorial:
 	python3 -m unittest test_boptestGymEnv.BoptestGymTutorialTest
+
+test-client-in-container:
+	make run-boptestgym-detached
+	make exec-boptestgym ARGS="make test-client"
+	make stop-boptestgym
 
 test-local-in-container:
 	make run-boptest

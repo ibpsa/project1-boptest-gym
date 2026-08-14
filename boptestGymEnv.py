@@ -25,6 +25,69 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 from examples.test_and_plot import plot_results, test_agent
 
+# The core KPIs that every reward in this module reads
+REWARD_KPIS = ['cost_tot', 'tdis_tot']
+
+
+class BoptestClient(object):
+    '''Handles the communication with a BOPTEST test case.
+
+    Every request the environment makes goes through this object, so that the
+    environment itself does not need to know how BOPTEST is reached.
+
+    '''
+
+    def __init__(self, url, testcase, select_options):
+        '''Select a test case and remember its identifier.
+
+        Parameters
+        ----------
+        url: string
+            Rest API url for communication with the BOPTEST interface.
+        testcase: string
+            The string identifier of the testcase.
+        select_options: dict
+            Test case options, sent in the select request body.  A BOPTEST that
+            does not know a key ignores it.
+
+        '''
+
+        self.url = url.rstrip('/')
+        self._kpi_subset_supported = True
+        self.testid = requests.post('{0}/testcases/{1}/select'.format(self.url, testcase),
+                                    json=select_options).json()['testid']
+
+    def get(self, endpoint, params=None):
+        return requests.get('{0}/{1}/{2}'.format(self.url, endpoint, self.testid),
+                            params=params).json()['payload']
+
+    def put(self, endpoint, json=None):
+        return requests.put('{0}/{1}/{2}'.format(self.url, endpoint, self.testid),
+                            json=json).json()['payload']
+
+    def post(self, endpoint, json=None):
+        return requests.post('{0}/{1}/{2}'.format(self.url, endpoint, self.testid),
+                             json=json).json()['payload']
+
+    def kpis(self, names=None):
+        '''Return the core KPIs, optionally only the ones named.
+
+        A BOPTEST that does not support the names parameter returns the full
+        set, so this falls back silently and stops asking.
+
+        '''
+
+        if names and self._kpi_subset_supported:
+            payload = self.get('kpi', params={'names': ','.join(names)})
+            if payload is not None and all(name in payload for name in names):
+                return payload
+            self._kpi_subset_supported = False
+        return self.get('kpi')
+
+    def stop(self):
+        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
+
+
 class BoptestGymEnv(gym.Env):
     '''
     BOPTEST Environment that follows gym interface.
@@ -51,7 +114,11 @@ class BoptestGymEnv(gym.Env):
                  scenario           = {'electricity_price':'constant'},
                  step_period        = 900,
                  render_episodes    = False,
-                 log_dir            = os.getcwd()):
+                 log_dir            = os.getcwd(),
+                 direct_step        = False,
+                 fmu_log_level      = None,
+                 log_level          = None,
+                 warmup_interval    = None):
         '''
         Parameters
         ----------
@@ -129,9 +196,31 @@ class BoptestGymEnv(gym.Env):
             Sampling time in seconds
         render_episodes: boolean
             True to render every episode
-        log_dir: string    
+        log_dir: string
             Directory to store results like plots or KPIs
-            
+        direct_step: boolean
+            True to ask BOPTEST to step the emulator FMU directly rather than
+            through pyfmi's simulate on every control step.  Measurements and
+            KPIs are unchanged, and a BOPTEST that does not support the option
+            ignores it.
+            Default is False.
+        fmu_log_level: int
+            Log level for the emulator FMU, from 0 for nothing to 7 for
+            everything.  Lowering it makes a control step cheaper.
+            Default is None, which leaves BOPTEST its own level.
+        log_level: int or str
+            Log level for BOPTEST's own log file and console output.  Lowering
+            it makes a control step cheaper.
+            Default is None, which leaves BOPTEST its own level.
+        warmup_interval: float
+            Sample interval in seconds for the warmup simulation that every
+            episode reset performs.  A larger value makes the reset cheaper
+            but slightly moves the state reached at the start time, and with
+            it the reported KPIs.  Control steps always use 30 s.  A BOPTEST
+            that does not support the option ignores it.
+            Default is None, which leaves the grid to BOPTEST, where it is
+            30 s.
+
         '''
         
         super(BoptestGymEnv, self).__init__()
@@ -152,7 +241,11 @@ class BoptestGymEnv(gym.Env):
         self.scenario           = scenario
         self.render_episodes    = render_episodes
         self.log_dir            = log_dir
-        
+        self.direct_step        = direct_step
+        self.fmu_log_level      = fmu_log_level
+        self.log_level          = log_level
+        self.warmup_interval    = warmup_interval
+
         # Avoid requesting data before the beginning of the year
         if self.regressive_period is not None:
             self.bgn_year_margin = self.regressive_period
@@ -167,23 +260,24 @@ class BoptestGymEnv(gym.Env):
         # Get testid for the particular testcase
         # Check if already started a test case and stop it if so before starting another
         try:
-            requests.put('{0}/stop/{1}'.format(url, self.testid))
+            self.client.stop()
         except:
             pass
         # Select and start a new test case
-        self.testid = requests.post('{0}/testcases/{1}/select'.format(url, testcase)).json()['testid']
+        self.client = BoptestClient(url, testcase, self._select_options())
+        self.testid = self.client.testid
         # Test case name
-        self.name = requests.get('{0}/name/{1}'.format(url, self.testid)).json()['payload']
+        self.name = self.client.get('name')
         # Measurements available
-        self.all_measurement_vars = requests.get('{0}/measurements/{1}'.format(url, self.testid)).json()['payload']
+        self.all_measurement_vars = self.client.get('measurements')
         # Predictive variables available
-        self.all_predictive_vars = requests.get('{0}/forecast_points/{1}'.format(url, self.testid)).json()['payload']
+        self.all_predictive_vars = self.client.get('forecast_points')
         # Inputs available
-        self.all_input_vars = requests.get('{0}/inputs/{1}'.format(url, self.testid)).json()['payload']
+        self.all_input_vars = self.client.get('inputs')
         # Default simulation step
-        self.step_def = requests.get('{0}/step/{1}'.format(url, self.testid)).json()['payload']
+        self.step_def = self.client.get('step')
         # Default scenario
-        self.scenario_def = requests.get('{0}/scenario/{1}'.format(url, self.testid)).json()['payload']
+        self.scenario_def = self.client.get('scenario')
         
         #=============================================================
         # Define observation space
@@ -427,6 +521,22 @@ class BoptestGymEnv(gym.Env):
         
         return summary
 
+    def _select_options(self):
+        '''Return the test case options to send when selecting, omitting any
+        that were not asked for so that BOPTEST keeps its own defaults.
+
+        '''
+
+        options = {}
+        if self.direct_step:
+            options['direct_step'] = True
+        if self.fmu_log_level is not None:
+            options['fmu_log_level'] = self.fmu_log_level
+        if self.log_level is not None:
+            options['log_level'] = self.log_level
+
+        return options
+
     def reset(self, seed=None, options=None):
         '''
         Method to reset the environment. The associated building model is 
@@ -482,15 +592,18 @@ class BoptestGymEnv(gym.Env):
             self.start_time = find_start_time()
         
         # Initialize the building simulation
-        res = requests.put('{0}/initialize/{1}'.format(self.url,self.testid),
-                           json={'start_time':int(self.start_time),
-                                 'warmup_period':int(self.warmup_period)}).json()['payload']
-        
+        initialize_params = {'start_time':int(self.start_time),
+                             'warmup_period':int(self.warmup_period)}
+        # Leave the warmup grid to BOPTEST unless one was asked for
+        if self.warmup_interval is not None:
+            initialize_params['warmup_interval'] = self.warmup_interval
+        res = self.client.put('initialize', json=initialize_params)
+
         # Set simulation step
-        requests.put('{0}/step/{1}'.format(self.url,self.testid), json={'step':int(self.step_period)})
-        
+        self.client.put('step', json={'step':int(self.step_period)})
+
         # Set BOPTEST scenario
-        requests.put('{0}/scenario/{1}'.format(self.url,self.testid), json=self.scenario)
+        self.client.put('scenario', json=self.scenario)
         
         # Initialize objective integrand
         self.objective_integrand = 0.
@@ -511,7 +624,7 @@ class BoptestGymEnv(gym.Env):
 
         '''
 
-        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
+        self.client.stop()
 
     def stop(self):
         '''
@@ -519,7 +632,7 @@ class BoptestGymEnv(gym.Env):
 
         '''
 
-        requests.put('{0}/stop/{1}'.format(self.url, self.testid))
+        self.client.stop()
 
     def step(self, action):
         '''
@@ -571,7 +684,7 @@ class BoptestGymEnv(gym.Env):
             u[act.replace('_u','_activate')] = float(1)
                 
         # Advance a BOPTEST simulation
-        res = requests.post('{0}/advance/{1}'.format(self.url,self.testid), json=u).json()['payload']
+        res = self.client.post('advance', json=u)
         
         # Compute reward of this (state-action-state') tuple
         reward = self.get_reward()
@@ -646,7 +759,7 @@ class BoptestGymEnv(gym.Env):
         w = 1
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url,self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
@@ -744,10 +857,10 @@ class BoptestGymEnv(gym.Env):
         if self.is_regressive:
             regr_index = res['time']-self.step_period*np.arange(1,self.regr_n+1)
             for var in self.regressive_vars:
-                res_var = requests.put('{0}/results/{1}'.format(self.url, self.testid), 
-                                       json={'point_names':[var],
-                                             'start_time':int(regr_index[-1]), 
-                                             'final_time':int(regr_index[0])}).json()['payload']
+                res_var = self.client.put('results',
+                                          json={'point_names':[var],
+                                                'start_time':int(regr_index[-1]),
+                                                'final_time':int(regr_index[0])})
                 # fill_value='extrapolate' is needed for the very few cases when
                 # res_var['time'] is not returned to be exactly between 
                 # regr_index[-1] and regr_index[0] but shorter. In these cases
@@ -760,10 +873,10 @@ class BoptestGymEnv(gym.Env):
 
         # Get predictions if this is a predictive agent. 
         if self.is_predictive:
-            predictions = requests.put('{0}/forecast/{1}'.format(self.url, self.testid), 
-                                       json={'point_names': self.predictive_vars,
-                                             'horizon':     int(self.predictive_period),
-                                             'interval':    int(self.step_period)}).json()['payload']
+            predictions = self.client.put('forecast',
+                                          json={'point_names': self.predictive_vars,
+                                                'horizon':     int(self.predictive_period),
+                                                'interval':    int(self.step_period)})
             for var in self.predictive_vars:
                 for i in range(self.pred_n):
                     observations.append(predictions[var][i])
@@ -781,7 +894,7 @@ class BoptestGymEnv(gym.Env):
         '''
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis()
         
         return kpis
     
@@ -1274,7 +1387,7 @@ class BoptestGymEnvRewardClipping(BoptestGymEnv):
         '''
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + kpis['tdis_tot']
@@ -1311,7 +1424,7 @@ class BoptestGymEnvRewardWeightCost(BoptestGymEnv):
         w = 0.1
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']
@@ -1345,7 +1458,7 @@ class BoptestGymEnvRewardWeightDiscomfort(BoptestGymEnv):
         w = 10
         
         # Compute BOPTEST core kpis
-        kpis = requests.get('{0}/kpi/{1}'.format(self.url, self.testid)).json()['payload']
+        kpis = self.client.kpis(names=REWARD_KPIS)
         
         # Calculate objective integrand function at this point
         objective_integrand = kpis['cost_tot'] + w*kpis['tdis_tot']

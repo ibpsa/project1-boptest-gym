@@ -6,6 +6,18 @@ on:
       - main
     types: [opened, synchronize, reopened]
 jobs:
+  test-client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: testing
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Pull boptestgym image from registry
+        run: make pull-boptestgym
+      - name: Test the BOPTEST client
+        run: make test-client-in-container
   test-local:
     runs-on: ubuntu-latest
     defaults:

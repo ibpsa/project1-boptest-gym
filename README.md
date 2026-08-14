@@ -96,6 +96,16 @@ docker compose up --scale worker=2 web worker provision
 
 Then you can train an RL agent with parallel learning with the vectorized BOPTEST-gym environment. See [`/examples/run_vectorized.py`](https://github.com/ibpsa/project1-boptest-gym/blob/master/examples/run_vectorized.py) for an example on how to do so. 
 
+### Note 3: on reducing the overhead per step
+
+- `direct_step=True` asks BOPTEST to step the emulator FMU with `do_step` directly instead of building a simulation algorithm and result handler for every control step. Measurements and KPIs are unchanged. It is sent when the test case is selected, so a BOPTEST that does not support it simply ignores it.
+
+- `fmu_log_level=0` and `log_level='WARNING'` turn BOPTEST's logging down. Both are unset by default, leaving BOPTEST its own levels. On their own they change nothing measurable, because pyfmi's per-step overhead hides the logging cost; combined with `direct_step` they are worth a further 1.16x.
+
+- `warmup_interval=<seconds>`, or `'inf'` for a single step over the whole warmup period, sets the grid the warmup simulation runs on and roughly halves the cost of an episode reset. Control steps always use 30 s. Coarsening it moves the state reached at the start time only within the FMU solver's own error tolerance: with a one-day warmup on `bestest_hydronic_heat_pump`, every grid from 60 s up to a single step shifts the zone temperature by less than 1e-05 K and the reported KPIs by less than 1e-05 relative, and not monotonically in the grid, which is solver noise rather than discretisation error. Left unset it is not sent at all, so BOPTEST keeps its own 30 s grid and results are bit-identical. A BOPTEST that does not support it ignores it.
+
+Independently of those, the reward now asks BOPTEST only for the KPIs it reads (`cost_tot` and `tdis_tot`, listed in `REWARD_KPIS`) rather than for all of them. The peak demand KPIs are maxima over the whole test period and so get more expensive the longer an episode runs, while these two do not. A BOPTEST that does not support requesting a subset returns the full set, which is still correct, so this needs no configuration and never fails.
+
 ## Versioning and main dependencies
 
 Current BOPTEST-Gym version is `v0.8.0` which is compatible with BOPTEST `v0.8.0` 

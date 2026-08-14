@@ -6,6 +6,7 @@ the tests.
 '''
 
 import unittest
+from unittest import mock
 import os
 import sys
 import pandas as pd
@@ -15,6 +16,7 @@ from testing import utilities
 from examples import run_baseline, run_sample, run_save_callback,\
     run_variable_episode, run_vectorized, run_multiaction, train_RL
 from collections import OrderedDict
+import boptestGymEnv
 from boptestGymEnv import BoptestGymEnv
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
@@ -618,6 +620,134 @@ class BoptestGymEnvMultiActTest(unittest.TestCase, utilities.partialChecks):
 
         # stop the environment to not overload the server
         env.stop()
+
+
+class StubRequests(object):
+    '''Stands in for the requests module.
+
+    Records every call and replays a canned response for the first url that
+    contains a registered pattern, so that BOPTEST versions that do and do not
+    support an option can both be exercised without a deployed test case.
+
+    '''
+
+    class Response(object):
+        def __init__(self, body, status_code=200, text=''):
+            self._body, self.status_code, self.text = body, status_code, text
+
+        def json(self):
+            if self._body is None:
+                raise ValueError('not json')
+            return self._body
+
+    def __init__(self):
+        self.calls = []
+        self.responses = {}
+
+    def _record(self, method, url, **kwargs):
+        self.calls.append((method, url, kwargs))
+        for pattern, response in self.responses.items():
+            if pattern in url:
+                return response(kwargs) if callable(response) else response
+        return self.Response({'status': 200, 'message': '', 'payload': {}})
+
+    def get(self, url, **kwargs):
+        return self._record('get', url, **kwargs)
+
+    def put(self, url, **kwargs):
+        return self._record('put', url, **kwargs)
+
+    def post(self, url, **kwargs):
+        return self._record('post', url, **kwargs)
+
+
+class BoptestClientTest(unittest.TestCase):
+    '''Tests the client that carries every request to BOPTEST.
+
+    These need no deployed test case: boptestGymEnv's requests module is
+    patched with StubRequests for the duration of each test.
+
+    '''
+
+    def setUp(self):
+        self.stub = StubRequests()
+        patcher = mock.patch.object(boptestGymEnv, 'requests', self.stub)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    # --- tests ---------------------------------------------------------------
+
+    def _client(self, select_options=None):
+        self.stub.responses['select'] = StubRequests.Response({'testid': 'a-test-id'})
+        return boptestGymEnv.BoptestClient(url, 'bestest_hydronic_heat_pump',
+                                           select_options or {})
+
+    def test_select_options_are_sent_as_given(self):
+        '''Test that the select body carries exactly the options asked for, so
+        that BOPTEST keeps its own defaults for the rest.
+
+        '''
+
+        self._client()
+        self.assertEqual(self.stub.calls[-1][2]['json'], {})
+        self.stub.calls = []
+        self._client({'direct_step': True, 'fmu_log_level': 0})
+        self.assertEqual(self.stub.calls[-1][2]['json'],
+                         {'direct_step': True, 'fmu_log_level': 0})
+
+    def test_kpi_subset_when_the_server_supports_it(self):
+        '''Test that only the named KPIs are requested and returned.
+
+        '''
+
+        client = self._client()
+        self.stub.responses['kpi'] = StubRequests.Response(
+            {'payload': {'cost_tot': 1.0, 'tdis_tot': 2.0}})
+        kpis = client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(sorted(kpis), sorted(boptestGymEnv.REWARD_KPIS))
+        self.assertEqual(self.stub.calls[-1][2]['params'],
+                         {'names': ','.join(boptestGymEnv.REWARD_KPIS)})
+        self.assertTrue(client._kpi_subset_supported)
+
+    def test_falls_back_when_the_server_ignores_names(self):
+        '''Test the case of a BOPTEST that predates the names parameter: it
+        ignores it and returns every KPI, which still contains what the reward
+        reads, so the request must succeed rather than fail.
+
+        '''
+
+        client = self._client()
+        every_kpi = {'cost_tot': 1.0, 'tdis_tot': 2.0, 'ener_tot': 3.0,
+                     'pele_tot': 4.0}
+        self.stub.responses['kpi'] = StubRequests.Response({'payload': dict(every_kpi)})
+        kpis = client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(sorted(kpis), sorted(every_kpi))
+
+    def test_falls_back_when_the_server_rejects_names(self):
+        '''Test the case of a BOPTEST that rejects the parameter: the client
+        asks again for everything and then stops asking for a subset.
+
+        '''
+
+        client = self._client()
+        every_kpi = {'cost_tot': 1.0, 'tdis_tot': 2.0, 'ener_tot': 3.0}
+
+        def kpi_response(kwargs):
+            if kwargs.get('params'):
+                return StubRequests.Response({'status': 400, 'message': 'bad names',
+                                       'payload': None})
+            return StubRequests.Response({'payload': dict(every_kpi)})
+
+        self.stub.responses['kpi'] = kpi_response
+        kpis = client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(sorted(kpis), sorted(every_kpi))
+        self.assertFalse(client._kpi_subset_supported)
+
+        # ...and the next reward does not pay for the failed attempt again
+        self.stub.calls = []
+        client.kpis(names=boptestGymEnv.REWARD_KPIS)
+        self.assertEqual(len(self.stub.calls), 1)
+        self.assertIsNone(self.stub.calls[0][2].get('params'))
 
 
 if __name__ == '__main__':
